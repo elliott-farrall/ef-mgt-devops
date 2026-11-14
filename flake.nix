@@ -24,11 +24,11 @@
             curl
             git
 
-            # Schema validation (CI)
+            # Schema validation & templating
             python3Packages.check-jsonschema
             python3Packages.pyyaml
-            python3Packages.pystache
             yaml-language-server
+            gettext
           ];
 
           shellHook = ''

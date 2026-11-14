@@ -1,30 +1,29 @@
-
 import {
-  to   = module.google-project["{{gcp_default_project}}"].google_project.this
-  id   = "{{gcp_project_number}}"
+  to   = module.google-project["${GCP_DEFAULT_PROJECT}"].google_project.this
+  id   = "${GCP_PROJ_NUM}"
 }
 
 import {
-  to   = module.google-service-account["sa-{{tfc_env_name}}-tfc"].google_service_account.this
-  id   = "{{sa_email}}"
+  to   = module.google-service-account["sa-${TFC_ENV_NAME}-tfc"].google_service_account.this
+  id   = "${SA_EMAIL}"
 }
 
 import {
-  to   = module.tfe-project["{{tfc_env_name}}"].tfe_project.this
-  id   = "prj-{{tfc_project_id}}"
+  to   = module.tfe-project["${TFC_ENV_NAME}"].tfe_project.this
+  id   = "prj-${TFC_PROJ_ID}"
 }
 
 import {
-  to   = module.tfe-workspace["{{tfc_ws_name}}"].tfe_workspace.this
-  id   = "{{tfc_workspace_id}}"
+  to   = module.tfe-workspace["${TFC_WS_NAME}"].tfe_workspace.this
+  id   = "${TFC_WSID}"
 }
 
 import {
-  to   = module.tfe-workspace["{{tfc_ws_name}}"].tfe_workspace_settings.this
-  id   = "{{tfc_workspace_id}}"
+  to   = module.tfe-workspace["${TFC_WS_NAME}"].tfe_workspace_settings.this
+  id   = "${TFC_WSID}"
 }
 
 import {
-  to   = module.github-repository["{{gcp_default_project}}"].github_repository.this
-  id   = "{{gcp_default_project}}"
+  to   = module.github-repository["${GCP_DEFAULT_PROJECT}"].github_repository.this
+  id   = "${GCP_DEFAULT_PROJECT}"
 }
