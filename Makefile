@@ -37,6 +37,7 @@ terraform: terraform-fmt terraform-validate ## Run all Terraform checks
 # ── Git ─────────────────────────────────────────────────────────────────
 git-branch: ## Enforce branch name convention
 	@BRANCH=$${BRANCH_NAME:-$$GITHUB_HEAD_REF}; \
+	if [ -z "$$BRANCH" ]; then BRANCH=$$(git symbolic-ref --short HEAD 2>/dev/null); fi; \
 	echo "$$BRANCH" | grep -Eq '^(feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert)/[a-z0-9][a-z0-9._-]*$$' || \
 	{ echo "Branch '$$BRANCH' must be <type>/<kebab-name>"; exit 1; }
 
