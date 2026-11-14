@@ -1,16 +1,16 @@
 data "tfe_organization" "ef" {
-  name = var.config.organization
+  name = var.organisation
 }
 
 resource "tfe_project" "planes" {
-  for_each = toset(var.config.projects)
+  for_each = toset(var.projects)
 
   name         = each.value
   organization = data.tfe_organization.ef.name
 }
 
 resource "tfe_workspace" "registry" {
-  for_each = { for w in var.config.workspaces : w.name => w }
+  for_each = var.workspaces
 
   name              = each.value.name
   organization      = data.tfe_organization.ef.name
@@ -21,7 +21,7 @@ resource "tfe_workspace" "registry" {
   # Step 5 attaches the VCS repo via the GitHub App integration; the token ID
   # comes from data.tfe_organization_integration (API: integrations/github):
   # vcs_repo {
-  #   identifier     = "${var.config.organization}/${each.value.repo}"
+  #   identifier     = "${var.organisation}/${each.value.repo}"
   #   branch         = "main"
   #   oauth_token_id = data.tfe_organization_integration.github.id
   # }

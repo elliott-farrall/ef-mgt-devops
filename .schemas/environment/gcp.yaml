@@ -1,0 +1,60 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: GCP environment inputs (gcp.yaml)
+description: Registry of the GCP organisation structure for one environment slot.
+type: object
+additionalProperties: false
+required:
+  - gcp
+properties:
+  gcp:
+    type: object
+    additionalProperties: false
+    required:
+      - organisation_id
+      - billing_account
+      - region
+      - landing_project
+      - folders
+    properties:
+      organisation_id:
+        type: string
+        pattern: "^[0-9]{6,}$"
+        description: Numeric GCP organisation ID (IAM & Admin → Settings).
+      billing_account:
+        type: string
+        pattern: "^[0-9]{6}-[A-Z0-9]{6}-[A-Z0-9]{6}$"
+        description: Billing account ID (XXXXXX-XXXXXX-XXXXXX), linked to the organisation with a live payment method.
+      region:
+        type: string
+        description: Default region for the google provider.
+      landing_project:
+        type: string
+        description: Project the google provider operates in (service accounts, APIs).
+      folders:
+        type: array
+        description: The folder tree, rooted at ef-root; unrolled by locals and provisioned by modules/gcp-org.
+        minItems: 1
+        items:
+          $ref: "#/definitions/folder"
+definitions:
+  folder:
+    type: object
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        pattern: "^ef-[a-z0-9-]+$"
+        description: Folder display name; lower kebab-case, ef- prefixed.
+      projects:
+        type: array
+        description: Project IDs created directly under this folder (leaves).
+        items:
+          type: string
+          pattern: "^ef-[a-z0-9-]+$"
+      folders:
+        type: array
+        description: Nested folders of the same shape.
+        items:
+          $ref: "#/definitions/folder"

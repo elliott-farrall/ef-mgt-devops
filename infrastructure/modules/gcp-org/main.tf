@@ -1,13 +1,8 @@
-resource "google_folder" "ef_root" {
-  display_name = "ef-root"
-  parent       = "organizations/${var.config.organization_id}"
-}
-
 resource "google_folder" "tree" {
-  for_each = { for f in var.config.folders : f.name => f }
+  for_each = var.folders
 
-  display_name = each.value.name
-  parent       = each.value.parent == "root" ? google_folder.ef_root.name : google_folder.tree[each.value.parent].name
+  display_name = each.key
+  parent       = each.value.parent == "" ? "organizations/${var.organisation_id}" : google_folder.tree[each.value.parent].name
 
   lifecycle {
     prevent_destroy = true
@@ -15,12 +10,12 @@ resource "google_folder" "tree" {
 }
 
 resource "google_project" "platform" {
-  for_each = { for p in var.config.projects : p.id => p }
+  for_each = var.projects
 
-  name            = each.value.id
-  project_id      = each.value.id
-  folder_id       = google_folder.tree[each.value.folder].folder_id
-  billing_account = var.config.billing_account
+  name            = each.key
+  project_id      = each.key
+  folder_id       = google_folder.tree[each.value.parent].folder_id
+  billing_account = var.billing_account
   labels          = var.labels
 
   deletion_policy = "PREVENT"

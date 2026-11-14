@@ -1,0 +1,66 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Terraform Cloud environment inputs (tfc.yaml)
+description: Registry of TFC projects, each with the workspaces that belong to it.
+type: object
+additionalProperties: false
+required:
+  - tfc
+properties:
+  tfc:
+    type: object
+    additionalProperties: false
+    required:
+      - hostname
+      - organisation
+      - projects
+    properties:
+      hostname:
+        type: string
+        description: TFC API hostname (app.terraform.io for the cloud).
+      organisation:
+        type: string
+        description: TFC organisation handle.
+      projects:
+        type: array
+        description: Plane projects, mirroring the top-level GCP folders.
+        minItems: 1
+        items:
+          $ref: "#/definitions/project"
+definitions:
+  project:
+    type: object
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        pattern: "^ef-[a-z0-9-]+$"
+        description: Project name; lower kebab-case, ef- prefixed.
+      workspaces:
+        type: array
+        description: Workspaces created in this project; one per ef-* repository.
+        items:
+          $ref: "#/definitions/workspace"
+  workspace:
+    type: object
+    additionalProperties: false
+    required:
+      - name
+      - repo
+      - working_directory
+      - auto_apply
+    properties:
+      name:
+        type: string
+        pattern: "^ef-[a-z0-9-]+$"
+        description: Workspace name; mirrors its repository.
+      repo:
+        type: string
+        description: GitHub repository name the workspace is VCS-connected to.
+      working_directory:
+        type: string
+        description: Terraform root inside the repository (infrastructure).
+      auto_apply:
+        type: boolean
+        description: Run policy — true for dev-style planes, false where apply needs confirmation.

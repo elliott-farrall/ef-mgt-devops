@@ -1,0 +1,41 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Cloudflare environment inputs (cf.yaml)
+description: Registry of DNS zones managed by the platform.
+type: object
+additionalProperties: false
+required:
+  - cf
+properties:
+  cf:
+    type: object
+    additionalProperties: false
+    required:
+      - account_id
+      - zones
+    properties:
+      account_id:
+        type: string
+        description: Cloudflare account ID.
+      zones:
+        type: array
+        description: Zone registry; provisioned by modules/cf.
+        minItems: 1
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - name
+            - plan
+          properties:
+            name:
+              type: string
+              description: Zone name (apex or delegated subzone).
+            plan:
+              type: string
+              enum:
+                - free
+                - basic
+                - pro
+                - business
+                - enterprise
+              description: Cloudflare zone plan.

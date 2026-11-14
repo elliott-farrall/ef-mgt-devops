@@ -8,6 +8,9 @@ Integration.
 
 - Accounts exist: GCP organisation, GitHub (`elliott-farrall`), Terraform Cloud,
   Cloudflare — with no further configuration.
+- A GCP **billing account is set up and linked to the organisation** with a live
+  payment method — projects cannot be created or attached to folders without
+  it. (Billing → Billing account; confirm `EF_BILLING_ACCOUNT` matches.)
 - Domain `elliott-farrall.phd` registered in Cloudflare.
 - Repository `ef-mgt-devops` exists and this scaffold is on `main`.
 - Local tooling: `gcloud` authenticated, `terraform`, `jq`, `curl`, `git`.
@@ -38,14 +41,14 @@ Authoritative mapping from `04-import.sh`. Extend as module resources land.
 
 | Terraform address | Source (inventory key) | Import ID format |
 |---|---|---|
-| `google_folder.ef_root` | `folder_ef-root` | `folders/<ID>` |
-| `google_folder.tree["ef-mgt"]` | `folder_ef-mgt` | `folders/<ID>` |
-| `google_folder.tree["ef-hub"]` | `folder_ef-hub` | `folders/<ID>` |
-| `google_folder.tree["ef-app"]` | `folder_ef-app` | `folders/<ID>` |
-| `google_folder.tree["ef-dev"]` | `folder_ef-dev` | `folders/<ID>` |
-| `google_folder.tree["ef-pre"]` | `folder_ef-pre` | `folders/<ID>` |
-| `google_folder.tree["ef-prd"]` | `folder_ef-prd` | `folders/<ID>` |
-| `google_project.platform["ef-mgt-devops"]` | `landing_project` | `ef-mgt-devops` |
+| `module.gcp_org.google_folder.tree["ef-root"]` | `folder_ef-root` | `folders/<ID>` |
+| `module.gcp_org.google_folder.tree["ef-mgt"]` | `folder_ef-mgt` | `folders/<ID>` |
+| `module.gcp_org.google_folder.tree["ef-hub"]` | `folder_ef-hub` | `folders/<ID>` |
+| `module.gcp_org.google_folder.tree["ef-app"]` | `folder_ef-app` | `folders/<ID>` |
+| `module.gcp_org.google_folder.tree["ef-dev"]` | `folder_ef-dev` | `folders/<ID>` |
+| `module.gcp_org.google_folder.tree["ef-pre"]` | `folder_ef-pre` | `folders/<ID>` |
+| `module.gcp_org.google_folder.tree["ef-prd"]` | `folder_ef-prd` | `folders/<ID>` |
+| `module.gcp_org.google_project.platform["ef-mgt-devops"]` | `landing_project` | `<project-number>` |
 | `module.tfc.tfe_project.planes["ef-mgt"]` | `tfc_project_ef-mgt` | `prj-<ID>` |
 | `module.tfc.tfe_project.planes["ef-hub"]` | `tfc_project_ef-hub` | `prj-<ID>` |
 | `module.tfc.tfe_project.planes["ef-app"]` | `tfc_project_ef-app` | `prj-<ID>` |

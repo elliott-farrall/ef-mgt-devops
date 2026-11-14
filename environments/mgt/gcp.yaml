@@ -1,17 +1,20 @@
 gcp:
-  organization_id: "REPLACE_ME"
-  billing_account: "REPLACE_ME"
+  organisation_id: "544969985088"
+  billing_account: "016263-85CCCB-076ADE"
   region: "europe-west2"
   landing_project: "ef-mgt-devops"
 
-  # Registries: the platform plane provisions all of these.
+  # Folder tree. Each folder: name, optional projects (leaf IDs), and
+  # optional folders nested with the same shape.
   folders:
-    - { name: ef-mgt, parent: root }
-    - { name: ef-hub, parent: root }
-    - { name: ef-app, parent: root }
-    - { name: ef-dev, parent: ef-app }
-    - { name: ef-pre, parent: ef-app }
-    - { name: ef-prd, parent: ef-app }
-
-  projects:
-    - { id: ef-mgt-devops, folder: ef-mgt }
+    - name: ef-root
+      folders:
+        - name: ef-mgt
+          projects:
+            - ef-mgt-devops
+        - name: ef-hub
+        - name: ef-app
+          folders:
+            - name: ef-dev
+            - name: ef-pre
+            - name: ef-prd

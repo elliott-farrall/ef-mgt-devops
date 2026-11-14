@@ -1,10 +1,10 @@
 output "folder_ids" {
-  description = "GCP folder IDs by name (ef-root plus the registry)."
+  description = "GCP folder IDs keyed by name across the whole resource tree."
   value       = module.gcp_org.folder_ids
 }
 
 output "project_ids" {
-  description = "Platform project IDs keyed by project id."
+  description = "Platform project IDs keyed by project ID across the whole resource tree."
   value       = module.gcp_org.project_ids
 }
 

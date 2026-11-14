@@ -1,5 +1,6 @@
 cf:
-  account_id: "REPLACE_ME"
+  account_id: "6c70a9f7539a46f128c27bfae8772c43"
 
   zones:
-    - { name: elliott-farrall.phd, plan: free }
+    - name: elliott-farrall.phd
+      plan: free

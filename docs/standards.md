@@ -25,6 +25,11 @@ Binding for this repository and every future `ef-*` repository.
   maintenance): numbered scripts, `00-lib.sh` helpers, `run.sh`
   orchestrator; never validation logic. `inventory.yaml` is transient —
   deleted by `05-cleanup.sh` at close-out.
+- `.schemas/environment/` — JSON Schema (draft-07, in YAML) mirroring the
+  `environments/<env>/` filenames; every registry change lands in its schema
+  in the same PR. Instances bind to them with a `yaml-language-server`
+  modeline — the only permitted top-of-file comment, because it is functional
+  metadata, not prose.
 - `docs/` — exactly three files: `design.md` (decisions and rationale),
   `standards.md` (binding rules), `bootstrap.md` (bring-up procedure);
   `README.md` points here. New documentation extends these three; it does not
@@ -38,11 +43,21 @@ Binding for this repository and every future `ef-*` repository.
 - Each `environments/<name>/*.yaml` has one top-level key matching the
   filename (`gcp:`, `gh:`, `tfc:`, `cf:`) with its variables nested
   underneath; `locals.tf` merges the files and exposes the namespaces.
-- Platform-wide inputs are **registries**: folders, projects, workspaces,
-  repositories, and zones are lists of entries keyed by name in the YAML, and
-  modules iterate them with `for_each`. Provisioning anything new is a data
-  change here — never a new variable, and never a hardcoded singular
-  resource.
+- YAML files use **block style only** — no flow/JSON syntax (`{...}` mappings
+  or `[...]` inline sequences). One entry per line keeps diffs reviewable.
+- Platform-wide inputs are **registries**: the GCP folder tree
+  (`folders:` — entries of `name`, optional `projects` (leaf IDs), and
+  optional nested `folders` of the same shape), the TFC project tree
+  (`projects:` — entries of `name` with optional nested `workspaces`),
+  GitHub repositories, and Cloudflare zones. Provisioning anything new is a
+  data change here — never a new variable, and never a hardcoded singular
+  resource. `locals.tf` unrolls the trees into flat keyed nodes (GCP: 4
+  folder levels, enforced by a `check` block; TFC: fixed two levels, with a
+  validation guarding project references); recursive modules are banned —
+  their cache layout breaks `terraform init` reruns.
+- Registry entries inherit platform defaults declared in `locals.tf` and may
+  override them with optional blocks (`settings:`, `protection:`); modules
+  receive the merged, keyed maps — never raw YAML entries.
 - All derivation in `locals.tf`; resources and modules consume locals only,
   and modules receive their platform's slice of the config, not the whole map.
 - `main.tf` is composition only — no hand-written resources beyond trivial glue.

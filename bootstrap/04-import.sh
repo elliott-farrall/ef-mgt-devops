@@ -23,12 +23,12 @@ import_one() {
   terraform import -input=false "$addr" "$id" || die "import failed for $addr"
 }
 
-R="google_folder"
-import_one "$R.ef_root" "folders/$(inventory_get folder_ef-root)"
+G="module.gcp_org"
+import_one "$G.google_folder.tree[\"ef-root\"]" "folders/$(inventory_get folder_ef-root)"
 for f in ef-mgt ef-hub ef-app ef-dev ef-pre ef-prd; do
-  import_one "$R.tree[\"$f\"]" "folders/$(inventory_get "folder_${f}")"
+  import_one "$G.google_folder.tree[\"$f\"]" "folders/$(inventory_get "folder_${f}")"
 done
-import_one "google_project.platform[\"ef-mgt-devops\"]" "$(inventory_get landing_project)"
+import_one "$G.google_project.platform[\"ef-mgt-devops\"]" "$(inventory_get landing_project)"
 
 T="module.tfc"
 for p in ef-mgt ef-hub ef-app; do

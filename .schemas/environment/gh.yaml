@@ -1,0 +1,90 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: GitHub environment inputs (gh.yaml)
+description: Registry of GitHub repositories with optional per-repo policy overrides.
+type: object
+additionalProperties: false
+required:
+  - gh
+properties:
+  gh:
+    type: object
+    additionalProperties: false
+    required:
+      - owner
+      - repositories
+    properties:
+      owner:
+        type: string
+        description: GitHub account or organisation owning the repositories.
+      repositories:
+        type: array
+        description: Repository registry; provisioned by modules/gh with platform defaults from locals.tf.
+        minItems: 1
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - name
+            - description
+          properties:
+            name:
+              type: string
+              pattern: "^ef-[a-z0-9-]+$"
+            description:
+              type: string
+            settings:
+              type: object
+              description: Overrides for github_repository platform defaults.
+              additionalProperties: false
+              properties:
+                visibility:
+                  type: string
+                  enum:
+                    - private
+                    - public
+                has_issues:
+                  type: boolean
+                has_projects:
+                  type: boolean
+                has_wiki:
+                  type: boolean
+                allow_merge_commit:
+                  type: boolean
+                allow_squash_merge:
+                  type: boolean
+                allow_rebase_merge:
+                  type: boolean
+                allow_auto_merge:
+                  type: boolean
+                delete_branch_on_merge:
+                  type: boolean
+            protection:
+              type: object
+              description: Overrides for the main-branch protection platform defaults.
+              additionalProperties: false
+              properties:
+                pattern:
+                  type: string
+                  description: Branch pattern the rule guards (default main).
+                enforce_admins:
+                  type: boolean
+                allows_force_pushes:
+                  type: boolean
+                allows_deletions:
+                  type: boolean
+                require_conversation_resolution:
+                  type: boolean
+                required_approving_review_count:
+                  type: integer
+                  minimum: 0
+                  maximum: 6
+                dismiss_stale_reviews:
+                  type: boolean
+                strict_status_checks:
+                  type: boolean
+                  description: Require branches to be up to date before merging.
+                status_checks:
+                  type: array
+                  description: Exact required CI check names.
+                  items:
+                    type: string

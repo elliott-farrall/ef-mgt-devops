@@ -33,9 +33,10 @@ structural.
 - **Least privilege.** One workload identity per scope, bound at the matching
   folder. The only org-level identity (`sa-adm-bootstrap`) is deleted at Step 6.
 - **The management plane provisions the rest.** This repository manages itself
-  *and* every other IaC project: its YAML inputs are registries of folders,
-  projects, workspaces, repositories, and zones. Landing a new `ef-*` project
-  is a data change here, not new machinery.
+  *and* every other IaC project: its YAML inputs are registries — the GCP
+  folder tree, TFC projects and workspaces, GitHub repositories, Cloudflare
+  zones. Landing a new `ef-*` project is a data change here, not new
+  machinery.
 
 ## Environment model
 
@@ -55,19 +56,22 @@ reuse flows through hub services and lib modules — never shared projects.
 
 ## Self-management and extensibility
 
-`ef-mgt-devops` is the root of the system: it creates the GCP folder tree, the
+`ef-mgt-devops` is the root of the system: it creates the GCP folder tree
+(folders with projects hanging off them, nested arbitrarily in the YAML), the
 TFC projects and *every* workspace, the GitHub repositories and their branch
 protection, and the DNS zones — including its own. The `environments/mgt/*.yaml`
-files are therefore registries, and the modules iterate over them
-(`for_each` keyed by name). Nothing is special-cased: this repo appears in its
-own `gh.repositories` and `tfc.workspaces` lists exactly like a future
-`ef-app-identity` would.
+files are therefore registries: `locals.tf` unrolls the folder tree into flat
+keyed nodes (4 levels deep, with a check block refusing deeper), and
+everything else is a `for_each` keyed by name. Nothing is special-cased: this
+repo appears in its own `gh.repositories` and `tfc.workspaces` lists exactly
+like a future `ef-app-identity` would.
 
 Bringing up another project is then mechanical:
 
-1. Add entries to the registries here — `gh.repositories`,
-   `tfc.workspaces` (its plane project and run policy), and `gcp.projects` if
-   it needs a project rather than reusing one.
+1. Add entries to the registries here — `gh.repositories`, a workspace
+   nested under its `tfc.projects` entry (run policy travels with it), and
+   `gcp.folders` (add the project to its folder's `projects` list) if it
+   needs a new project.
 2. Merge the PR; the mgt run creates the repo, workspace, and project.
 3. Scaffold the new repository to the same layout contract
    ([standards.md](standards.md)); its workspace already exists, so its first
@@ -78,6 +82,12 @@ Bringing up another project is then mechanical:
 Plane boundaries stay hard: `ef-mgt-devops` provisions landing spots, but
 workload resources live only in their own environment's projects, under their
 own service account.
+
+Policy is data too. Repository settings and branch protection live in
+`locals.tf` as platform defaults — private, squash-only, PR-required, green-CI,
+admin-enforced — and any registry entry may override them with an optional
+`settings:` or `protection:` block. A new repo gets the house rules for free;
+deviations are visible in the YAML where a reviewer can see them.
 
 ## Platform roles
 
