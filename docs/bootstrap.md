@@ -23,8 +23,9 @@ Integration.
   apply.
 - Repository `ef-mgt-devops` exists and this scaffold is on `main`.
 - Local tooling: `gcloud` authenticated, `terraform`, `jq`, `curl`, `git`.
-- Environment variables (never committed): `EF_BILLING_ACCOUNT`, `TFC_TOKEN`,
-  `GITHUB_TOKEN`. All other values are read from
+- Environment variables (never committed): `TF_TOKEN_APP_TERRAFORM_IO`,
+  `GITHUB_TOKEN`. Billing account is read from
+  `environments/mgt/billing.yaml`; organisation details from
   `environments/mgt/organisation.yaml`.
 
 ## Steps
