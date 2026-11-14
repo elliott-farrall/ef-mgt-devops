@@ -1,6 +1,7 @@
 variable "environment" {
   type        = string
   description = "Environment slot selecting environments/<name>/ YAML inputs, naming, labels, and policy. The only top-level variable; no default by design."
+  default     = "mgt"
 
   validation {
     condition     = contains(["mgt", "hub", "dev", "pre", "prd"], var.environment)

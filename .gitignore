@@ -1,16 +1,4 @@
+# terraform
 .terraform/
 *.tfstate
 *.tfstate.*
-crash.log
-crash.*.log
-.terraform.tfstate.lock.info
-
-.env
-*.pem
-*.p12
-gcloud-*.json
-
-.DS_Store
-.idea/
-.vscode/
-*.swp

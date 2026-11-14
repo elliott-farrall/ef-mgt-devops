@@ -1,47 +1,79 @@
 {
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
+    make-shell.url = "github:nicknovitski/make-shell";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";
   };
 
-  outputs = inputs @ { flake-parts, nixpkgs, systems, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = builtins.attrNames systems;
+  outputs = inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [ inputs.make-shell.flakeModules.default ];
 
-      perSystem = { pkgs, ... }: {
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            gcloud-sdk
-            terraform
-            gh
-            jq
-            git
-            python3Packages.check-jsonschema
-            python3Packages.pyyaml
-            yaml-language-server
-          ];
+      systems = import inputs.systems;
 
-          environment.variables = {
-            TF_VAR_environment = "mgt";
+      perSystem = { pkgs, system, ... }: let
+        tfccli = pkgs.stdenv.mkDerivation rec {
+          pname = "tfccli";
+          version = "0.11.0";
+
+          src = pkgs.fetchurl {
+            url = "https://github.com/richclement/tfccli/releases/download/v${version}/tfccli_${version}_linux_amd64.tar.gz";
+            sha256 = "sha256-QEjiQMJ1zK+oPaKeqoTDuRbRgaK68J5ptSmcdcUMDzE=";
           };
+
+          nativeBuildInputs = [ pkgs.unzip ];
+
+          unpackPhase = ''
+            tar xzf $src
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin
+            cp tfccli $out/bin/
+          '';
+        };
+      in {
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
         };
 
-        devShells.bootstrap = pkgs.mkShell {
-          packages = with pkgs; [
-            gcloud-sdk
+        make-shells = rec {
+          default = ci;
+          
+          ci.packages = with pkgs; [
+            google-cloud-sdk
             terraform
-            tfccli
             gh
             jq
             git
-            gettext
+            shellcheck
+            check-jsonschema
+            python3Packages.json-schema-for-humans
+            python3Packages.pyyaml
             yq
+            terraform-docs
+            yaml-language-server
+            gettext
           ];
 
-          environment.variables = {
-            TF_VAR_environment = "mgt";
-          };
+          bootstrap.packages = with pkgs; [
+            google-cloud-sdk
+            terraform
+            gh
+            jq
+            git
+            shellcheck
+            check-jsonschema
+            python3Packages.json-schema-for-humans
+            python3Packages.pyyaml
+            yq
+            terraform-docs
+            yaml-language-server
+            gettext
+            tfccli
+          ];
         };
       };
     };
