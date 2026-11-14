@@ -1,0 +1,32 @@
+# CI validates only — GitHub Actions holds no cloud credentials for applies.
+# The plan-only pass (which executes validation/precondition/check blocks)
+# is enabled after bootstrap Step 5 wires the TFC workspace; until then this
+# workflow does fmt + validate with no backend.
+name: ci
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: fmt
+        run: terraform fmt -check -recursive
+
+      - name: validate
+        run: |
+          terraform init -backend=false
+          terraform validate

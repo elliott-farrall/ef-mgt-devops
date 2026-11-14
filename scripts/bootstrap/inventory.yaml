@@ -1,0 +1,23 @@
+# Record of bootstrap-created IDs — appended by scripts/bootstrap/*.sh and
+# committed. This file is the handover trail from seed scripts to Terraform
+# state (04-import.sh reads it). Empty values = not yet created.
+
+organization_id: ""
+billing_account: ""
+landing_project: ""
+folder_ef-root: ""
+folder_ef-mgt: ""
+folder_ef-hub: ""
+folder_ef-app: ""
+folder_ef-dev: ""
+folder_ef-pre: ""
+folder_ef-prd: ""
+sa_mgt_tfc: ""
+sa_adm_bootstrap: ""
+wif_pool: ""
+tfc_project_ef-mgt: ""
+tfc_project_ef-hub: ""
+tfc_project_ef-app: ""
+tfc_varset_global: ""
+tfc_workspace: ""
+cf_zone_apex: ""

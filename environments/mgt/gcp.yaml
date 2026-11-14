@@ -1,0 +1,17 @@
+# GCP inputs — mgt environment.
+# Real IDs land here after bootstrap Step 1 (recorded in inventory.yaml);
+# the check block in main.tf fails any plan still containing REPLACE_ME.
+
+organization_id: "REPLACE_ME"      # numeric GCP organisation ID
+billing_account: "REPLACE_ME"      # billing account ID (XXXXXX-XXXXXX-XXXXXX)
+gcp_region: "europe-west2"
+landing_project: "ef-mgt-devops"
+
+# Folder tree: name + parent ("root" = ef-root).
+folders:
+  - { name: ef-mgt, parent: root }
+  - { name: ef-hub, parent: root }
+  - { name: ef-app, parent: root }
+  - { name: ef-dev, parent: ef-app }
+  - { name: ef-pre, parent: ef-app }
+  - { name: ef-prd, parent: ef-app }
