@@ -1,0 +1,30 @@
+
+import {
+  to   = module.google-project["{{gcp_default_project}}"].google_project.this
+  id   = "{{gcp_project_number}}"
+}
+
+import {
+  to   = module.google-service-account["sa-{{tfc_env_name}}-tfc"].google_service_account.this
+  id   = "{{sa_email}}"
+}
+
+import {
+  to   = module.tfe-project["{{tfc_env_name}}"].tfe_project.this
+  id   = "prj-{{tfc_project_id}}"
+}
+
+import {
+  to   = module.tfe-workspace["{{tfc_ws_name}}"].tfe_workspace.this
+  id   = "{{tfc_workspace_id}}"
+}
+
+import {
+  to   = module.tfe-workspace["{{tfc_ws_name}}"].tfe_workspace_settings.this
+  id   = "{{tfc_workspace_id}}"
+}
+
+import {
+  to   = module.github-repository["{{gcp_default_project}}"].github_repository.this
+  id   = "{{gcp_default_project}}"
+}

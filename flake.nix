@@ -27,6 +27,7 @@
             # Schema validation (CI)
             python3Packages.check-jsonschema
             python3Packages.pyyaml
+            python3Packages.pystache
             yaml-language-server
           ];
 
