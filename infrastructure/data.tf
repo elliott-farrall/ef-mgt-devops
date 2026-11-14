@@ -3,6 +3,6 @@ data "google_organization" "ef" {
 }
 
 data "google_billing_account" "ef" {
-  display_name = local.config.billing.name
+  display_name = "ef-${local.config.billing.name}"
 }
 

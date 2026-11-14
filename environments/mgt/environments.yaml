@@ -1,33 +1,36 @@
 # yaml-language-server: $schema=../../.schemas/environment/environments.yaml
 environments:
   - name: root
-    type: blank
+    type: folder
 
   - name: mgt
-    type: terraform
+    type: infrastructure
     parent: root
     projects:
-      - name: ef-mgt-devops
+      - name: devops
         type: infrastructure
-        description: EF platform management plane - bootstrap scripts, platform IaC, runbook.
+        description: DevOps Management.
         default: true
 
   - name: hub
-    type: terraform
+    type: infrastructure
     parent: root
 
   - name: app
-    type: blank
+    type: folder
     parent: root
 
   - name: dev
-    type: terraform
+    type: infrastructure
     parent: app
 
   - name: pre
-    type: terraform
+    type: infrastructure
     parent: app
 
   - name: prd
-    type: terraform
+    type: infrastructure
     parent: app
+
+  - name: lib
+    type: library

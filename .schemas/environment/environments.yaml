@@ -1,6 +1,6 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Environment inputs (environments.yaml)
-description: Deployment planes — a list with one entry per GCP folder; terraform-type entries own a TFC project and its projects. Each project mints a repository, a workspace, and a GCP project in its environment's folder; lib entries mint a repository and a registry module only. Identity, pools, providers, roles, conditions and grants are derived by the code, never declared here.
+description: Deployment planes — a list with one entry per GCP folder; infrastructure entries own a TFC project and its projects. Each project mints resources according to its type — software a repository, infrastructure repository plus workspace plus GCP project, module a repository plus a private registry module. Identity, pools, providers, roles, conditions and grants are derived by the code, never declared here.
 type: object
 additionalProperties: false
 required:
@@ -22,19 +22,20 @@ definitions:
       name:
         type: string
         pattern: '^[a-z][a-z0-9-]*$'
-        description: Short environment name; the folder is ef-<name>.
+        description: Short environment name; the folder is ef-<name> except for library environments, which have none.
       type:
         enum:
-          - blank
-          - terraform
-        description: blank is just a folder; terraform owns the TFC project ef-<name>, an identity, and may host infrastructure projects.
+          - folder
+          - infrastructure
+          - library
+        description: folder is just a GCP folder; infrastructure owns the TFC project ef-<name>, an identity, and hosts infrastructure projects; library creates no folder and no identity — it is the home of module projects published to the TFC private registry.
       parent:
         type: string
         pattern: '^[a-z][a-z0-9-]*$'
         description: Name of the parent environment; omit on the entry whose folder hangs off the organisation root.
       projects:
         type: array
-        description: Deliverables of this environment; each mints resources according to its type.
+        description: Deliverables of this environment; each mints resources according to its type. Infrastructure environments host software and infrastructure projects; folder environments host only software; library environments host only module projects.
         items:
           $ref: "#/definitions/project"
   project:
@@ -46,8 +47,8 @@ definitions:
     properties:
       name:
         type: string
-        pattern: "^ef-[a-z0-9-]+$"
-        description: Project name; the repository always, plus workspace and GCP project for infrastructure, or registry module for module; unique across the platform.
+        pattern: "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+        description: Project suffix; the full name ef-<environment>-<name> is generated, and the workspace and GCP project carry it.
       type:
         enum:
           - software
@@ -61,7 +62,7 @@ definitions:
       repo:
         type: string
         pattern: "^ef-[a-z0-9-]+$"
-        description: GitHub repository; defaults to the name with a trailing -<environment> lane suffix stripped.
+        description: GitHub repository; defaults to the generated full name, set explicitly when one repository serves several environments.
       description:
         type: string
         description: Repository description; one shared repository is described by the entry that carries it.

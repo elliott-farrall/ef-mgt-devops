@@ -1,67 +1,55 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Domain inputs (domain.yaml)
-description: Public DNS zones and the platform-owned records in them.
+description: Domains owned by the platform, hosted as Cloud DNS zones in the default project; the zone resource name is generated from the domain.
 type: object
 additionalProperties: false
 required:
   - domain
 properties:
   domain:
-    type: object
-    additionalProperties: false
-    required:
-      - zones
-    properties:
-      zones:
-        type: array
-        description: Public DNS zones owned by the platform, hosted by the default project; workload repos manage their own records directly.
-        minItems: 1
-        items:
-          type: object
-          additionalProperties: false
-          required:
-            - name
-            - domain
-          properties:
-            name:
-              type: string
-              pattern: '^[a-z0-9-]+$'
-              description: Managed zone resource name.
-            domain:
-              type: string
-              pattern: '^[a-z0-9.-]+\.[a-z]{2,}$'
-              description: DNS domain served by the zone.
-            records:
-              type: array
-              description: Platform-owned record sets; omit for none.
-              items:
-                type: object
-                additionalProperties: false
-                required:
-                  - name
-                  - type
-                  - ttl
-                  - records
-                properties:
-                  name:
-                    type: string
-                    pattern: '^[a-z0-9_*.-]+$'
-                    description: Label relative to the zone, or the full apex name.
-                  type:
-                    enum:
-                      - A
-                      - AAAA
-                      - CNAME
-                      - MX
-                      - NS
-                      - TXT
-                      - CAA
-                      - SRV
-                  ttl:
-                    type: integer
-                    minimum: 0
-                  records:
-                    type: array
-                    minItems: 1
-                    items:
-                      type: string
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9.-]+\.[a-z]{2,}$'
+          description: The domain itself; the managed zone is named with dots replaced by dashes.
+        records:
+          type: array
+          description: Platform-owned record sets; omit for none.
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - name
+              - type
+              - ttl
+              - records
+            properties:
+              name:
+                type: string
+                pattern: '^[a-z0-9_*.-]+$'
+                description: Label relative to the zone, or the full apex name.
+              type:
+                enum:
+                  - A
+                  - AAAA
+                  - CNAME
+                  - MX
+                  - NS
+                  - TXT
+                  - CAA
+                  - SRV
+              ttl:
+                type: integer
+                minimum: 0
+              records:
+                type: array
+                minItems: 1
+                items:
+                  type: string

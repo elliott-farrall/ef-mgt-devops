@@ -9,5 +9,5 @@ organisation:
     hostname: app.terraform.io
     github_app_installation: Terraform Cloud
 
-  github:
+  gh:
     owner: elliott-farrall

@@ -47,7 +47,7 @@ with `bootstrap/04-cleanup.sh`.
 - `01-google.sh`: landing project `ef-mgt-devops` (provider operating
   context and identity hosting) + billing link + API enablement; service
   every service account and IAM binding is **derived** by the platform
-  code from `environments.list` — `sa-<env>-tfc` per terraform
+  code from `environments` — `sa-<env>-tfc` per infrastructure
   environment, `sa-mgt-tfc` holding the platform roles — so
   `01-google.sh` seeds only the bootstrap-only `sa-adm-bootstrap` that
   config never declares;

@@ -15,8 +15,8 @@ properties:
     properties:
       name:
         type: string
-        minLength: 1
-        description: Billing account display name; resolved to its ID by data.google_billing_account.
+        pattern: '^[a-z][a-z0-9-]*$'
+        description: Billing account display suffix; Terraform prepends ef- (name billing selects the account displayed ef-billing).
       budgets:
         type: array
         description: Budget alerts; GCP budgets notify, they never cap.

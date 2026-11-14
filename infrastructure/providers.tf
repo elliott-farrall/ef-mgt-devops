@@ -9,5 +9,5 @@ provider "tfe" {
 
 
 provider "github" {
-  owner = local.config.organisation.github.owner
+  owner = local.config.organisation.gh.owner
 }

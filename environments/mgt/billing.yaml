@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=../../.schemas/environment/billing.yaml
 billing:
-  name: ef-billing
+  name: billing
   budgets:
-    - name: ef-budget-total
+    - name: total
       amount: 30
       thresholds:
         - 0.5
