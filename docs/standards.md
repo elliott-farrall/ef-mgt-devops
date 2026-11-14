@@ -86,20 +86,30 @@ Binding for this repository and every future `ef-*` repository.
 - All derivation in `locals.tf`; resources and modules consume locals only,
   and modules receive their config slice, not the whole merged map.
 - Modules are named `<platform>-<resource>` in the singular
-  (`gcp-folder`, `gcp-project`, `gcp-service-account`, `gcp-iam-binding`,
+  (`gcp-folders`, `gcp-project`, `gcp-service-account`, `gcp-iam-binding`,
   `gcp-budget`, `tfc-project`, `tfc-workspace`, `cf-zone`,
   `gh-repository`): each provisions one instance of a resource family.
   Multiplicity comes from `for_each` at the call site, never from looping
   inside the module.
 - Module call grammar: `source`, then `for_each`; blank line; inputs;
   blank line; `depends_on`.
-- A self-referential tree is flattened into one collection —
-  `local.gcp_folders` (name → `{ parent, depth }`) — and the folder module
-  is called once per depth level (`gcp-folder-root`, `-plane`, `-ladder`,
-  `-leaf`), each filtering that collection. Terraform cannot order sibling
-  instances of the same module set, so a single loop over parents and
-  children is not expressible; merged `all_folder_ids` / `all_folder_names`
-  locals hide the layering from downstream calls.
+- Every module call binds to exactly one local: `for_each` iterates a
+  `local.*` collection, and each argument is a pass-through of
+  `each.value`, a key, or a bare data/local reference. No comprehensions,
+  ternaries, or index lookups in `main.tf` — resolution lives in
+  `locals.tf`, so `main.tf` is pure wiring and `locals.tf` is the only
+  place to read to understand what a call receives.
+- The iterated object's keys are exactly the module's input names, and
+  every argument reads `each.value.<input-name>` — never `each.key`,
+  never a bare `each.value`, never a constant. The loop element *is* the
+  argument list, so the call reads as a mirror of the local and the
+  module's variables.
+- A self-referential resource graph (the folder tree) is the single
+  exception: it loops with `for_each` **inside** one `gcp-folders` call — the plural name is deliberate, the module consumes the whole collection,
+  because Terraform can order resources against each other but never
+  sibling instances of one module set. The tree arrives as one flat
+  collection, `local.gcp_folders` (name → `{ parent }`); parent
+  references are validated by the module's own checks.
 - Data sources live in the root `data.tf`; modules receive resolved IDs
   and names, keeping them thin resource wrappers. Cross-module wiring is
   done only in the root `main.tf`.

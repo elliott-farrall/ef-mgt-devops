@@ -62,13 +62,13 @@ Authoritative mapping from `04-import.sh`. Extend as module resources land.
 
 | Terraform address | Source (inventory key) | Import ID format |
 |---|---|---|
-| `module.gcp-folder-root["ef-root"].google_folder.this` | `folder_ef-root` | `folders/<ID>` |
-| `module.gcp-folder-plane["ef-mgt"].google_folder.this` | `folder_ef-mgt` | `folders/<ID>` |
-| `module.gcp-folder-plane["ef-hub"].google_folder.this` | `folder_ef-hub` | `folders/<ID>` |
-| `module.gcp-folder-plane["ef-app"].google_folder.this` | `folder_ef-app` | `folders/<ID>` |
-| `module.gcp-folder-ladder["ef-dev"].google_folder.this` | `folder_ef-dev` | `folders/<ID>` |
-| `module.gcp-folder-ladder["ef-pre"].google_folder.this` | `folder_ef-pre` | `folders/<ID>` |
-| `module.gcp-folder-ladder["ef-prd"].google_folder.this` | `folder_ef-prd` | `folders/<ID>` |
+| `module.gcp-folders.google_folder.tree["ef-root"]` | `folder_ef-root` | `folders/<ID>` |
+| `module.gcp-folders.google_folder.tree["ef-mgt"]` | `folder_ef-mgt` | `folders/<ID>` |
+| `module.gcp-folders.google_folder.tree["ef-hub"]` | `folder_ef-hub` | `folders/<ID>` |
+| `module.gcp-folders.google_folder.tree["ef-app"]` | `folder_ef-app` | `folders/<ID>` |
+| `module.gcp-folders.google_folder.tree["ef-dev"]` | `folder_ef-dev` | `folders/<ID>` |
+| `module.gcp-folders.google_folder.tree["ef-pre"]` | `folder_ef-pre` | `folders/<ID>` |
+| `module.gcp-folders.google_folder.tree["ef-prd"]` | `folder_ef-prd` | `folders/<ID>` |
 | `module.gcp-project["ef-mgt-devops"].google_project.this` | `landing_project` | `<project-number>` |
 | `module.tfc-project["ef-mgt"].tfe_project.this` | `tfc_project_ef-mgt` | `prj-<ID>` |
 | `module.tfc-project["ef-hub"].tfe_project.this` | `tfc_project_ef-hub` | `prj-<ID>` |

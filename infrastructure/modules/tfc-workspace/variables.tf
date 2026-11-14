@@ -3,8 +3,8 @@ variable "name" {
   type        = string
 }
 
-variable "organization" {
-  description = "TFC organization handle."
+variable "organisation" {
+  description = "TFC organisation handle."
   type        = string
 }
 

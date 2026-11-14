@@ -1,6 +1,6 @@
 resource "tfe_workspace" "this" {
   name              = var.name
-  organization      = var.organization
+  organization      = var.organisation
   project_id        = var.project_id
   working_directory = var.working_directory
   auto_apply        = var.auto_apply

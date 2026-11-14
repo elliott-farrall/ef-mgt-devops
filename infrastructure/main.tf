@@ -1,72 +1,46 @@
-module "gcp-folder-root" {
-  source   = "./modules/gcp-folder"
-  for_each = { for k, v in local.gcp_folders : k => v if v.depth == 1 }
+module "gcp-folders" {
+  source = "./modules/gcp-folders"
 
-  name   = each.key
-  parent = data.google_organization.ef.name
-}
-
-module "gcp-folder-plane" {
-  source   = "./modules/gcp-folder"
-  for_each = { for k, v in local.gcp_folders : k => v if v.depth == 2 }
-
-  name   = each.key
-  parent = module.gcp-folder-root[each.value.parent].folder_name
-}
-
-module "gcp-folder-ladder" {
-  source   = "./modules/gcp-folder"
-  for_each = { for k, v in local.gcp_folders : k => v if v.depth == 3 }
-
-  name   = each.key
-  parent = module.gcp-folder-plane[each.value.parent].folder_name
-}
-
-module "gcp-folder-leaf" {
-  source   = "./modules/gcp-folder"
-  for_each = { for k, v in local.gcp_folders : k => v if v.depth == 4 }
-
-  name   = each.key
-  parent = module.gcp-folder-ladder[each.value.parent].folder_name
+  tree = local.gcp_folders
 }
 
 module "gcp-project" {
   source   = "./modules/gcp-project"
-  for_each = local.gcp_project_nodes
+  for_each = local.gcp_projects
 
-  name               = each.key
-  folder_id          = local.all_folder_ids[each.value.parent]
-  billing_account_id = data.google_billing_account.ef.billing_account
-  labels             = local.labels
+  name               = each.value.name
+  folder_id          = each.value.folder_id
+  billing_account_id = each.value.billing_account_id
+  labels             = each.value.labels
 }
 
 module "gcp-service-account" {
   source   = "./modules/gcp-service-account"
-  for_each = { for sa in local.gcp.iam : sa.name => sa }
+  for_each = local.gcp_identities
 
-  name    = each.key
-  project = module.gcp-project[each.value.project].project_id
+  name    = each.value.name
+  project = each.value.project
 }
 
 module "gcp-iam-binding" {
   source   = "./modules/gcp-iam-binding"
-  for_each = { for x in local.gcp_iam_bindings : x.key => x }
+  for_each = local.gcp_bindings
 
   role            = each.value.role
-  member          = "serviceAccount:${module.gcp-service-account[each.value.sa].email}"
-  folder          = startswith(each.value.scope, "folder:") ? local.all_folder_names[trimprefix(each.value.scope, "folder:")] : null
-  project         = startswith(each.value.scope, "project:") ? module.gcp-project[trimprefix(each.value.scope, "project:")].project_id : null
-  organisation    = each.value.scope == "organisation" ? data.google_organization.ef.org_id : null
-  billing_account = each.value.scope == "billing" ? data.google_billing_account.ef.billing_account : null
+  member          = each.value.member
+  folder          = each.value.folder
+  project         = each.value.project
+  organisation    = each.value.organisation
+  billing_account = each.value.billing_account
 }
 
 module "gcp-budget" {
   source   = "./modules/gcp-budget"
-  for_each = { for b in local.gcp.billing.budgets : b.name => b }
+  for_each = local.gcp_budgets
 
   name               = each.value.name
-  billing_account_id = data.google_billing_account.ef.billing_account
-  currency           = local.gcp.billing.currency
+  billing_account_id = each.value.billing_account_id
+  currency           = each.value.currency
   amount             = each.value.amount
   thresholds         = each.value.thresholds
   projects           = each.value.projects
@@ -74,19 +48,19 @@ module "gcp-budget" {
 
 module "tfc-project" {
   source   = "./modules/tfc-project"
-  for_each = toset(local.tfc_project_names)
+  for_each = local.tfc_projects
 
-  name         = each.value
-  organization = data.tfe_organization.ef.name
+  name         = each.value.name
+  organisation = each.value.organisation
 }
 
 module "tfc-workspace" {
   source   = "./modules/tfc-workspace"
-  for_each = local.tfc_workspace_nodes
+  for_each = local.tfc_workspaces
 
   name              = each.value.name
-  organization      = data.tfe_organization.ef.name
-  project_id        = module.tfc-project[each.value.project].id
+  organisation      = each.value.organisation
+  project_id        = each.value.project_id
   working_directory = each.value.working_directory
   auto_apply        = each.value.auto_apply
 }
@@ -95,8 +69,8 @@ module "cf-zone" {
   source   = "./modules/cf-zone"
   for_each = local.cf_zones
 
-  account_id = data.cloudflare_accounts.ef.accounts[0].id
-  zone       = each.value.name
+  account_id = each.value.account_id
+  zone       = each.value.zone
   plan       = each.value.plan
 }
 
@@ -104,6 +78,6 @@ module "gh-repository" {
   source   = "./modules/gh-repository"
   for_each = local.gh_repositories
 
-  repository = each.value
-  protection = local.gh_protections[each.key]
+  repository = each.value.repository
+  protection = each.value.protection
 }
