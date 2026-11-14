@@ -10,9 +10,14 @@ properties:
     type: object
     additionalProperties: false
     required:
+      - billing_account_id
       - name
       - budgets
     properties:
+      billing_account_id:
+        type: string
+        pattern: '^[0-9A-Z]{6}-[0-9A-Z]{6}-[0-9A-Z]{12}$'
+        description: GCP billing account ID.
       name:
         type: string
         pattern: '^[a-z][a-z0-9-]*$'

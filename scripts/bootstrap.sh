@@ -2,8 +2,9 @@
 set -euo pipefail
 
 # ── Bootstrap: EF platform bring-up ────────────────────────────────
-# Reads config from environments/mgt/*.yaml. Secrets stay in env vars.
-# Scripts create, Terraform adopts, the plan proves.
+# Creates seed resources that Terraform cannot create itself (folders,
+# billing link, landing project). Then imports them into state.
+# After this, the standard deployment workflow takes over.
 # ──────────────────────────────────────────────────────────────────
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -15,80 +16,61 @@ die()  { printf '\033[1;31m[ef] fatal:\033[0m %s\n' "$*" >&2; exit 1; }
 
 # ── Read config from YAML ─────────────────────────────────────────
 
-ORG_DOMAIN=$(nix-shell -p python3Packages.pyyaml --run "python3 -c 'import yaml; print(yaml.safe_load(open(\"$ENV_DIR/organisation.yaml\"))[\"organisation\"][\"gcp\"][\"domain\"])'" 2>/dev/null | grep -v warning)
-TFC_ORG=$(nix-shell -p python3Packages.pyyaml --run "python3 -c 'import yaml; print(yaml.safe_load(open(\"$ENV_DIR/organisation.yaml\"))[\"organisation\"][\"tfe\"][\"organisation\"])'" 2>/dev/null | grep -v warning)
-TFC_HOSTNAME=$(nix-shell -p python3Packages.pyyaml --run "python3 -c 'import yaml; print(yaml.safe_load(open(\"$ENV_DIR/organisation.yaml\"))[\"organisation\"][\"tfe\"][\"hostname\"])'" 2>/dev/null | grep -v warning)
-GH_OWNER=$(nix-shell -p python3Packages.pyyaml --run "python3 -c 'import yaml; print(yaml.safe_load(open(\"$ENV_DIR/organisation.yaml\"))[\"organisation\"][\"gh\"][\"owner\"])'" 2>/dev/null | grep -v warning)
+GCP_DOMAIN=$(yq '.organisation.gcp.domain' "$ENV_DIR/organisation.yaml")
+TFC_ORG=$(yq '.organisation.tfe.organisation' "$ENV_DIR/organisation.yaml")
+TFC_HOSTNAME=$(yq '.organisation.tfe.hostname' "$ENV_DIR/organisation.yaml")
 
-INFRA_ENVS=$(nix-shell -p python3Packages.pyyaml --run "python3 -c 'import yaml,json; d=yaml.safe_load(open(\"$ENV_DIR/environments.yaml\")); print(\" \".join([e[\"name\"] for e in d[\"environments\"] if e.get(\"type\")==\"infrastructure\"]))'" 2>/dev/null | grep -v warning)
-
-[[ -n "$ORG_DOMAIN" ]] || die "organisation domain not found in $ENV_DIR/organisation.yaml"
+[[ -n "$GCP_DOMAIN" ]] || die "gcp domain not found in $ENV_DIR/organisation.yaml"
 [[ -n "$TFC_ORG" ]] || die "TFC organisation not found in $ENV_DIR/organisation.yaml"
 [[ -n "$TFC_HOSTNAME" ]] || die "TFC hostname not found in $ENV_DIR/organisation.yaml"
-[[ -n "$GH_OWNER" ]] || die "GitHub owner not found in $ENV_DIR/organisation.yaml"
-[[ -n "$INFRA_ENVS" ]] || die "no infrastructure environments found in $ENV_DIR/environments.yaml"
 
 # ── Prerequisites ──────────────────────────────────────────────────
 
-require_env() {
-  local v
-  for v in "$@"; do
-    [[ -n "${!v:-}" ]] || die "Required environment variable $v is unset."
-  done
-}
+[[ -n "${TFC_TOKEN:-}" ]] || die "Required environment variable TFC_TOKEN is unset."
 
-require_env EF_BILLING_ACCOUNT TFC_TOKEN
-
-log "preflight: tools"
-for t in gcloud terraform jq curl git; do
+for t in gcloud terraform jq curl git tfc; do
   command -v "$t" >/dev/null || die "$t not found on PATH"
 done
 
-API="https://${TFC_HOSTNAME}/api/v2"
-HDR=(-H "Authorization: Bearer $TFC_TOKEN" -H "Content-Type: application/vnd.api+json")
-tfc() { curl -sf "${HDR[@]}" "$@"; }
+# Set TFC auth for both Terraform backend and tfccli.
+# tfccli uses TF_TOKEN_<sanitized_host> per Terraform CLI conventions.
+export TF_TOKEN_APP_TERRAFORM_IO="${TFC_TOKEN:-}"
+
+# ── Read billing account from config ───────────────────────────────
+
+BILLING_ACCOUNT=$(yq '.billing.billing_account_id' "$ENV_DIR/billing.yaml")
+[[ -n "$BILLING_ACCOUNT" ]] || die "billing_account_id not found in $ENV_DIR/billing.yaml"
 
 # ── Step 1: Seed GCP ───────────────────────────────────────────────
 
-log "seeding GCP for organisation $ORG_DOMAIN"
+log "seeding GCP for organisation $GCP_DOMAIN"
 
-ORG="$(gcloud organizations list --filter="display_name=${ORG_DOMAIN}" --format='value(name)' | head -n1)"
-[[ -n "$ORG" ]] || die "organisation not resolved — set EF_ORG_ID or EF_ORG_DOMAIN"
-
-folder_id_for() {
-  gcloud resource-manager folders list --organization="$ORG" \
-    --filter="displayName=$1" --format="value(name)" 2>/dev/null | head -n1
-}
-
-ensure_folder() {
-  local name="$1" parent="$2" existing
-  existing="$(folder_id_for "$name")"
-  if [[ -n "$existing" ]]; then
-    log "folder $name already exists ($existing)"
-  else
-    log "creating folder $name under $parent"
-    existing="$(gcloud resource-manager folders create \
-      --display-name="$name" --parent="$parent" --organization="$ORG" \
-      --format="value(name)")"
-  fi
-  log "folder $name → $existing"
-}
+ORG="$(gcloud organizations list --filter="display_name=${GCP_DOMAIN}" --format='value(name)' | head -n1)"
+[[ -n "$ORG" ]] || die "organisation not resolved — set EF_ORG_ID or EF_GCP_DOMAIN"
 
 LANDING="ef-mgt-devops"
 
-ensure_folder "ef-root" "organizations/$ORG"
-ROOT="folders/$(folder_id_for ef-root)"
-for f in ef-mgt ef-hub ef-app; do ensure_folder "$f" "$ROOT"; done
-APP="folders/$(folder_id_for ef-app)"
-for f in ef-dev ef-pre ef-prd; do ensure_folder "$f" "$APP"; done
+# Create ef-root folder if it does not exist
+ROOT_FOLDER_NAME="$(gcloud resource-manager folders list --organization="$ORG" \
+  --filter="displayName=ef-root" --format="value(name)" 2>/dev/null | head -n1)"
+if [[ -n "$ROOT_FOLDER_NAME" ]]; then
+  log "folder ef-root already exists ($ROOT_FOLDER_NAME)"
+else
+  log "creating folder ef-root under organizations/$ORG"
+  ROOT_FOLDER_NAME="$(gcloud resource-manager folders create \
+    --display-name=ef-root --parent="organizations/$ORG" --organization="$ORG" \
+    --format="value(name)")"
+fi
+ROOT="folders/${ROOT_FOLDER_NAME#/}"
 
+# Create ef-mgt-devops project if it does not exist
 if gcloud projects describe "$LANDING" >/dev/null 2>&1; then
   log "project $LANDING already exists"
 else
   log "creating project $LANDING"
   gcloud projects create "$LANDING" \
     --folder="$ROOT" \
-    --billing-account="$EF_BILLING_ACCOUNT" \
+    --billing-account="$BILLING_ACCOUNT" \
     --set-as-default
 fi
 
@@ -111,40 +93,31 @@ fi
 
 # ── Step 2: Seed Terraform Cloud ───────────────────────────────────
 
-ORG_ID="$(tfc "$API/organizations/$TFC_ORG" | jq -r '.data.id')"
+TFC_OPTS="--address https://${TFC_HOSTNAME} --org ${TFC_ORG} --output-format json"
 
-ensure_project() {
-  local name="$1" id
-  id="$(tfc "$API/organizations/$TFC_ORG/projects?search[name]=$name" \
-        | jq -r --arg n "$name" '.data[] | select(.attributes.name==$n) | .id' | head -n1)"
-  if [[ -n "$id" ]]; then
-    log "project $name already exists ($id)"
-  else
-    log "creating project $name"
-    id="$(tfc -X POST "$API/projects" \
-          -d "$(jq -n --arg n "$name" --arg o "$ORG_ID" '{data:{type:"projects",attributes:{name:$n,settings:{execution-mode:"remote"},auto-destroy-activity-duration:-1},relationships:{organization:{data:{type:"organizations",id:$o}}}}}')" \
-          | jq -r '.data.id')"
-  fi
-  log "project $name → $id"
-}
+# Resolve organisation ID via tfc
+ORG_ID="$(tfc organizations get --name "$TFC_ORG" ${TFC_OPTS} | jq -r '.id')"
 
-for p in ef-mgt ef-hub; do ensure_project "$p"; done
+# Create ef-mgt TFC project if it does not exist
+LANDING_PROJ="$(tfc projects list ${TFC_OPTS} | jq -r 'select(.name=="ef-mgt") | .id' | head -n1)"
+if [[ -z "$LANDING_PROJ" ]]; then
+  log "creating project ef-mgt"
+  LANDING_PROJ="$(tfc projects create --name ef-mgt ${TFC_OPTS} | jq -r '.id')"
+  log "project ef-mgt → $LANDING_PROJ"
+else
+  log "project ef-mgt already exists ($LANDING_PROJ)"
+fi
 
+# Create ef-mgt-devops workspace if it does not exist
 LANDING_WS="ef-mgt-devops"
-LANDING_PROJ="$(tfc "$API/organizations/$TFC_ORG/projects?search[name]=ef-mgt" \
-                | jq -r --arg n "ef-mgt" '.data[] | select(.attributes.name==$n) | .id' | head -n1)"
-
-ws_id="$(tfc "$API/organizations/$TFC_ORG/workspaces?search[name]=$LANDING_WS&project_ids=$LANDING_PROJ" \
-         | jq -r --arg n "$LANDING_WS" '.data[] | select(.attributes.name==$n) | .id' | head -n1)"
+ws_id="$(tfc workspaces list ${TFC_OPTS} --project-id "$LANDING_PROJ" \
+         | jq -r "select(.name==\"$LANDING_WS\") | .id" | head -n1)"
 if [[ -n "$ws_id" ]]; then
   log "workspace $LANDING_WS already exists ($ws_id)"
 else
   log "creating workspace $LANDING_WS in project ef-mgt"
-  ws_id="$(tfc -X POST "$API/workspaces" \
-        -d "$(jq -n --arg n "$LANDING_WS" --arg pid "$LANDING_PROJ" \
-          '{data:{type:"workspaces",attributes:{name:$n,project-id:$pid}}}' \
-        )" \
-        | jq -r '.data.id')"
+  ws_id="$(tfc workspaces create --name "$LANDING_WS" --project-id "$LANDING_PROJ" ${TFC_OPTS} \
+           | jq -r '.id')"
   log "workspace $LANDING_WS → $ws_id"
 fi
 
@@ -170,7 +143,7 @@ import_one() {
 }
 
 # Folders
-for f in ef-root ef-mgt ef-hub ef-app ef-dev ef-pre ef-prd; do
+for f in ef-root ef-mgt; do
   fid="$(gcloud resource-manager folders list --organization="$ORG" \
          --filter="displayName=$f" --format="value(name)" 2>/dev/null | head -n1)"
   import_one "module.google-folder.google_folder.tree[\"$f\"]" "folders/${fid}"
@@ -181,17 +154,13 @@ proj_num="$(gcloud projects describe "$LANDING" --format='value(projectNumber)' 
 [[ -n "$proj_num" ]] || die "project $LANDING not found"
 import_one "module.google-project[\"$LANDING\"].google_project.this" "$proj_num"
 
-# TFC projects
-for p in ef-mgt ef-hub; do
-  pid="$(tfc "$API/organizations/$TFC_ORG/projects?search[name]=$p" \
-         | jq -r --arg n "$p" '.data[] | select(.attributes.name==$n) | .id' | head -n1)"
-  [[ -n "$pid" ]] || die "TFC project $p not found"
-  import_one "module.tfe-project[\"$p\"].tfe_project.this" "prj-$pid"
-done
+# TFC project + workspace
+pid="$(tfc projects list ${TFC_OPTS} | jq -r 'select(.name=="ef-mgt") | .id' | head -n1)"
+[[ -n "$pid" ]] || die "TFC project ef-mgt not found"
+import_one "module.tfe-project[\"ef-mgt\"].tfe_project.this" "prj-$pid"
 
-# Workspace + settings
-ws_id="$(tfc "$API/organizations/$TFC_ORG/workspaces?search[name]=$LANDING_WS&project_ids=$LANDING_PROJ" \
-         | jq -r --arg n "$LANDING_WS" '.data[] | select(.attributes.name==$n) | .id' | head -n1)"
+ws_id="$(tfc workspaces list ${TFC_OPTS} --project-id "$LANDING_PROJ" \
+         | jq -r "select(.name==\"$LANDING_WS\") | .id" | head -n1)"
 [[ -n "$ws_id" ]] || die "workspace $LANDING_WS not found"
 import_one "module.tfe-workspace[\"$LANDING_WS\"].tfe_workspace.this" "$ws_id"
 import_one "module.tfe-workspace[\"$LANDING_WS\"].tfe_workspace_settings.this" "$ws_id"
