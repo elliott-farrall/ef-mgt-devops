@@ -14,7 +14,7 @@ properties:
     properties:
       zones:
         type: array
-        description: Public DNS zones owned by the platform; workload repos manage their own records directly.
+        description: Public DNS zones owned by the platform, hosted by the default project; workload repos manage their own records directly.
         minItems: 1
         items:
           type: object
@@ -22,7 +22,6 @@ properties:
           required:
             - name
             - domain
-            - project
           properties:
             name:
               type: string
@@ -32,10 +31,6 @@ properties:
               type: string
               pattern: '^[a-z0-9.-]+\.[a-z]{2,}$'
               description: DNS domain served by the zone.
-            project:
-              type: string
-              pattern: '^ef-[a-z0-9-]+$'
-              description: Hosting project; must exist in projects.yaml.
             records:
               type: array
               description: Platform-owned record sets; omit for none.

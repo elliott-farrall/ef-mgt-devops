@@ -30,24 +30,27 @@ structural.
 - **Modules start local.** `infrastructure/modules/` until code genuinely must
   cross repositories; then extract to `ef-lib-*` and publish by tag. Premature
   extraction is the failure mode this guards against.
-- **Least privilege.** Two kinds of identity. `sa-adm-tfc` is the platform
-  administration identity: folder management at `ef-root` plus
-  organisation- and billing-scope read, used by the `ef-mgt-devops`
-  workspace because the platform structure is its workload. Each plane
-  identity `sa-<env>-tfc` (mgt, hub, dev, pre, prd) is bound only at its
-  own folder — project creation and editor — never above. Each identity
-  names its hosting project in `environments.service_accounts`, and all of them name
-  `ef-mgt-devops`: the platform's own landing project holds the service
-  accounts and the workload identity pool, one project fewer to audit.
-  Everything is declared in `environments.yaml`, three registries
-  read top to bottom — `service_accounts` (identity),
-  `workload_identities` (federation), `iam_members` (authorisation) —
-  never in the console. The bootstrap-only `sa-adm-bootstrap` is never
-  declared and is deleted at close-out.
+- **Least privilege, derived.** One kind of identity: `sa-<env>-tfc` per
+  environment, minted by the code from `environments.list` — every
+  terraform-type entry gets the account, the `tfc-<env>` provider, and the
+  core roles its function requires (project creation and editor at its own
+  folder; impersonation and DNS admin at the landing project). The
+  management environment is detected from the stack being applied and
+  receives the platform roles on top — `ef-root` folder administration,
+  organisation browse, billing user — so `sa-mgt-tfc` is both plane and
+  platform identity, and no separate admin account exists to audit. All
+  identities live in the landing project — the single project marked
+  `default: true`, `ef-mgt-devops` — which also hosts every environment's
+  pool and the DNS zone: one project fewer to audit. Identities are folder-scoped: admission is
+  derived from the folder itself — a terraform plane accepts workspaces
+  named `ef-<env>-*`, a lane accepts `*-<env>` — and the grant binds the
+  pool attribute `environment/<env>`, not any workspace subject. No
+  workspace and no role is ever named in YAML. The bootstrap-only `sa-adm-bootstrap` is never declared
+  and is deleted at close-out.
 - **The management plane provisions the rest.** This repository manages itself
   *and* every other IaC project: its four YAML input files are registries
-  split by setup concern — organisation facts, domains and DNS,
-  environments, projects. Landing a new `ef-*` project is a data change here, not new
+  split by setup concern — organisation facts, billing, domains and DNS,
+  and environments. Landing a new `ef-*` project is a data change here, not new
   machinery.
 
 ## Environment model
@@ -76,16 +79,16 @@ therefore registries of flat entries: hierarchy is expressed by
 `parent` pointers, not nesting — the data stays trivially readable and
 the code stays free of unroll machinery. Everything iterates with a
 `for_each` keyed by name. Nothing is special-cased: this repo appears in
-its own `projects.github` and `environments.tfe` workspace lists exactly like a
-future `ef-app-identity` would.
+its own `projects` entry under `mgt` exactly like a future
+`ef-app-identity` under `dev`, `pre` and `prd` would.
 
 Bringing up another project is then mechanical:
 
-1. Add entries to the registries here — a `projects.github` repo (plus a
-   `projects.gcp` entry if it needs a new project), and one workspace per
-   deployment environment nested under its `environments.tfe.projects`
-   entry (each carries `environment` and run policy, `repo` defaults to
-   the name).
+1. Add one `projects` entry of type `infrastructure` per deployment
+   environment under that environment's entry (name carries the lane
+   suffix, run policy optional; the repository is created once, shared
+   by the lane entries). Supporting-code repositories are entries of
+   type `module`; plain repositories are `software`.
 2. Merge the PR; the mgt run creates the repo, workspace, and project.
 3. Scaffold the new repository to the same layout contract
    ([standards.md](standards.md)); its workspace already exists, so its first
@@ -150,7 +153,7 @@ anything else, anywhere:
 | Link | Mechanism | Credential |
 |------|-----------|------------|
 | GitHub ↔ TFC | TFC GitHub App: webhook runs on `main`, status checks on PRs | App installed once as a prerequisite; workspace links managed by Terraform via the installation ID |
-| TFC → GCP | Workload identity federation: run exchanges its OIDC token at the `ef-tfc` pool; provider `tfc-<env>` (CEL condition on the workspace claim) binds to the environment's service account via `workloadIdentityUser`; runs automatically receive `WIF_PROVIDER` and `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` as workspace environment variables | `sa-adm-tfc` (mgt plane), `sa-<env>-tfc` (workload planes) |
+| TFC → GCP | Workload identity federation: run exchanges its OIDC token at the `ef-<env>-tfc` pool; provider `tfc-<env>` (folder-derived CEL condition; admitted tokens are stamped `attribute.environment/<env>`) binds the environment's principalSet to its service account via `workloadIdentityUser`; runs automatically receive `WIF_PROVIDER` and `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` as workspace environment variables | `sa-<env>-tfc`; `sa-mgt-tfc` doubles as platform administration |
 | TFC → GitHub | GitHub provider (`integrations/github`) manages repo settings and branch protection | Fine-grained token as sensitive variable, this repository only |
 
 A fourth link exists only during bootstrap: the operator's machine authenticates

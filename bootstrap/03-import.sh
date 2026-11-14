@@ -26,11 +26,11 @@ for f in ef-root ef-mgt ef-hub ef-app ef-dev ef-pre ef-prd; do
 done
 import_one "module.google-project[\"ef-mgt-devops\"].google_project.this" "$(inventory_get landing_project)"
 
-for sa in sa-adm-tfc sa-mgt-tfc sa-hub-tfc sa-dev-tfc sa-pre-tfc sa-prd-tfc; do
+for sa in sa-mgt-tfc sa-hub-tfc sa-dev-tfc sa-pre-tfc sa-prd-tfc; do
   import_one "module.google-service-account[\"$sa\"].google_service_account.this" "$(inventory_get "sa_${sa//-/_}")"
 done
 
-for p in ef-mgt ef-hub ef-app; do
+for p in ef-mgt ef-hub; do
   import_one "module.tfe-project[\"$p\"].tfe_project.this" "$(inventory_get "tfe_project_${p}")"
 done
 import_one "module.tfe-workspace[\"ef-mgt-devops\"].tfe_workspace.this" "$(inventory_get tfe_workspace)"

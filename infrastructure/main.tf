@@ -1,8 +1,3 @@
-resource "google_iam_workload_identity_pool" "tfc" {
-  workload_identity_pool_id = local.config.environments.workload_identities.pool
-  project                   = module.google-project[local.config.environments.workload_identities.pool_project].google_project.project_id
-}
-
 module "google-folder" {
   source = "./modules/google-folder"
 
@@ -19,6 +14,16 @@ module "google-project" {
   labels             = each.value.labels
 
   depends_on = [module.google-folder]
+}
+
+module "google-workload-identity-pool" {
+  source   = "./modules/google-workload-identity-pool"
+  for_each = local.google_workload_identity_pools
+
+  name    = each.value.name
+  project = each.value.project
+
+  depends_on = [module.google-project]
 }
 
 module "google-service-account" {
@@ -41,10 +46,10 @@ module "google-workload-identity-provider" {
   pool_project_number   = each.value.pool_project_number
   issuer                = each.value.issuer
   service_account_email = each.value.service_account_email
+  environment           = each.value.environment
   attribute_condition   = each.value.attribute_condition
-  subject               = each.value.subject
 
-  depends_on = [module.google-service-account]
+  depends_on = [module.google-service-account, module.google-workload-identity-pool]
 }
 
 module "google-iam-member" {
@@ -106,6 +111,18 @@ module "tfe-workspace" {
   gcp_service_account_email = each.value.gcp_service_account_email
 
   depends_on = [module.tfe-project, module.github-repository]
+}
+
+module "tfe-registry-module" {
+  source   = "./modules/tfe-registry-module"
+  for_each = local.tfe_registry_modules
+
+  name                    = each.value.name
+  organization            = each.value.organization
+  repository              = each.value.repository
+  github_app_installation = each.value.github_app_installation
+
+  depends_on = [module.github-repository]
 }
 
 module "github-repository" {

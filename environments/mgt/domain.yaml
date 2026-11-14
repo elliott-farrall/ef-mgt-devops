@@ -3,7 +3,6 @@ domain:
   zones:
     - name: elliott-farrall-phd
       domain: elliott-farrall.phd
-      project: ef-mgt-devops
       records:
         - name: elliott-farrall.phd
           type: MX

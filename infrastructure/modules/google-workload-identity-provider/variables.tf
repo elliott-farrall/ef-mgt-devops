@@ -28,12 +28,12 @@ variable "service_account_email" {
   type        = string
 }
 
-variable "attribute_condition" {
-  description = "CEL condition restricting which tokens the provider accepts."
+variable "environment" {
+  description = "Environment name stamped onto admitted tokens as attribute.environment."
   type        = string
 }
 
-variable "subject" {
-  description = "Token subject bound to the service account."
+variable "attribute_condition" {
+  description = "CEL condition restricting which TFC tokens the provider accepts."
   type        = string
 }

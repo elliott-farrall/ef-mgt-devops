@@ -1,179 +1,70 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Environment inputs (environments.yaml)
-description: The deployment planes — folder hierarchy, TFC projects and workspaces, and the identity registries that run them.
+description: Deployment planes — a list with one entry per GCP folder; terraform-type entries own a TFC project and its projects. Each project mints a repository, a workspace, and a GCP project in its environment's folder; lib entries mint a repository and a registry module only. Identity, pools, providers, roles, conditions and grants are derived by the code, never declared here.
 type: object
 additionalProperties: false
 required:
   - environments
 properties:
   environments:
+    type: array
+    minItems: 1
+    items:
+      $ref: "#/definitions/environment"
+definitions:
+  environment:
     type: object
     additionalProperties: false
     required:
-      - folders
-      - tfe
-      - service_accounts
-      - workload_identities
-      - iam_members
+      - name
+      - type
     properties:
-      folders:
+      name:
+        type: string
+        pattern: '^[a-z][a-z0-9-]*$'
+        description: Short environment name; the folder is ef-<name>.
+      type:
+        enum:
+          - blank
+          - terraform
+        description: blank is just a folder; terraform owns the TFC project ef-<name>, an identity, and may host infrastructure projects.
+      parent:
+        type: string
+        pattern: '^[a-z][a-z0-9-]*$'
+        description: Name of the parent environment; omit on the entry whose folder hangs off the organisation root.
+      projects:
         type: array
-        description: Flat folder registry; parent pointers carry the hierarchy.
-        minItems: 1
+        description: Deliverables of this environment; each mints resources according to its type.
         items:
-          type: object
-          additionalProperties: false
-          required:
-            - name
-            - parent
-          properties:
-            name:
-              type: string
-              pattern: "^ef-[a-z0-9-]+$"
-            parent:
-              type: string
-              pattern: '^(root|ef-[a-z0-9-]+)$'
-              description: root for children of the organisation root, otherwise another folder name.
-      tfe:
-        type: object
-        additionalProperties: false
-        required:
-          - projects
-        properties:
-          projects:
-            type: array
-            description: Plane projects, mirroring the top-level GCP folders.
-            minItems: 1
-            items:
-              $ref: "#/definitions/project"
-      service_accounts:
-        type: array
-        description: Platform service accounts — identity existence only.
-        minItems: 1
-        items:
-          type: object
-          additionalProperties: false
-          required:
-            - name
-            - project
-          properties:
-            name:
-              type: string
-              pattern: "^sa-[a-z0-9-]+$"
-            project:
-              type: string
-              pattern: "^ef-[a-z0-9-]+$"
-              description: Hosting project; must exist in projects.yaml.
-      workload_identities:
-        type: object
-        additionalProperties: false
-        required:
-          - pool
-          - pool_project
-          - issuer
-          - identities
-        properties:
-          pool:
-            type: string
-            pattern: '^[a-z0-9-]+$'
-            description: Workload identity pool id.
-          pool_project:
-            type: string
-            pattern: '^ef-[a-z0-9-]+$'
-            description: Project hosting the pool; must exist in projects.yaml.
-          issuer:
-            type: string
-            pattern: '^https://[a-z0-9.-]+$'
-            description: OIDC issuer the providers trust.
-          identities:
-            type: array
-            description: Federation per service account; omit an account that has no workspace mapping yet.
-            items:
-              type: object
-              additionalProperties: false
-              required:
-                - name
-                - service_account
-                - attribute_condition
-                - subject
-              properties:
-                name:
-                  type: string
-                  pattern: '^tfc-[a-z0-9-]+$'
-                  description: Provider id, tfc-<environment> convention.
-                service_account:
-                  type: string
-                  pattern: '^sa-[a-z0-9-]+$'
-                  description: Must exist in service_accounts.
-                attribute_condition:
-                  type: string
-                  minLength: 1
-                  description: CEL condition restricting which tokens the provider accepts.
-                subject:
-                  type: string
-                  minLength: 1
-                  description: Token subject bound to the service account.
-      iam_members:
-        type: array
-        description: Flat IAM bindings; member names a service account from service_accounts.
-        minItems: 1
-        items:
-          type: object
-          additionalProperties: false
-          required:
-            - scope
-            - role
-            - member
-          properties:
-            scope:
-              type: string
-              pattern: '^(folder:ef-[a-z0-9-]+|project:ef-[a-z0-9-]+|organisation|billing)$'
-            role:
-              type: string
-              pattern: "^roles/[a-zA-Z.]+$"
-            member:
-              type: string
-              pattern: "^sa-[a-z0-9-]+$"
-definitions:
+          $ref: "#/definitions/project"
   project:
     type: object
     additionalProperties: false
     required:
       - name
+      - type
     properties:
       name:
         type: string
         pattern: "^ef-[a-z0-9-]+$"
-        description: Project name; lower kebab-case, ef- prefixed.
-      workspaces:
-        type: array
-        description: Workspaces created in this project; one per ef-* repository.
-        items:
-          $ref: "#/definitions/workspace"
-  workspace:
-    type: object
-    additionalProperties: false
-    required:
-      - name
-      - environment
-    properties:
-      name:
-        type: string
-        pattern: "^ef-[a-z0-9-]+$"
-        description: Workspace name; unique across the platform, e.g. ef-app-identity-dev.
-      environment:
-        type: string
+        description: Project name; the repository always, plus workspace and GCP project for infrastructure, or registry module for module; unique across the platform.
+      type:
         enum:
-          - mgt
-          - hub
-          - dev
-          - pre
-          - prd
-        description: Environment slot injected as the terraform "environment" variable.
+          - software
+          - infrastructure
+          - module
+        description: software is just a repository; infrastructure adds a TFC workspace and a GCP project in the environment's folder; module adds a private registry module published from the repository by git tag.
+      default:
+        type: boolean
+        default: false
+        description: Exactly one infrastructure project across all environments is the platform home — it hosts every identity pool, service account, and DNS zone.
       repo:
         type: string
         pattern: "^ef-[a-z0-9-]+$"
-        description: GitHub repository this workspace builds; defaults to the workspace name (app workspaces share one repo across environments).
+        description: GitHub repository; defaults to the name with a trailing -<environment> lane suffix stripped.
+      description:
+        type: string
+        description: Repository description; one shared repository is described by the entry that carries it.
       working_directory:
         type: string
         default: "infrastructure"
@@ -181,4 +72,62 @@ definitions:
       auto_apply:
         type: boolean
         default: false
-        description: Run policy — true for dev-style planes, false where apply needs confirmation.
+        description: Run policy — true for dev-style lanes, false where apply needs confirmation.
+      settings:
+        type: object
+        description: Overrides for github_repository platform defaults.
+        additionalProperties: false
+        properties:
+          visibility:
+            type: string
+            enum:
+              - private
+              - public
+          has_issues:
+            type: boolean
+          has_projects:
+            type: boolean
+          has_wiki:
+            type: boolean
+          allow_merge_commit:
+            type: boolean
+          allow_squash_merge:
+            type: boolean
+          allow_rebase_merge:
+            type: boolean
+          allow_auto_merge:
+            type: boolean
+          delete_branch_on_merge:
+            type: boolean
+      protection:
+        type: object
+        description: Overrides for the main-branch protection platform defaults.
+        additionalProperties: false
+        properties:
+          pattern:
+            type: string
+            description: Branch pattern the rule guards (default main).
+          enforce_admins:
+            type: boolean
+          allows_force_pushes:
+            type: boolean
+          allows_deletions:
+            type: boolean
+          require_conversation_resolution:
+            type: boolean
+          required_linear_history:
+            type: boolean
+          required_approving_review_count:
+            type: integer
+            minimum: 0
+            maximum: 6
+          dismiss_stale_reviews:
+            type: boolean
+          strict_status_checks:
+            type: boolean
+            description: Require branches to be up to date before merging.
+          status_checks:
+            type: array
+            description: Exact required CI check names.
+            items:
+              type: string

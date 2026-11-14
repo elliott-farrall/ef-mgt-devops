@@ -4,44 +4,45 @@ check "budget_scopes_exist" {
       for b in values(local.google_billing_budgets) :
       b.scope == "" || !startswith(b.scope, "projects/") || contains(keys(local.google_projects), trimprefix(b.scope, "projects/"))
     ])
-    error_message = "Every budget projects scope must name a project declared in the tree."
+    error_message = "Every budget projects scope must name a declared project."
   }
 }
 
-check "project_parents_exist" {
+check "environment_parents_exist" {
   assert {
-    condition     = alltrue([for p in local.config.projects.gcp : contains(keys(local.google_folders.folders), p.parent)])
-    error_message = "Every project parent must name a folder in environments.folders."
+    condition     = alltrue([for e in [for x in local.config.environments : x if x.type != "lib"] : try(e.parent, null) == null || contains([for x in local.config.environments : x.name], e.parent)])
+    error_message = "Every environment parent must name another environment."
   }
 }
 
-check "service_account_projects_exist" {
+
+
+check "project_names_unique" {
   assert {
-    condition     = alltrue([for sa in local.config.environments.service_accounts : contains(keys(local.google_projects), sa.project)])
-    error_message = "Every service account hosting project must name a project in projects.gcp."
+    condition     = length([for p in local.environment_projects : p.name]) == length(toset([for p in local.environment_projects : p.name]))
+    error_message = "Project names double as workspace, repository, and GCP project ids; they must be unique across all environments."
   }
 }
 
-check "workload_identity_accounts_exist" {
+check "infrastructure_projects_require_terraform_environments" {
   assert {
-    condition     = alltrue([for id in local.config.environments.workload_identities.identities : contains(keys(local.google_service_accounts), id.service_account)])
-    error_message = "Every workload identity must map to a service account in environments.service_accounts."
+    condition     = alltrue([for p in local.infrastructure_projects : contains([for e in local.config.environments : e.name if e.type == "terraform"], p.env)])
+    error_message = "Infrastructure projects need the folder and TFC project that only terraform-type environments have."
   }
 }
 
-check "iam_members_exist" {
+check "default_project_is_unique" {
   assert {
-    condition     = alltrue([for x in local.config.environments.iam_members : contains(keys(local.google_service_accounts), x.member)])
-    error_message = "Every IAM binding member must name a service account in environments.service_accounts."
+    condition     = length([for p in local.infrastructure_projects : p.name if try(p.default, false) != false]) == 1
+    error_message = "Exactly one project must be marked default: true; it hosts every identity pool, service account, and DNS zone."
   }
 }
 
-check "iam_member_scopes_exist" {
+check "lib_names_unique" {
   assert {
-    condition = alltrue([
-      for x in local.config.environments.iam_members :
-      contains(["organisation", "billing"], x.scope) || (startswith(x.scope, "folder:") && contains(keys(local.google_folders.folders), trimprefix(x.scope, "folder:"))) || (startswith(x.scope, "project:") && contains(keys(local.google_projects), trimprefix(x.scope, "project:")))
-    ])
-    error_message = "Every IAM binding scope must name a folder, project, organisation, or billing account."
+    condition     = length([for l in try(local.config.environments.lib, []) : l.name]) == length(toset([for l in try(local.config.environments.lib, []) : l.name]))
+    error_message = "Lib repository names must be unique."
   }
 }
+
+

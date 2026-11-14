@@ -27,7 +27,7 @@ ensure_project() {
   inventory_set "tfe_project_${name}" "$id"
 }
 
-for p in ef-mgt ef-hub ef-app; do ensure_project "$p"; done
+for p in ef-mgt ef-hub; do ensure_project "$p"; done
 
 
 log "done — commit the updated inventory.yaml"

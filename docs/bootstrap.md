@@ -46,13 +46,14 @@ with `bootstrap/04-cleanup.sh`.
 
 - `01-google.sh`: landing project `ef-mgt-devops` (provider operating
   context and identity hosting) + billing link + API enablement; service
-  accounts and every IAM binding are declared in
-  `environments.service_accounts` and `environments.iam_members` —
-  `sa-adm-tfc` for platform administration, one `sa-<env>-tfc` per plane,
-  each naming its hosting project — plus the bootstrap-only
-  `sa-adm-bootstrap` that config never declares;
-  workload identity pool + providers are Terraform's (root glue +
-  `google-workload-identity-provider`), hosted in `ef-mgt-devops` (the `ef-mgt-devops` workspace assumes `sa-adm-tfc`);
+  every service account and IAM binding is **derived** by the platform
+  code from `environments.list` — `sa-<env>-tfc` per terraform
+  environment, `sa-mgt-tfc` holding the platform roles — so
+  `01-google.sh` seeds only the bootstrap-only `sa-adm-bootstrap` that
+  config never declares;
+  workload identity pools + providers are Terraform's
+  (`google-workload-identity-pool` + `google-workload-identity-provider`),
+  hosted in `ef-mgt-devops` (the `ef-mgt-devops` workspace assumes `sa-mgt-tfc`);
   organisation policies
   (required labels, prevent project deletion, allowed regions).
 - `02-tfe.sh`: global variable set `ef-global` (org/billing IDs);
@@ -85,7 +86,7 @@ Authoritative mapping from `03-import.sh`. Extend as module resources land.
 | `module.google-project["ef-mgt-devops"].google_project.this` | `landing_project` | `<project-number>` |
 | `module.tfe-project["ef-mgt"].tfe_project.this` | `tfe_project_ef-mgt` | `prj-<ID>` |
 | `module.tfe-project["ef-hub"].tfe_project.this` | `tfe_project_ef-hub` | `prj-<ID>` |
-| `module.tfe-project["ef-app"].tfe_project.this` | `tfe_project_ef-app` | `prj-<ID>` |
+| `module.tfe-project["ef-dev"/"ef-pre"/"ef-prd"]` | created by first apply | lane projects replace `ef-app`; they did not exist before adoption |
 | `module.tfe-workspace["ef-mgt-devops"].tfe_workspace.this` | `tfe_workspace` | `<ws-ID>` |
 | `module.tfe-workspace["ef-mgt-devops"].tfe_workspace_settings.this` | `tfe_workspace` | `<ws-ID>` |
 | `module.github-repository["ef-mgt-devops"].github_repository.this` | `github_repository` | `ef-mgt-devops` (repo slug) |

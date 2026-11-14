@@ -13,21 +13,26 @@ Binding for this repository and every future `ef-*` repository.
 - Platform identifiers are the provider names: `google`, `tfe`, `github`
   (`modules/google-project`). Not the product abbreviations
   — `gcp`, `tfc`, `gh` are retired. Product names survive only inside data
-  values (`sa-<env>-tfc`, `tfc-<env>`, `ef-tfc`).
-- Service accounts: `sa-<scope>-<purpose>`. `sa-adm-tfc` is the platform
-  administration identity — org-level roles, used by the `ef-mgt-devops`
-  workspace for high-level operations. `sa-<env>-tfc` (`sa-mgt-tfc`,
-  `sa-hub-tfc`, `sa-dev-tfc`, `sa-pre-tfc`, `sa-prd-tfc`) are plane
-  identities, bound only at their own folders. Identity configuration is
-  three ordered registries in `environments.yaml`: `service_accounts` (name,
-  project — existence), `workload_identities` (pool, pool_project, issuer
-  plus one federation entry per account — authentication), and
-  `iam_members` (flat scope/role/member bindings — authorisation). Scopes
-  are explicit everywhere: `folder:`, `project:`, `organisation`,
-  `billing`. All platform identities live in the landing project
-  `ef-mgt-devops`, declared like
-  any other project in the tree. `sa-adm-bootstrap` is the exception:
-  bootstrap-only, never declared, deleted at close-out.
+  values (`sa-<env>-tfc`, `tfc-<env>`, `ef-<env>-tfc`).
+- Service accounts: `sa-<env>-tfc`, **derived** — one per `terraform`-type
+  environment; `blank` environments are folders only. Each derived identity gets the core
+  roles required for its function: `projectCreator` and `editor` at its own
+  folder, `serviceAccountUser` and `dns.admin` at the landing project. The
+  stack's own environment is detected as the management one and receives the
+  platform roles on top: `folderAdmin` and `projectCreator` at `ef-root`,
+  `browser` at the organisation, `billing.user` at the billing account.
+  There is no separate administration identity — `sa-mgt-tfc` runs the
+  platform and the management plane. The landing project is the one
+  project marked `default: true` — exactly one, today `ef-mgt-devops` —
+  and it hosts every identity pool `ef-<env>-tfc`, every service account,
+  and every DNS zone. The marker sits on the project, not the
+  environment: identity and domain always know where they go. `sa-adm-bootstrap` is the exception: bootstrap-only, never
+  declared, deleted at close-out.
+- Workspace names carry the folder scope, because federation admits by
+  folder, not by name: a workspace of a terraform-type environment starts
+  `ef-<env>-`; a workspace deploying into a lane environment ends `-<env>`.
+  The naming convention *is* the contract — the CEL condition and the
+  `attribute.environment/<env>` stamp are derived from it, never declared.
 - PR branches: `<type>/<kebab-name>`, type one of `feature`, `fix`, `hotfix`,
   `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `revert`.
   Enforced by the `branch-name` CI check, which is required on `main`.
@@ -62,14 +67,24 @@ Binding for this repository and every future `ef-*` repository.
   Everything a file does is said by its name, its code, or `docs/`;
   work-in-progress notes belong in the runbook, never in the tree.
 - Config files are named by setup concern, not by platform:
-  `organisation.yaml` (who we operate as — org domain, region, billing,
-  TFC and GitHub handles), `domain.yaml` (DNS zones and platform records),
-  `environments.yaml` (folder tree, TFC projects and workspaces, the three
-  identity registries), `projects.yaml` (GCP projects and GitHub
-  repositories — the two faces of every deployable thing). Each file has
-  one top-level key matching the filename (`organisation:`, `domain:`,
-  `environments:`, `projects:`); `locals.tf` merges the files and exposes
-  the namespaces.
+  `organisation.yaml` (who we operate as — org domain, region, TFC and
+  GitHub handles), `billing.yaml` (billing account and budget alerts),
+  `domain.yaml` (DNS zones and platform records), and `environments.yaml`
+  (a list, one entry per folder, each hosting `projects`; the one
+  infrastructure project marked `default: true` is the platform home). Each file has one top-level key
+  matching the filename; `locals.tf` merges the files and exposes the
+  namespaces.
+- **A project is one entry with a type**: declaring
+  `environments[].projects[]` with `type: software` mints just the GitHub
+  repository; `type: infrastructure` adds the TFC workspace (in the
+  environment's project `ef-<env>`) and the GCP project in folder
+  `ef-<env>`; `type: module` adds a private TFC registry module published
+  from the repository by git tag. Name = repository = workspace = GCP
+  project id; the repository is the name with a trailing `-<lane>` suffix
+  stripped, so one repo can carry `ef-app-identity-dev|pre|prd` while
+  `ef-mgt-devops` owns its repo outright. `settings:`/`protection:`
+  override repository policy once per repo. `default: true` on exactly
+  one infrastructure project marks the platform home.
 - YAML files use **block style only** — no flow/JSON syntax (`{...}` mappings
   or `[...]` inline sequences). One entry per line keeps diffs reviewable.
 - Values are **plain scalars — no quote marks** in `environments/` and
@@ -78,15 +93,18 @@ Binding for this repository and every future `ef-*` repository.
   for exactly this reason). `.schemas/` is exempt: JSON Schema regex
   patterns and prose descriptions legitimately carry quotes.
 - Optional inputs with platform defaults are omitted from the YAML; the
-  defaults live in `locals.tf`: `organisation.tfe.hostname` = `app.terraform.io`,
-  `environments.tfe.projects[].workspaces[].working_directory` = `infrastructure`,
-  `environments.tfe.projects[].workspaces[].auto_apply` = `false`,
-  `organisation.gcp.billing` currency = GBP in the module.
-- Platform-wide inputs are **registries**: GCP `folders` and `projects`
-  (flat entries of `{ name, parent }` — the parent pointer carries the
-  hierarchy, `root` marks children of the organisation root), TFC
-  `projects` (entries of `name` with optional nested `workspaces`),
-  GitHub repositories, DNS zones, and billing budgets.
+  defaults live in `locals.tf`: `environments.list[].projects[].working_directory` = `infrastructure`,
+  `environments.list[].projects[].auto_apply` = `false`,
+  `billing` currency = GBP in the module.
+- Platform-wide inputs are **registries**: `environments.list` — one entry
+  per folder, `{ name, type, parent? }`, ancestors before children; the
+  parent pointer carries the hierarchy and the parentless entry hangs off
+  the organisation root; `type: terraform` owns the TFC project `ef-<name>`
+  with optional nested `workspaces`; `projects.gcp` and `projects.github`;
+  DNS zones; billing budgets. Names are derived, never repeated: folder
+  `ef-<name>`, service account `sa-<name>-tfc`, provider `tfc-<name>`,
+  federation issuer `https://<organisation.tfe.hostname>` — the TFC API
+  endpoint and the OIDC trust are one required value.
   Provisioning anything new is a data change here — never a new variable,
   and never a hardcoded singular resource. Hierarchies live in data as
   parent pointers, never as nested YAML: HCL has no recursion, so every
@@ -99,10 +117,10 @@ Binding for this repository and every future `ef-*` repository.
   and modules receive their config slice, not the whole merged map.
 - Modules are named `<provider>-<resource>` — the provider's own name and
   the main resource deployed (`google-folder`, `google-project`,
-  `google-service-account`, `google-workload-identity-provider`,
-  `google-iam-member`, `google-billing-budget`,
+  `google-service-account`, `google-workload-identity-pool`,
+  `google-workload-identity-provider`, `google-iam-member`, `google-billing-budget`,
   `google-dns-managed-zone`, `tfe-project`, `tfe-workspace`,
-  `github-repository`): each provisions one instance of a resource family.
+  `tfe-registry-module`, `github-repository`): each provisions one instance of a resource family.
   Multiplicity comes from `for_each` at the call site, never from looping
   inside the module.
 - Module outputs are mechanical: one output per resource the module
@@ -140,20 +158,20 @@ Binding for this repository and every future `ef-*` repository.
   is done only in the root `main.tf`.
 - Cross-module ordering is stated with explicit `depends_on` even where
   value references already imply it: folders → projects → service
-  accounts → workload identities → bindings, projects → budgets, tfe-projects → workspaces.
+  accounts → workload identities → bindings, projects → budgets, tfe-projects → project workspaces.
   The wiring graph in `main.tf` should be readable without tracing
   expressions.
 - `check` blocks live in `checks.tf` — root or module — never in
   `main.tf`. A check belongs in the module that owns the invariant; the
   root `checks.tf` keeps cross-registry referential integrity
-  (project→folder, service_account→project, workload_identity→account,
-  iam_member→account+scope, budget→project).
-- `main.tf` is composition only — no hand-written resources beyond trivial
-  glue. The single sanctioned glue resource is the workload identity pool:
-  it is a platform singleton; its providers are the
-  `google-workload-identity-provider` module — one provider per federated
-  identity, minting tokens into exactly one service account — and every
-  further binding is a `google-iam-member` entry.
+  (project→folder, environment→parent, workspace→environment,
+  landing→project, zone→project, budget→project).
+- `main.tf` is composition only — no hand-written resources, with no
+  exceptions since the pool became a module: pools
+  (`google-workload-identity-pool`, one per environment), providers
+  (`google-workload-identity-provider`, one per federated identity,
+  minting tokens into exactly one service account), and every further
+  binding (`google-iam-member`) all sit behind modules.
 - Validation is Terraform-native: `validation`, `precondition`, and `check`
   blocks must fail bad input at plan time.
 - Modules stay repo-local until code must cross repositories; then extract to

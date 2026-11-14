@@ -1,0 +1,51 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Billing inputs (billing.yaml)
+description: The billing relationship — account and budget alerts.
+type: object
+additionalProperties: false
+required:
+  - billing
+properties:
+  billing:
+    type: object
+    additionalProperties: false
+    required:
+      - name
+      - budgets
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: Billing account display name; resolved to its ID by data.google_billing_account.
+      budgets:
+        type: array
+        description: Budget alerts; GCP budgets notify, they never cap.
+        minItems: 1
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - name
+            - amount
+            - thresholds
+          properties:
+            name:
+              type: string
+              pattern: '^[a-z][a-z0-9-]*$'
+              description: Budget display name.
+            amount:
+              type: integer
+              minimum: 1
+              description: Monthly spend alert threshold in whole GBP.
+            thresholds:
+              type: array
+              minItems: 1
+              items:
+                type: number
+                exclusiveMinimum: 0
+                maximum: 1
+                description: Alert fractions of the amount, e.g. 0.5 = half spent.
+            scope:
+              type: string
+              pattern: '^(|projects/ef-[a-z0-9-]+|folders/ef-[a-z0-9-]+|organizations/[0-9]+)$'
+              description: Budget coverage; omit for the whole account.

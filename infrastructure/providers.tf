@@ -3,7 +3,7 @@ provider "google" {
 }
 
 provider "tfe" {
-  hostname     = try(local.config.organisation.tfe.hostname, "app.terraform.io")
+  hostname     = local.config.organisation.tfe.hostname
   organization = local.config.organisation.tfe.organisation
 }
 
