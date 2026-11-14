@@ -2,295 +2,303 @@
 
 This is the design document for the EF platform: decisions and rationale,
 maintained in the repository they describe and versioned by its git history.
-The binding rules live in [standards.md](standards.md); the bring-up procedure
+Binding rules live in [standards.md](standards.md); the bring-up procedure
 in [bootstrap.md](bootstrap.md). Read this file before proposing anything
 structural.
 
 ## Principles
 
-- **Everything is infrastructure as code.** After bootstrap, consoles are
-  read-only; every change to the platform arrives as a PR to this repository.
-- **Bootstrap is scripts + imports.** Numbered seed scripts create the
-  chicken-and-egg resources (folders must exist before any workspace can
-  manage them); `terraform import` then adopts everything into state. There is
-  deliberately no permanent bootstrap codebase — the scripts are short-lived
-  seeds, the inventory is transient (deleted at close-out), the code is the
-  steady state.
-- **One hierarchy, three mirrors.** GCP folders, Terraform Cloud projects, and
-  repository namespaces mirror each other with predictable names
-  (`ef-mgt/ef-hub/ef-app`). Structure is enforced by IAM and org policies, not
-  convention.
-- **Environments are data.** The same code serves every environment; the single
-  `environment` input selects the YAML inputs, naming, labels, identity, and
-  apply policy. New behaviour is expressed as derivation in `locals.tf`, never
-  as a new variable.
-- **Validation is Terraform-native.** `validation`, `precondition`, and `check`
-  blocks fail bad input at plan time. Shell scripts only orchestrate — if a
-  rule can be checked in HCL, it must be.
-- **Modules start local.** `infrastructure/modules/` until code genuinely must
-  cross repositories; then extract to `ef-lib-*` and publish by tag. Premature
-  extraction is the failure mode this guards against.
-- **Least privilege, derived.** One kind of identity: `sa-<env>-tfc` per
-  environment, minted by the code from `environments` — every
-  infrastructure-type entry gets the account, the `tfc-<env>` provider, and the
-  core roles its function requires (project creation and editor at its own
-  folder; impersonation and DNS admin at the landing project). The
-  management environment is detected from the stack being applied and
-  receives the platform roles on top — `ef-root` folder administration,
-  organisation browse, billing user — so `sa-mgt-tfc` is both plane and
-  platform identity, and no separate admin account exists to audit. All
-  identities live in the landing project — the single project marked
-  `default: true`, `ef-mgt-devops` — which also hosts every environment's
-  pool and the DNS zone: one project fewer to audit. Identities are folder-scoped: admission is
-  derived from the folder itself — every environment accepts workspaces
-  named `ef-<env>-*` — and the grant binds the
-  pool attribute `environment/<env>`, not any workspace subject. No
-  workspace and no role is ever named in YAML. The bootstrap-only `sa-adm-bootstrap` is never declared
-  and is deleted at close-out.
-- **The management plane provisions the rest.** This repository manages itself
-  *and* every other IaC project: its four YAML input files are registries
-  split by setup concern — organisation facts, billing, domains,
-  and environments. Landing a new `ef-*` project is a data change here, not new
-  machinery.
+- **Everything is infrastructure as code.** After bootstrap, consoles are read-only; every change arrives as a PR. Manual changes are drift and must be adopted or reverted within one working day.
+- **Bootstrap is scripts + imports.** Seed scripts create chicken-and-egg resources (`terraform import` then adopts them). There is no permanent bootstrap codebase — scripts are short-lived seeds, the code is steady state.
+- **One hierarchy, three mirrors.** GCP folders, TFC projects, and GitHub namespaces mirror each other with predictable names. Structure is enforced by IAM and org policies, not convention.
+- **Environments are data.** The same code serves every environment. The single `environment` input selects YAML inputs, naming, labels, identity, and apply policy. New behaviour is derivation in `locals.tf`, never a new variable.
+- **Validation is Terraform-native.** `validation`, `precondition`, and `check` blocks fail bad input at plan time. Shell scripts only orchestrate — if a rule can be checked in HCL, it must be.
+- **Modules start local.** `infrastructure/modules/` until code genuinely must cross repositories. Premature extraction is the failure mode this guards against.
+- **Least privilege, derived.** One identity kind: `sa-<env>-tfc` per environment, minted from config. All identities live in the landing project, which also hosts every pool and the DNS zone. No workspace and no role is ever named in YAML.
+- **Management plane provisions everything.** This repo manages itself and every future `ef-*` project. Landing a new project is a data change here, not new machinery.
+- **Names traverse platforms.** Folder name → project ID → workspace name → repository name. One stable name resolved at plan time by provider data sources. No ID leaks between platforms.
 
-## Environment model
+## Environments
 
-Five slots partition the platform:
+Five slots partition the platform. Infrastructure-type environments own a GCP folder, TFC project, service account, WIF pool, and workspaces. Library environments host registry modules only. Software environments get repositories but no identity plumbing.
 
-| Slot | Role | Why it exists |
-|------|------|---------------|
-| `mgt` | The platform itself | Operates org, folders, DNS, TFC; production-grade because everything else depends on it |
-| `hub` | Shared services | Consumed by every environment, so it sits outside the ladder and gets a manual-confirm gate |
-| `dev` | Experiments | Auto-apply: fast iteration where breakage is cheap |
-| `pre` | Staging | Soaks after dev before anything real moves |
-| `prd` | Production | Manual confirm only |
+| Slot | Type | Role | Run policy | Why it exists |
+|------|------|------|------------|---------------|
+| `mgt` | infrastructure | Platform management | manual confirm | Operates org, folders, DNS, TFC; production-grade because everything else depends on it |
+| `hub` | infrastructure | Shared services | manual confirm | Consumed by every environment, so it sits outside the ladder |
+| `dev` | infrastructure | Experiments | auto-apply | Fast iteration where breakage is cheap |
+| `pre` | infrastructure | Staging | manual confirm | Soaks after dev before anything real moves |
+| `prd` | infrastructure | Production | manual confirm | Safety gates on all applies |
 
-Isolation is structural: a project lives in exactly one environment folder,
-each environment has its own service account and state, and cross-environment
-reuse flows through hub services and lib modules — never shared projects.
+Isolation is structural: a project lives in exactly one environment folder, each environment has its own service account and state, and cross-environment reuse flows through hub services and library modules.
 
-## Self-management and extensibility
+### Naming convention
 
-`ef-mgt-devops` is the root of the system: it creates the GCP folder
-tree and projects, the TFC projects and *every*
-workspace, the GitHub repositories and their branch protection, and the DNS
-zones — including its own. The `environments/mgt/*.yaml` files are
-therefore registries of flat entries: hierarchy is expressed by
-`parent` pointers, not nesting — the data stays trivially readable and
-the code stays free of unroll machinery. Everything iterates with a
-`for_each` keyed by name. Nothing is special-cased: this repo appears in
-its own `projects` entry under `mgt` exactly like a future
-`ef-app-identity` under `dev`, `pre` and `prd` would.
+Config carries suffix-only names. Terraform generates full names as `ef-<env>-<suffix>`.
 
-Bringing up another project is then mechanical:
+| Entity | Config example | Generated name | Scope |
+|--------|---------------|----------------|-------|
+| Environment | `name: devops` | `ef-mgt-devops` (project) / `ef-mgt-devops` (workspace) / `ef-mgt-devops` (repo) | Entire platform |
+| Service account | derived | `sa-dev-tfc` | Landing project |
+| WIF pool | derived | `ef-dev-tfc` | Landing project |
+| TFC project | derived | `ef-dev` | TFC organisation |
+| Billing budget display | `billing.budgets[].name: total` | `ef-budget-total` | GCP billing account |
+| DNS zone name | `domain.yaml[].name: elliott-farrall.phd` | `elliott-farrall-phd` | Landing project |
+| Cross-env repo share | `projects[].repo: shared-repo` | `ef-shared-repo` (created once) | Owner namespace |
 
-1. Add one `projects` entry of type `infrastructure` per deployment
-   environment under that environment's entry — config carries only the
-   suffix; the environment generates the full name `ef-<env>-<suffix>`;
-   run policy optional; one repository shared across lanes is named
-   explicitly with `repo:`. Supporting-code repositories are `module`
-   entries under `lib`; plain repositories are `software`.
-2. Merge the PR; the mgt run creates the repo, workspace, and project.
-3. Scaffold the new repository to the same layout contract
-   ([standards.md](standards.md)); its workspace already exists, so its first
-   PR plans against real state from day one.
-4. The new repo then manages *its own* resources. Cross-project
-   references resolve **by name through provider data sources**
-   (`google_folders`, `google_dns_managed_zone`, …) — this repository
-   publishes no outputs and nothing couples to its internals. Names are the
-   stable contract; IDs are looked up. A website repo's domain, for example,
-   is one `google_dns_record_set` in the platform's apex zone plus a
-   `data.google_dns_managed_zone` lookup — no new plumbing anywhere.
+### Cross-environment access
 
-Plane boundaries stay hard: `ef-mgt-devops` provisions landing spots, but
-workload resources live only in their own environment's projects, under their
-own service account.
+Reuse flows through two mechanisms:
 
-Policy is data too. Repository settings and branch protection live in
-`locals.tf` as platform defaults — private, squash-only, PR-required, green-CI,
-admin-enforced — and any registry entry may override them with an optional
-`settings:` or `protection:` block. A new repo gets the house rules for free;
-deviations are visible in the YAML where a reviewer can see them.
+1. **Hub services** consumed by all lanes. Hub projects sit outside the development ladder.
+2. **Library modules** published to the private TFC registry, consumed by any lane via `tfe_registry_module`.
 
-## Cost control
+No shared projects exist.
 
-GCP budgets alert; they never cap — so the platform treats the two
-mechanisms separately. Budget alerts are declared in `billing.budgets` (in `billing.yaml`):
-a config suffix whose display name is generated as `ef-budget-<name>`, a monthly amount in GBP — the platform currency, hardcoded in the module,
-not config — a list of threshold fractions
-(0.5, 0.8, 1.0), and an optional `scope` naming a resolved ancestor
-(`projects/…`, `folders/…`, `organizations/…) — omit it for an account-wide budget. The convention is
-one account-wide budget plus one per plane as planes acquire projects.
-Notifications go to billing-account recipients by default; a Pub/Sub
-channel per budget is the steady-state upgrade.
+## Platforms
 
-The real guardrails against runaway spend are structural, not monetary:
-the organisation policies (allowed regions, required labels), the
-manual-confirm gates on mgt/hub/prd applies, and weekly drift checks
-that catch surprise resources before they bill a second month.
+Each platform does exactly one job. Resources are created by Terraform modules driven from environment configuration.
 
-## Platform roles
+### Google Cloud
 
-Each platform does exactly one job:
+GCP hosts the workload hierarchy and federation plumbing. Identity is folder-scoped: admission derives from the folder itself. All GCP resources are created on the first Terraform apply after bootstrap imports existing state.
 
-- **GitHub** — source of truth and CI validation. Holds *no* cloud apply
-  credentials; a compromised repo cannot touch infrastructure. Repo settings
-  and `main` branch protection are managed here like everything else, via the
-  `github-repository` module (provider `integrations/github`) with a fine-grained token
-  scoped to this repository only.
-- **Terraform Cloud** — the single deployment engine. All applies run as TFC
-  workspace identities; run policy (plan/apply gates) is per environment.
-- **GCP** — the workload, plus the hierarchy the platform manages. Never
-  reached by static keys: workload identity federation only.
-- **Cloud DNS (GCP)** — DNS, natively. The platform owns the public zones;
-  workload repos add records by name lookup. (Cloudflare remains the domain
-  *registrar* — a billing relationship, not infrastructure.)
+#### Folders
 
-## Resource map
+Seven hierarchical containers grouping projects. Bootstrap scripts create them; Terraform adopts them into state.
 
-This section maps every resource the stack creates onto its source platform,
-its configuration key, and its naming rule. Hierarchy is expressed by
-parent pointers in data; identifiers are looked up by name at plan time.
+| Folder | Parent | Notes |
+|--------|--------|-------|
+| `ef-root` | Organisation root | Container for management-plane environments |
+| `ef-mgt` | `ef-root` | Management plane — operates org, folders, DNS, TFC |
+| `ef-hub` | `ef-root` | Shared services — consumed by every lane |
+| `ef-app` | `ef-root` | Application tier — child environments deploy inside this folder |
+| `ef-dev` | `ef-app` | Experiment space — fast iteration |
+| `ef-pre` | `ef-app` | Staging environment |
+| `ef-prd` | `ef-app` | Production environment |
 
-### What GCP creates
+All folders have `prevent_destroy` enabled.
 
-All GCP resources are provisioned through Google provider modules and driven
-from `environments/mgt/*.yaml`. Folders and projects appear on first apply;
-billing and DNS also on first apply. Identity derives from the environment list.
+#### Projects
 
-| Resource | Module | Config source | Naming rule | Parent / scope |
-|----------|--------|---------------|-------------|----------------|
-| GCP folder | `google-folder` | `environments[].parent` | `ef-<name>` | org root (`folder_id = var.tree.root_parent`) or another folder (`parent`) |
-| GCP project | `google-project` | `projects[]` | `ef-<env>-<suffix>` | folder (`folder_id`) + billing account (`data.google_billing_account.ef.billing_account`) |
-| Service account | `google-service-account` | derived from infrastructure envs | `sa-<env>-tfc` | landing project (the default project) |
-| Workload identity pool | `google-workload-identity-pool` | derived from infrastructure envs | `ef-<env>-tfc` | landing project |
-| WIF provider | `google-workload-identity-provider` | derived from infrastructure envs | `tfc-<env>` | pool (see above) + OIDC issuer `https://<hostname>` |
-| SA workloadIdentityUser binding | built into provider module | — | — | pool project number → `sa-<env>-tfc` email |
-| IAM member (folder/project/org/billing) | `google-iam-member` | derived bindings | — | scope path (`folders/<id>`, `projects/<id>`, `organizations/<id>`, `billingAccounts/<id>`) |
-| Billing budget | `google-billing-budget` | `billing.budgets[]` | display: `ef-budget-<name>` | billing account + optional scope filter |
-| DNS managed zone | `google-dns-managed-zone` | `domain.yaml[].name` | `name` = auto-generated from domain (dots → dashes) | landing project |
-| DNS record sets | built into dns-managed-zone module | `domain.yaml[].records[]` | — | zone (same module, keyed by name+type) |
+One GCP project deployed. The management plane runs inside its own project; lane environments exist as folders and workspaces but no compute yet.
 
-Naming convention summary: environments carry suffix-only names (e.g. `devops`). Terraform generates full names for all GCP resources as `ef-<env>-<suffix>` (project IDs), `sa-<env>-tfc` (service accounts), `ef-<env>-tfc` (WIF pools). The billing account display resolves to `ef-billing` and budgets to `ef-budget-<name>` where `<name>` comes from config.
+| Project ID | Folder | Billing | Description | Default |
+|------------|--------|---------|-------------|---------|
+| `ef-mgt-devops` | `ef-mgt` | `ef-billing` | DevOps Management | Yes |
 
-### What Terraform Cloud creates
+Hub, dev, pre, and prd folders exist as organisational containers but hold no projects today. Projects appear when infrastructure-type entries gain `projects[]` definitions.
 
-TFC resources mirror the GCP hierarchy: one project per infrastructure-type
-environment, one workspace per infrastructure project entry, and one registry
-module per library-project entry.
+#### Workload identity federation
 
-| Resource | Module | Config source | Naming rule | Scope |
-|----------|--------|---------------|-------------|-------|
-| TFC project | `tfe-project` | derived from infrastructure envs | `ef-<env>` | organization-level |
-| TFC workspace | `tfe-workspace` | derived from infrastructure projects | `ef-<env>-<suffix>` | tfe-project |
-| Workspace branch protection | built into workspace module | derived | — | workspace (execution_mode = remote) |
-| Workspace environment variables | built into workspace module | derived | `environment`, `WIF_PROVIDER`, `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` | workspace |
-| Registry module | `tfe-registry-module` | `lib` entries under each environment | module name | private registry, VCS-linked repo |
-
-Workspaces embed their own identity plumbing: `WIF_PROVIDER` points to the
-GCP pool address and `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` names the SA that
-the workspace assumes after OIDC exchange. No manual credential provisioning
-is required.
-
-### What GitHub creates
-
-Every infrastructure-project entry produces a GitHub repository with standardised
-branch protection: squash-only merge, auto-delete on merge, admin enforcement,
-required PR reviews, and mandatory status checks.
-
-| Resource | Module | Config source | Naming rule | Scope |
-|----------|--------|---------------|-------------|-------|
-| Repository | `github-repository` | union of all `projects[]` entries | `ef-<env>-<suffix>` | owner (`organisation.gh.owner`) |
-| Branch protection | built into github-repository module | derived defaults, overridable per-entry | — | repo `main` branch |
-
-Cross-environment repo sharing is possible: multiple lane entries can reference
-a single repository via the `repo:` override on a project entry.
-
-### How the platforms link together
-
-The three links described in the integration table operate through exact names;
-no identifier leaks out of one platform into another. The chain runs left-to-right:
+One OIDC-based auth chain per infrastructure-type environment. Five SAs, five pools, five providers — all hosted in `ef-mgt-devops`.
 
 ```
-config → terraform locals → module call → resource creation
+TFC run → OIDC token → ef-<env>-tfc pool (GCP)
+         ├─ check: workspace_name.startsWith("ef-<env>-")
+         └─ attribute.environment = "<env>"
+
+Pool principalSet → roles/iam.workloadIdentityUser → sa-<env>-tfc
+                                                    │
+                                                    └→ WORKSPACE env vars:
+                                                        - WIF_PROVIDER
+                                                        - GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
 ```
 
-The authentication chain (TFC → GCP) works like this:
+| Pool Name | Provider Name | SA Email Pattern | Purpose |
+|-----------|---------------|------------------|---------|
+| `ef-mgt-tfc` | `tfc-mgt` | `sa-mgt-tfc@[PROJECT].iam.gserviceaccount.com` | Management plane identity |
+| `ef-hub-tfc` | `tfc-hub` | `sa-hub-tfc@[PROJECT].iam.gserviceaccount.com` | Shared services identity |
+| `ef-dev-tfc` | `tfc-dev` | `sa-dev-tfc@[PROJECT].iam.gserviceaccount.com` | Experiment workspace identity |
+| `ef-pre-tfc` | `tfc-pre` | `sa-pre-tfc@[PROJECT].iam.gserviceaccount.com` | Staging workspace identity |
+| `ef-prd-tfc` | `tfc-prd` | `sa-prd-tfc@[PROJECT].iam.gserviceaccount.com` | Production workspace identity |
 
-1. A TFC workspace receives a pull request event (or a direct trigger).
-2. TFC issues an OIDC token scoped to the workspace and environment.
-3. That token hits the `ef-<env>-tfc` workload identity pool in GCP.
-4. The provider `tfc-<env>` verifies the OIDC issuer and evaluates
-   `assertion.workspace_name.startsWith("ef-<env>-")` — if the condition
-   passes, the admitted principalSet becomes `principalSet://.../attribute.environment/<env>`.
-5. The pool binding grants `roles/iam.workloadIdentityUser` on the
-   `sa-<env>-tfc` service account to that principalSet.
-6. The workspace already carries `WIF_PROVIDER` and
-   `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` as environment variables, so the
-   run automatically impersonates the SA and proceeds with GCP API calls.
-7. The SA's IAM bindings (folder editor, project creator, etc.) control
-   exactly what the workspace can create inside its scope.
+The manager receives extra IAM bindings beyond the standard set: folder admin over `ef-root`, project creator on `ef-mgt-devops`, organisation browser, and billing user.
 
-The TFC → GitHub link uses the same model but in reverse: the `github` provider
-uses a user-scoped token stored as a TFC sensitive variable, scoped to manage
-only this repository. The TFC GitHub App installed once connects webhooks
-(status checks on PRs, push-triggered runs on `main`).
+#### IAM bindings
 
-No resource ever publishes its ID to another platform. Folder names become
-project IDs become workspace names become repository names. One stable name
-traverses three platforms, resolved at plan time by provider data sources.
+Twenty-four IAM member resources distributed across four scope types:
 
-### Creation timeline
+| Scope type | Target | Bindings | Count |
+|------------|--------|----------|-------|
+| Folder/project editor | Each infra folder + its project | mgt, hub, dev, pre, prd | 10 |
+| Service account impersonation | `ef-mgt-devops` (landing) | All five infra SAs | 5 |
+| DNS admin | `ef-mgt-devops` (landing) | All five infra SAs | 5 |
+| Platform roles | `ef-root`, `ef-mgt-devops`, organisation root, billing account | mgt-sa only | 4 |
 
-| Phase | What happens | Who triggers it |
-|-------|--------------|------------------|
-| Bootstrap Step 1–2 | Shell scripts seed folders, enable APIs, link billing; inventory YAML records pending imports | Operator machine |
-| Bootstrap Step 3 | `terraform import` adopts every seed-created resource into state using module addresses from the import table | Operator machine |
-| First apply | All remaining resources (workspaces, SAs, pools, providers, bindings, budgets, DNS zones, repos, branch protection) are created in parallel | mgt environment run |
-| Subsequent changes | Data change in YAML → PR → CI validate/fmt → merge → TFC plan → confirm (per run policy) → apply | Any contributor |
-| New project bring-up | Add `projects` entry → merge → mgt creates repo/workspace/project → scaffold new repo → self-manages own resources | Project lead |
+All bindings resolve targets by name using provider data sources. No hardcoded IDs.
 
-Bootstrap resources (folders, billing account link) exist before any Terraform
-state; `terraform import` stitches them in. Everything else is pure code.
+#### Billing budgets
 
-The platforms are joined by exactly three links — nothing authenticates to
-anything else, anywhere:
+One account-wide budget alerting on the GCP billing account.
 
-| Link | Mechanism | Credential |
-|------|-----------|------------|
-| GitHub ↔ TFC | TFC GitHub App: webhook runs on `main`, status checks on PRs | App installed once as a prerequisite; workspace links managed by Terraform via the installation ID |
-| TFC → GCP | Workload identity federation: run exchanges its OIDC token at the `ef-<env>-tfc` pool; provider `tfc-<env>` (folder-derived CEL condition; admitted tokens are stamped `attribute.environment/<env>`) binds the environment's principalSet to its service account via `workloadIdentityUser`; runs automatically receive `WIF_PROVIDER` and `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` as workspace environment variables | `sa-<env>-tfc`; `sa-mgt-tfc` doubles as platform administration |
-| TFC → GitHub | GitHub provider (`integrations/github`) manages repo settings and branch protection | Fine-grained token as sensitive variable, this repository only |
+| Display Name | Amount | Thresholds | Scope | Notification |
+|--------------|--------|------------|-------|--------------|
+| `ef-budget-total` | £30 GBP | 50%, 80%, 100% | Account-wide (no filter) | Billing account recipients |
 
-A fourth link exists only during bootstrap: the operator's machine authenticates
-to TFC with a user token for `init`/`import` (Step 3) and it is revoked at
-Step 5. In steady state, no human credential touches the deployment path.
+Budget alerts trigger notifications but never cap spending — structural guardrails (org policies, manual-confirm gates, weekly drift checks) handle runaway spend.
 
-## Deployment workflow
+#### DNS
 
-    developer → GitHub PR → CI checks → merge to main
-              → TFC run (plan) → confirm (per run policy) → apply
+DNS resolution uses GCP Cloud DNS. Managed zone and six record sets hosted in `ef-mgt-devops`. (Cloudflare remains the registrar — billing relationship only.)
 
-Pull requests run fmt, validate (no backend), and a plan-only pass so every
-validation, precondition, and check block executes before merge. A merge to
-`main` starts a TFC run; whether it auto-applies is the environment's run
-policy, not the code's choice. Weekly drift checks compare state to reality;
-findings open a run and an issue — adoption or revert within one working day,
-never console-fix.
+| Property | Value |
+|----------|-------|
+| Zone name | `elliott-farrall-phd` |
+| DNS name | `elliott-farrall.phd.` |
+| Project | `ef-mgt-devops` |
 
-## Repository layout
+Record sets:
 
-One repository (`ef-mgt-devops`) holds the entire management plane: code,
-environment inputs, bootstrap scripts, and this documentation. Splitting them
-would let the runbook and the code drift apart — the import list must match
-the module addresses, so they live and change together. The layout contract for
-all future `ef-*` repositories is defined in [standards.md](standards.md).
+| Record | Type | TTL | Values |
+|--------|------|-----|--------|
+| `elliott-farrall.phd` | MX | 300 | 10 mail.protonmail.ch, 20 mailsec.protonmail.ch |
+| `elliott-farrall.phd` | TXT | 300 | v=spf1 include:_spf.protonmail.ch ~all; protonmail-verification=ea77d... |
+| `_dmarc.elliott-farrall.phd` | TXT | 300 | v=DMARC1; p=quarantine |
+| `protonmail._domainkey.elliott-farrall.phd` | CNAME | 300 | protonmail.domainkey.*proton.ch |
+| `protonmail2._domainkey.elliott-farrall.phd` | CNAME | 300 | protonmail2.domainkey.*proton.ch |
+| `protonmail3._domainkey.elliott-farrall.phd` | CNAME | 300 | protonmail3.domainkey.*proton.ch |
 
-## Where things live
+Workload repos add records by looking up the zone by name (`data.google_dns_managed_zone`).
 
-| Question | Document |
-|----------|----------|
-| Why is it shaped this way? | `docs/design.md` (this file) |
-| What are the binding rules? | `docs/standards.md` |
-| How do we bring it up? | `docs/bootstrap.md` |
-| What changed and when? | git history of these three files |
+### Terraform Cloud
+
+TFC is the single deployment engine. All applies run under workspace identities with remote execution mode. Workspaces VCS-link to their GitHub repositories via the TFC GitHub App installation.
+
+#### TFC Projects
+
+Five logical groupings containing workspaces. One per infrastructure-type environment.
+
+| Project Name | Environment | Purpose |
+|--------------|-------------|---------|
+| `ef-mgt` | `mgt` | Platform management — runs `feature/initialise`, manages entire stack |
+| `ef-hub` | `hub` | Shared services — consumed by every lane; manual-confirm gate |
+| `ef-dev` | `dev` | Experiment workspace — auto-apply |
+| `ef-pre` | `pre` | Staging workspace — manual-confirm before prod |
+| `ef-prd` | `prd` | Production workspace — manual-confirm gate |
+
+#### TFC Workspaces
+
+One workspace deployed today. Additional workspaces appear automatically when infrastructure environments gain `projects[]` definitions.
+
+| Workspace Name | TFC Project | Repository | Execution Mode | Auto-apply | Linked Variables |
+|---------------|-------------|------------|----------------|------------|------------------|
+| `ef-mgt-devops` | `ef-mgt` | `ef-mgt-devops` | Remote | No (manual confirm) | `environment=mgt`, `WIF_PROVIDER`, `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` |
+
+Workspace variables embed identity plumbing. Three variables per workspace — declared category, assigned purpose, runtime value populated at apply.
+
+| Variable | Category | Purpose | Runtime Value |
+|----------|----------|---------|---------------|
+| `environment` | terraform | Declares deployment slot | `mgt` |
+| `WIF_PROVIDER` | env | GCP pool address for OIDC exchange | `projects/<landing>/locations/global/workloadIdentityPools/ef-mgt-tfc` |
+| `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` | env | SA to impersonate after token exchange | `sa-mgt-tfc@[PROJECT].iam.gserviceaccount.com` |
+
+#### Registry Modules
+
+Zero registry modules currently deployed. They are created when infrastructure environments define `lib` entries — publisher-provided module names, version-tagged, pinned by consumers.
+
+### GitHub
+
+GitHub is source of truth and CI validation. It holds no cloud apply credentials. A compromised repository cannot touch infrastructure.
+
+#### Repositories
+
+One repository deployed today. Additional repositories appear automatically when infrastructure environments gain `projects[]` definitions.
+
+| Repository | Namespace | Visibility | Branch Protection | Linked Workspace |
+|-----------|-----------|------------|-------------------|------------------|
+| `ef-mgt-devops` | `elliott-farrall` | Private | See table below | `ef-mgt-devops` |
+
+Cross-environment repo sharing: multiple environment slots can share a single repository by setting `repo:` on their project entry. One repo = one set of branch protection; lanes sharing it inherit the same defaults unless explicitly overridden. Currently no sharing configured.
+
+#### Branch Protection Rules
+
+Standardised across every repository with optional per-repo overrides.
+
+| Rule | Value | Overrideable |
+|------|-------|--------------|
+| Required approving reviews | 1 | Yes |
+| Dismiss stale reviews on new commits | true | Yes |
+| Require conversation resolution before merge | true | Yes |
+| Strict status checks require upstream testing | true | Yes |
+| Allowed merge methods | Squash only | No |
+| Delete head branches on merge | true | Yes |
+
+Required status checks: `["ci/checks"]` (configured per-repo via CI pipelines).
+
+#### CI Integration
+
+The TFC GitHub App connects two systems:
+
+| Event | Action | Platform |
+|-------|--------|----------|
+| Pull request push | CI runs status checks (format + validate + plan-only) | GitHub Actions |
+| Merge to `main` | TFC triggers run (plan → confirm → apply) | TFC |
+
+GitHub Actions holds no cloud credentials — CI validates code without backend connectivity. Actual apply runs execute in TFC under workspace identities.
+
+## Codebase
+
+### Repository Structure
+
+One repository (`ef-mgt-devops`) holds the entire management plane: code, environment inputs, bootstrap scripts, and documentation. Splitting would let the runbook and the code drift apart.
+
+```
+├── .github/workflows/       # CI: branch-name, schema, fmt/validate
+├── .schemas/environment/    # JSON Schema per environment config file
+├── bootstrap/               # Bash orchestration (seed, import, cleanup)
+│   ├── 01-google.sh         # Create folders, enable APIs, link billing
+│   ├── 02-tfe.sh            # Create projects, variables, workspaces
+│   ├── 03-import.sh         # Adopt seed-created resources into state
+│   └── 04-cleanup.sh        # Delete inventory, bootstrap SA
+├── docs/                    # Three-file convention
+│   ├── design.md            # Decisions and rationale (this file)
+│   ├── standards.md         # Binding rules (naming, layout, review)
+│   └── bootstrap.md         # Bring-up procedure + import table
+├── environments/            # YAML inputs, split by concern
+│   └── mgt/                 # Management environment config
+│       ├── organisation.yaml # Org facts: domain, region, GH owner, TFC hostname
+│       ├── billing.yaml      # Billing account + budgets
+│       ├── domain.yaml       # Domain zones + DNS records
+│       └── environments.yaml # Environment list + projects + lib modules
+├── infrastructure/          # Terraform working directory
+│   ├── locals.tf            # All derivation from config
+│   ├── main.tf              # Module calls + depends_on
+│   ├── providers.tf         # Provider configurations
+│   ├── data.tf              # Data sources (shared lookups)
+│   ├── checks.tf            # Validation checks (cross-registry integrity)
+│   └── modules/             # Repo-local Terraform modules
+│       ├── google-folder           # Folder hierarchy
+│       ├── google-project          # GCP projects
+│       ├── google-service-account  # IAM service accounts
+│       ├── google-billing-budget   # Budget alerts
+│       ├── google-dns-managed-zone # DNS zones + record sets
+│       ├── google-iam-member       # IAM bindings (folder/project/org/billing)
+│       ├── google-workload-identity-pool     # WIF pools
+│       ├── google-workload-identity-provider # WIF providers + SA binding
+│       ├── tfe-project             # TFC projects
+│       ├── tfe-workspace           # TFC workspaces + settings + variables
+│       ├── tfe-registry-module     # Private registry modules
+│       └── github-repository       # Repos + branch protection
+├── README.md              # Entry point
+└── .gitignore
+```
+
+All files follow conventions defined in [standards.md](standards.md): no comments in code or YAML (only shebangs and `yaml-language-server` modelines), block-style YAML only, plain scalars where possible, module outputs mechanical (one per resource, resource-type named).
+
+### Deployment Workflow
+
+```
+developer → GitHub PR → CI validate → merge to main
+                      → TFC plan → confirm (per run policy) → apply
+```
+
+Pull requests trigger CI that runs format checks, schema validation, and Terraform validate (no backend). The plan-only pass catches validation/precondition/check block failures before merge. A merge to `main` starts a TFC run; whether it auto-applies follows the environment's run policy, not the code's choice.
+
+Weekly drift checks compare state to reality. Findings open a run and issue — adoption or revert within one working day, never console-fix.
+
+Console changes are drift. Any manual change must be adopted or reverted within one working day. The one exception: installing the TFC GitHub App itself (a prerequisite done once; its installation ID makes workspace linking pure Terraform thereafter).
+
+### Import addresses
+
+During bootstrap, seed-created resources are imported into state via module addresses matching the calling sites in `main.tf`. See [bootstrap.md](bootstrap.md) for the complete import table. Addresses use module paths like `module.google-project["ef-mgt-devops"].google_project.this`, keyed by generated names, not hardcoded IDs.
