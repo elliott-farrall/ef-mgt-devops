@@ -30,7 +30,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_auto_apply"></a> [auto\_apply](#input\_auto\_apply) | Run policy. | `bool` | n/a | yes |
+| <a name="input_auto_apply"></a> [auto\_apply](#input\_auto\_apply) | Whether to automatically apply changes when a Terraform plan is successful. | `bool` | n/a | yes |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment slot injected as the terraform environment variable. | `string` | n/a | yes |
 | <a name="input_gcp_service_account_email"></a> [gcp\_service\_account\_email](#input\_gcp\_service\_account\_email) | Service account the run impersonates once its workload identity token is exchanged. | `string` | n/a | yes |
 | <a name="input_github_app_installation"></a> [github\_app\_installation](#input\_github\_app\_installation) | Name of the TFC GitHub App installation; resolved by data.tfe\_github\_app\_installation within this module. | `string` | n/a | yes |
@@ -45,9 +45,9 @@ No modules.
 
 | Name | Description |
 | ---- | ----------- |
-| <a name="output_tfe_variable_environment"></a> [tfe\_variable\_environment](#output\_tfe\_variable\_environment) | n/a |
-| <a name="output_tfe_variable_gcp_impersonate_service_account"></a> [tfe\_variable\_gcp\_impersonate\_service\_account](#output\_tfe\_variable\_gcp\_impersonate\_service\_account) | n/a |
-| <a name="output_tfe_variable_wif_provider"></a> [tfe\_variable\_wif\_provider](#output\_tfe\_variable\_wif\_provider) | n/a |
-| <a name="output_tfe_workspace"></a> [tfe\_workspace](#output\_tfe\_workspace) | n/a |
-| <a name="output_tfe_workspace_settings"></a> [tfe\_workspace\_settings](#output\_tfe\_workspace\_settings) | n/a |
+| <a name="output_tfe_variable_environment"></a> [tfe\_variable\_environment](#output\_tfe\_variable\_environment) | The environment slot variable injected into the workspace as a terraform variable. |
+| <a name="output_tfe_variable_gcp_impersonate_service_account"></a> [tfe\_variable\_gcp\_impersonate\_service\_account](#output\_tfe\_variable\_gcp\_impersonate\_service\_account) | The GCP service account variable used for impersonation after workload identity token exchange. |
+| <a name="output_tfe_variable_wif_provider"></a> [tfe\_variable\_wif\_provider](#output\_tfe\_variable\_wif\_provider) | The WIF provider variable exposed to runs as an environment variable. |
+| <a name="output_tfe_workspace"></a> [tfe\_workspace](#output\_tfe\_workspace) | The TFE workspace created for this infrastructure project. |
+| <a name="output_tfe_workspace_settings"></a> [tfe\_workspace\_settings](#output\_tfe\_workspace\_settings) | Workspace settings resource (execution mode set to remote). |
 <!-- END_TF_DOCS -->

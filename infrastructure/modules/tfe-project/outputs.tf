@@ -1,3 +1,4 @@
 output "tfe_project" {
-  value = tfe_project.this
+  description = "The TFE project resource."
+  value       = tfe_project.this
 }

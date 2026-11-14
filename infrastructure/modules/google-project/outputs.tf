@@ -1,5 +1,6 @@
 output "google_project" {
-  value = google_project.this
+  description = "The GCP project resource."
+  value       = google_project.this
 }
 
 output "google_project_service" {

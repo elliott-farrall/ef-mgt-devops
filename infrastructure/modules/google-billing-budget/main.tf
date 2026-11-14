@@ -1,7 +1,9 @@
+# -- locals: derive scope kind (projects, folders, organisations) or empty --
 locals {
   kind = var.scope == "" ? "" : element(split("/", var.scope), 0)
 }
 
+# -- google_billing_budget.this: monthly budget alert with optional project/folder/org scoping --
 resource "google_billing_budget" "this" {
   billing_account = var.billing_account_id
   display_name    = var.name

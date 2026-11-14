@@ -1,7 +1,9 @@
 output "github_repository" {
-  value = github_repository.this
+  description = "The repository resource."
+  value       = github_repository.this
 }
 
 output "github_branch_protection" {
-  value = github_branch_protection.this
+  description = "Main branch protection policy."
+  value       = github_branch_protection.this
 }

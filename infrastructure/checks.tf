@@ -1,3 +1,4 @@
+# -- check budget_scopes_exist: budgets can only scope to declared projects --
 check "budget_scopes_exist" {
   assert {
     condition = alltrue([
@@ -8,6 +9,7 @@ check "budget_scopes_exist" {
   }
 }
 
+# -- check environment_parents_exist: parents must be named environments --
 check "environment_parents_exist" {
   assert {
     condition     = alltrue([for e in [for x in local.config.environments : x if x.type != "library"] : try(e.parent, null) == null || contains([for x in [for y in local.config.environments : y if y.type != "library"] : x.name], e.parent)])
@@ -17,6 +19,7 @@ check "environment_parents_exist" {
 
 
 
+# -- check project_names_unique: project names are workspace/repo/GCP id --
 check "project_names_unique" {
   assert {
     condition     = length([for p in local.environment_projects : p.name]) == length(toset([for p in local.environment_projects : p.name]))
@@ -24,6 +27,7 @@ check "project_names_unique" {
   }
 }
 
+# -- check project_type_matches_environment: infra→infra env, module→library env --
 check "project_type_matches_environment" {
   assert {
     condition     = alltrue([for p in local.environment_projects : p.type == "infrastructure" ? contains([for e in local.config.environments : e.name if e.type == "infrastructure"], p.env) : p.type == "module" ? contains([for e in local.config.environments : e.name if e.type == "library"], p.env) : !contains([for e in local.config.environments : e.name if e.type == "library"], p.env)])
@@ -31,6 +35,7 @@ check "project_type_matches_environment" {
   }
 }
 
+# -- check default_project_is_unique: exactly one default hosts pools and DNS --
 check "default_project_is_unique" {
   assert {
     condition     = length([for p in local.infrastructure_projects : p.name if try(p.default, false) != false]) == 1

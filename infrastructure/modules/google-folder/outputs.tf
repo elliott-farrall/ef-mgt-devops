@@ -1,3 +1,4 @@
 output "google_folder" {
-  value = google_folder.tree
+  description = "Maps of GCP folder resources."
+  value       = google_folder.tree
 }

@@ -1,3 +1,4 @@
+# -- google_folder.tree: GKE folders in a tree structure --
 resource "google_folder" "tree" {
   for_each = var.tree.folders
 

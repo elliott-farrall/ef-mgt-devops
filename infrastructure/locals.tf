@@ -1,3 +1,4 @@
+# -- locals: YAML configs merged with environment name plus derived maps --
 locals {
   config = merge([for f in sort(fileset("${path.root}/../environments/${var.environment}", "*.yaml")) : yamldecode(file("${path.root}/../environments/${var.environment}/${f}"))]...)
 

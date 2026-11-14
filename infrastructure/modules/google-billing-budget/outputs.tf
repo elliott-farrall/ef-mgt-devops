@@ -1,3 +1,4 @@
 output "google_billing_budget" {
-  value = google_billing_budget.this
+  description = "The GCP billing budget resource."
+  value       = google_billing_budget.this
 }

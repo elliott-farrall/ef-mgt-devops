@@ -1,3 +1,4 @@
 output "tfe_registry_module" {
-  value = tfe_registry_module.this
+  description = "Private registry module resource."
+  value       = tfe_registry_module.this
 }

@@ -55,8 +55,8 @@ bash-shell: ## Lint and syntax-check shell scripts
 	@for s in scripts/*.sh; do bash -n "$$s"; done
 
 # ── Docs ────────────────────────────────────────────────────────────────
-docs-readme: ## Generate README.md from Terraform modules (uses .terraform-docs.yml)
-	@cd infrastructure && terraform-docs . 2>/dev/null || true
+docs-readme: ## Generate README.md for root module and all submodules
+	@terraform-docs infrastructure 2>/dev/null || true
 
 docs-changelog: ## Auto-generate CHANGELOG.md from git history (conventional commits)
 	@git-cliff --output CHANGELOG.md

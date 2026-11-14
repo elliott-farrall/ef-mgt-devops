@@ -16,8 +16,8 @@ sort:
   by: name
 
 output:
-  file: "../README.md"
-  mode: inject
+  file: "README.md"
+  mode: replace
 
 settings:
   anchor: true

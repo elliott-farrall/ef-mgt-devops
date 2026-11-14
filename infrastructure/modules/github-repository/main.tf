@@ -1,3 +1,4 @@
+# -- github_repository.this: private repository with required settings --
 resource "github_repository" "this" {
   name        = var.repository.name
   description = var.repository.description
@@ -17,6 +18,7 @@ resource "github_repository" "this" {
   }
 }
 
+# -- github_branch_protection.this: main branch protection policy --
 resource "github_branch_protection" "this" {
   repository_id = github_repository.this.node_id
   pattern       = var.protection.pattern

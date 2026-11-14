@@ -1,3 +1,4 @@
+# -- tfe_workspace.this: linked workspace with VCS repo --
 resource "tfe_workspace" "this" {
   name              = var.name
   project_id        = var.project_id
@@ -11,11 +12,13 @@ resource "tfe_workspace" "this" {
   }
 }
 
+# -- tfe_workspace_settings.this: sets execution mode to remote --
 resource "tfe_workspace_settings" "this" {
   workspace_id   = tfe_workspace.this.id
   execution_mode = "remote"
 }
 
+# -- tfe_variable.environment: environment slot injected as terraform env var --
 resource "tfe_variable" "environment" {
   key          = "environment"
   value        = var.environment
@@ -24,6 +27,7 @@ resource "tfe_variable" "environment" {
   description  = "Environment slot this workspace deploys."
 }
 
+# -- tfe_variable.wif_provider: WIF provider resource name exposed to runs --
 resource "tfe_variable" "wif_provider" {
   key          = "WIF_PROVIDER"
   value        = var.wif_provider
@@ -32,6 +36,7 @@ resource "tfe_variable" "wif_provider" {
   description  = "Workload identity provider this workspace authenticates through, exposed to the run environment."
 }
 
+# -- tfe_variable.gcp_impersonate_service_account: SA impersonated after WIF token exchange --
 resource "tfe_variable" "gcp_impersonate_service_account" {
   key          = "GOOGLE_IMPERSONATE_SERVICE_ACCOUNT"
   value        = var.gcp_service_account_email

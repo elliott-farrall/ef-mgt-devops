@@ -1,3 +1,17 @@
+# -- BEGIN_MODULE_DESCRIPTIONS --
+# google-folder       : Google Cloud GKE folders
+# google-project      : Google Cloud GKE projects
+# google-workload-identity-pool  : Workload identity pools for TFC
+# google-service-account   : Service accounts for TFC integration
+# google-workload-identity-provider : Workload identity providers linking TFC to GCP
+# google-iam-member     : IAM policy bindings for service accounts
+# google-billing-budget : Budget alerts per billing account or scope
+# google-dns-managed-zone : DNS zones for owned domains
+# tfe-project           : TFE projects
+# tfe-workspace         : TFE workspaces linked to repos
+# tfe-registry-module   : Private registry modules from repos
+# github-repository     : Repositories with branch protection
+# -- END_MODULE_DESCRIPTIONS --
 module "google-folder" {
   source = "./modules/google-folder"
 

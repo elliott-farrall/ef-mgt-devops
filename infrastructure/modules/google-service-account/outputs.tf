@@ -1,3 +1,4 @@
 output "google_service_account" {
-  value = google_service_account.this
+  description = "The GCP service account resource."
+  value       = google_service_account.this
 }

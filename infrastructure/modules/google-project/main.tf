@@ -1,3 +1,4 @@
+# -- google_project.this: GCP project with identity pool hosting role --
 resource "google_project" "this" {
   name            = var.name
   project_id      = var.name
@@ -12,6 +13,7 @@ resource "google_project" "this" {
   }
 }
 
+# -- google_project_service.apis: APIs enabled on the project --
 resource "google_project_service" "apis" {
   for_each = { for s in var.services : s => s }
 
