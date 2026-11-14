@@ -1,5 +1,6 @@
 tfc:
   organisation: elliott-farrall
+  github_app_installation: Terraform Cloud
 
   projects:
     - name: ef-mgt

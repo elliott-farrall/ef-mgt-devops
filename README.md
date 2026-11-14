@@ -1,7 +1,7 @@
 # ef-mgt-devops
 
 The EF platform management plane in code: GCP organisation structure,
-Terraform Cloud, and Cloudflare — plus the bootstrap scripts and runbook.
+Terraform Cloud, and DNS — plus the bootstrap scripts and runbook.
 
 - **Status:** scaffolding (`feature/initialise`). All inputs are concrete;
   CI validates every YAML config against its schema on each PR.

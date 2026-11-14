@@ -1,17 +1,10 @@
-check "account_unique" {
-  assert {
-    condition     = length(data.cloudflare_accounts.ef.accounts) == 1
-    error_message = "cf.account '${local.config.cf.account}' must match exactly one Cloudflare account."
-  }
-}
-
-check "budget_projects_exist" {
+check "budget_scopes_exist" {
   assert {
     condition = alltrue([
-      for b in local.config.gcp.billing.budgets :
-      alltrue([for p in try(b.projects, []) : contains(keys(local.gcp_projects), p)])
+      for b in values(local.gcp_budgets) :
+      b.scope == "" || !startswith(b.scope, "projects/") || contains(keys(local.gcp_projects), trimprefix(b.scope, "projects/"))
     ])
-    error_message = "Every budget projects entry must name a project declared in the folder tree."
+    error_message = "Every budget projects scope must name a project declared in the tree."
   }
 }
 

@@ -4,7 +4,6 @@ gcp:
 
   billing:
     name: ef-billing
-    currency: GBP
     budgets:
       - name: ef-budget-total
         amount: 30
@@ -12,6 +11,45 @@ gcp:
           - 0.5
           - 0.8
           - 1.0
+
+  dns:
+    zones:
+      - name: elliott-farrall-phd
+        domain: elliott-farrall.phd
+        project: ef-mgt-devops
+        records:
+          - name: elliott-farrall.phd
+            type: MX
+            ttl: 300
+            records:
+              - 10 mail.protonmail.ch
+              - 20 mailsec.protonmail.ch
+          - name: elliott-farrall.phd
+            type: TXT
+            ttl: 300
+            records:
+              - v=spf1 include:_spf.protonmail.ch ~all
+              - protonmail-verification=ea77d033a00e948f715ba9d296e7e1d273cd601d
+          - name: _dmarc
+            type: TXT
+            ttl: 300
+            records:
+              - v=DMARC1; p=quarantine
+          - name: protonmail._domainkey
+            type: CNAME
+            ttl: 300
+            records:
+              - protonmail.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch
+          - name: protonmail2._domainkey
+            type: CNAME
+            ttl: 300
+            records:
+              - protonmail2.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch
+          - name: protonmail3._domainkey
+            type: CNAME
+            ttl: 300
+            records:
+              - protonmail3.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch
 
   folders:
     - name: ef-root
@@ -44,6 +82,10 @@ gcp:
         - scope: project:ef-mgt-devops
           roles:
             - roles/iam.serviceAccountUser
+            - roles/dns.admin
+            - roles/dns.admin
+            - roles/dns.admin
+            - roles/dns.admin
         - scope: organisation
           roles:
             - roles/browser
@@ -60,6 +102,7 @@ gcp:
         - scope: project:ef-mgt-devops
           roles:
             - roles/iam.serviceAccountUser
+            - roles/dns.admin
     - name: sa-hub-tfc
       project: ef-mgt-devops
       bindings:

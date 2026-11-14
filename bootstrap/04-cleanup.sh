@@ -19,7 +19,7 @@ git -C "$REPO_ROOT" rm -q bootstrap/inventory.yaml
 
 log "commit the removal, then finish the manual checklist:"
 cat <<'EOF'
-  [ ] revoke the TFC user token, the Cloudflare seed token, and the bootstrap GitHub PAT
+  [ ] revoke the TFC user token and the bootstrap GitHub PAT
   [ ] enable weekly drift checks on the ef-mgt-devops workspace
   [ ] git tag bootstrap-v1.0 && git push --tags
 EOF

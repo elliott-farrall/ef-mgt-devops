@@ -44,8 +44,8 @@ structural.
   `sa-adm-bootstrap` is never declared and is deleted at Step 6.
 - **The management plane provisions the rest.** This repository manages itself
   *and* every other IaC project: its YAML inputs are registries — the GCP
-  folder tree, TFC projects and workspaces, GitHub repositories, Cloudflare
-  zones. Landing a new `ef-*` project is a data change here, not new
+  folder tree, DNS zones, TFC projects and workspaces, and GitHub
+  repositories. Landing a new `ef-*` project is a data change here, not new
   machinery.
 
 ## Environment model
@@ -54,7 +54,7 @@ Five slots partition the platform:
 
 | Slot | Role | Why it exists |
 |------|------|---------------|
-| `mgt` | The platform itself | Operates org, folders, TFC, Cloudflare; production-grade because everything else depends on it |
+| `mgt` | The platform itself | Operates org, folders, DNS, TFC; production-grade because everything else depends on it |
 | `hub` | Shared services | Consumed by every environment, so it sits outside the ladder and gets a manual-confirm gate |
 | `dev` | Experiments | Auto-apply: fast iteration where breakage is cheap |
 | `pre` | Staging | Soaks after dev before anything real moves |
@@ -89,9 +89,11 @@ Bringing up another project is then mechanical:
    PR plans against real state from day one.
 4. The new repo then manages *its own* resources. Cross-project
    references resolve **by name through provider data sources**
-   (`google_folders`, `cloudflare_zones`, …) — this repository publishes no
-   outputs and nothing couples to its internals. Names are the stable
-   contract; IDs are looked up.
+   (`google_folders`, `google_dns_managed_zone`, …) — this repository
+   publishes no outputs and nothing couples to its internals. Names are the
+   stable contract; IDs are looked up. A website repo's domain, for example,
+   is one `google_dns_record_set` in the platform's apex zone plus a
+   `data.google_dns_managed_zone` lookup — no new plumbing anywhere.
 
 Plane boundaries stay hard: `ef-mgt-devops` provisions landing spots, but
 workload resources live only in their own environment's projects, under their
@@ -107,9 +109,10 @@ deviations are visible in the YAML where a reviewer can see them.
 
 GCP budgets alert; they never cap — so the platform treats the two
 mechanisms separately. Budget alerts are declared in `gcp.billing.budgets`:
-a monthly amount in `billing.currency`, a list of threshold fractions
-(0.5, 0.8, 1.0), and an optional `projects` filter that scopes the budget
-to tree projects — omit it for an account-wide budget. The convention is
+a monthly amount in GBP — the platform currency, hardcoded in the module,
+not config — a list of threshold fractions
+(0.5, 0.8, 1.0), and an optional `scope` naming a resolved ancestor
+(`projects/…`, `folders/…`, `organizations/…) — omit it for an account-wide budget. The convention is
 one account-wide budget plus one per plane as planes acquire projects.
 Notifications go to billing-account recipients by default; a Pub/Sub
 channel per budget is the steady-state upgrade.
@@ -132,25 +135,24 @@ Each platform does exactly one job:
   workspace identities; run policy (plan/apply gates) is per environment.
 - **GCP** — the workload, plus the hierarchy the platform manages. Never
   reached by static keys: workload identity federation only.
-- **Cloudflare** — DNS and edge. At launch just the apex zone; subzones arrive
-  with workloads and delegate to Cloud DNS where needed.
+- **Cloud DNS (GCP)** — DNS, natively. The platform owns the public zones;
+  workload repos add records by name lookup. (Cloudflare remains the domain
+  *registrar* — a billing relationship, not infrastructure.)
 
 ## Integration
 
-The platforms are joined by exactly five links — nothing authenticates to
+The platforms are joined by exactly three links — nothing authenticates to
 anything else, anywhere:
 
 | Link | Mechanism | Credential |
 |------|-----------|------------|
-| GitHub ↔ TFC | TFC GitHub App: webhook runs on `main`, status checks on PRs | App installation and workspace links — click-ops, ignored by TF (`ignore_changes = [vcs_repo]`) |
+| GitHub ↔ TFC | TFC GitHub App: webhook runs on `main`, status checks on PRs | App installed once as a prerequisite; workspace links managed by Terraform via the installation ID |
 | TFC → GCP | Workload identity federation: run exchanges OIDC token | `sa-adm-tfc` (mgt plane), `sa-<env>-tfc` (workload planes) |
-| TFC → Cloudflare | Cloudflare provider on the apex zone | Zone-scoped API token as sensitive variable |
 | TFC → GitHub | GitHub provider (`integrations/github`) manages repo settings and branch protection | Fine-grained token as sensitive variable, this repository only |
-| Cloudflare → GCP | NS delegation of future subzones to Cloud DNS | Zone records only (deferred) |
 
-A sixth link exists only during bootstrap: the operator's machine authenticates
-to TFC with a user token for `init`/`import` (Step 4) and it is revoked at
-Step 6. In steady state, no human credential touches the deployment path.
+A fourth link exists only during bootstrap: the operator's machine authenticates
+to TFC with a user token for `init`/`import` (Step 3) and it is revoked at
+Step 5. In steady state, no human credential touches the deployment path.
 
 ## Deployment workflow
 

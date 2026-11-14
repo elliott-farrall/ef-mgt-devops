@@ -1,10 +1,5 @@
 variable "name" {
-  description = "Workspace name."
-  type        = string
-}
-
-variable "organisation" {
-  description = "TFC organisation handle."
+  description = "Workspace name; also the repository it links to."
   type        = string
 }
 
@@ -21,4 +16,14 @@ variable "working_directory" {
 variable "auto_apply" {
   description = "Run policy."
   type        = bool
+}
+
+variable "github_owner" {
+  description = "GitHub account owning the repository."
+  type        = string
+}
+
+variable "github_app_installation_id" {
+  description = "TFC GitHub App installation ID (prerequisite); links the workspace to its repository."
+  type        = string
 }

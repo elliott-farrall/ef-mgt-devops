@@ -3,11 +3,10 @@ provider "google" {
 }
 
 provider "tfe" {
-  hostname = try(local.config.tfc.hostname, "app.terraform.io")
+  hostname     = try(local.config.tfc.hostname, "app.terraform.io")
+  organization = local.config.tfc.organisation
 }
 
-provider "cloudflare" {
-}
 
 provider "github" {
   owner = local.config.gh.owner

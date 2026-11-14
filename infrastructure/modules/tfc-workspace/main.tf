@@ -1,12 +1,13 @@
 resource "tfe_workspace" "this" {
   name              = var.name
-  organization      = var.organisation
   project_id        = var.project_id
   working_directory = var.working_directory
   auto_apply        = var.auto_apply
 
-  lifecycle {
-    ignore_changes = [vcs_repo]
+  vcs_repo {
+    identifier                 = "${var.github_owner}/${var.name}"
+    branch                     = "main"
+    github_app_installation_id = var.github_app_installation_id
   }
 }
 

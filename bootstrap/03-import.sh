@@ -36,7 +36,6 @@ done
 import_one "module.tfc-workspace[\"ef-mgt-devops\"].tfe_workspace.this" "$(inventory_get tfc_workspace)"
 import_one "module.tfc-workspace[\"ef-mgt-devops\"].tfe_workspace_settings.this" "$(inventory_get tfc_workspace)"
 
-import_one "module.cf-zone[\"elliott-farrall.phd\"].cloudflare_zone.this" "$(inventory_get cf_zone_apex)"
 import_one "module.gh-repository[\"ef-mgt-devops\"].github_repository.this" "$(inventory_get gh_repository)"
 
 

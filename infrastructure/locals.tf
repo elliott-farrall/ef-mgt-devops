@@ -15,14 +15,14 @@ locals {
     }
   }
 
-  gcp_identities = {
+  gcp_service_accounts = {
     for sa in local.config.gcp.iam : sa.name => {
       name    = sa.name
       project = module.gcp-project[sa.project].project_id
     }
   }
 
-  gcp_bindings = {
+  gcp_iam_bindings = {
     for x in flatten([for sa in local.config.gcp.iam : [for b in sa.bindings : [for r in b.roles : { key = "${sa.name}|${b.scope}|${r}", sa = sa.name, scope = b.scope, role = r }]]]) : x.key => {
       scope = x.scope == "organisation" ? "organizations/${data.google_organization.ef.org_id}" : (
         x.scope == "billing" ? "billingAccounts/${data.google_billing_account.ef.billing_account}" : (
@@ -38,35 +38,35 @@ locals {
     for b in local.config.gcp.billing.budgets : b.name => {
       name               = b.name
       billing_account_id = data.google_billing_account.ef.billing_account
-      currency           = local.config.gcp.billing.currency
       amount             = b.amount
       thresholds         = b.thresholds
-      projects           = try(b.projects, [])
+      scope              = try(b.scope, null) == null ? "" : b.scope
+    }
+  }
+
+  gcp_dns = {
+    for z in local.config.gcp.dns.zones : z.name => {
+      name       = z.name
+      domain     = z.domain
+      project_id = module.gcp-project[z.project].project_id
+      records    = try(z.records, [])
     }
   }
 
   tfc_projects = {
     for p in local.config.tfc.projects : p.name => {
-      name         = p.name
-      organisation = data.tfe_organization.ef.name
+      name = p.name
     }
   }
 
   tfc_workspaces = {
     for w in flatten([for p in local.config.tfc.projects : [for ws in try(p.workspaces, []) : { name = ws.name, project = p.name, working_directory = try(ws.working_directory, "infrastructure"), auto_apply = try(ws.auto_apply, false) }]]) : w.name => {
-      name              = w.name
-      organisation      = data.tfe_organization.ef.name
-      project_id        = module.tfc-project[w.project].id
-      working_directory = w.working_directory
-      auto_apply        = w.auto_apply
-    }
-  }
-
-  cf_zones = {
-    for z in local.config.cf.zones : z.name => {
-      account_id = data.cloudflare_accounts.ef.accounts[0].id
-      zone       = z.name
-      plan       = try(z.plan, "free")
+      name                       = w.name
+      project_id                 = module.tfc-project[w.project].id
+      working_directory          = w.working_directory
+      auto_apply                 = w.auto_apply
+      github_owner               = local.config.gh.owner
+      github_app_installation_id = data.tfe_github_app_installation.ef.id
     }
   }
 

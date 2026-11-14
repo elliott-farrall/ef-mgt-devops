@@ -18,7 +18,7 @@ module "gcp-project" {
 
 module "gcp-service-account" {
   source   = "./modules/gcp-service-account"
-  for_each = local.gcp_identities
+  for_each = local.gcp_service_accounts
 
   name    = each.value.name
   project = each.value.project
@@ -28,7 +28,7 @@ module "gcp-service-account" {
 
 module "gcp-iam-binding" {
   source   = "./modules/gcp-iam-binding"
-  for_each = local.gcp_bindings
+  for_each = local.gcp_iam_bindings
 
   scope  = each.value.scope
   role   = each.value.role
@@ -43,10 +43,21 @@ module "gcp-budget" {
 
   name               = each.value.name
   billing_account_id = each.value.billing_account_id
-  currency           = each.value.currency
   amount             = each.value.amount
   thresholds         = each.value.thresholds
-  projects           = each.value.projects
+  scope              = each.value.scope
+
+  depends_on = [module.gcp-project]
+}
+
+module "gcp-dns" {
+  source   = "./modules/gcp-dns"
+  for_each = local.gcp_dns
+
+  name       = each.value.name
+  domain     = each.value.domain
+  project_id = each.value.project_id
+  records    = each.value.records
 
   depends_on = [module.gcp-project]
 }
@@ -55,30 +66,21 @@ module "tfc-project" {
   source   = "./modules/tfc-project"
   for_each = local.tfc_projects
 
-  name         = each.value.name
-  organisation = each.value.organisation
+  name = each.value.name
 }
 
 module "tfc-workspace" {
   source   = "./modules/tfc-workspace"
   for_each = local.tfc_workspaces
 
-  name              = each.value.name
-  organisation      = each.value.organisation
-  project_id        = each.value.project_id
-  working_directory = each.value.working_directory
-  auto_apply        = each.value.auto_apply
+  name                       = each.value.name
+  project_id                 = each.value.project_id
+  working_directory          = each.value.working_directory
+  auto_apply                 = each.value.auto_apply
+  github_owner               = each.value.github_owner
+  github_app_installation_id = each.value.github_app_installation_id
 
-  depends_on = [module.tfc-project]
-}
-
-module "cf-zone" {
-  source   = "./modules/cf-zone"
-  for_each = local.cf_zones
-
-  account_id = each.value.account_id
-  zone       = each.value.zone
-  plan       = each.value.plan
+  depends_on = [module.tfc-project, module.gh-repository]
 }
 
 module "gh-repository" {

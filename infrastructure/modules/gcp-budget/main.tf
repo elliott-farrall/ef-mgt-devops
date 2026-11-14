@@ -1,3 +1,7 @@
+locals {
+  kind = var.scope == "" ? "" : element(split("/", var.scope), 0)
+}
+
 resource "google_billing_budget" "this" {
   billing_account = var.billing_account_id
   display_name    = var.name
@@ -5,7 +9,7 @@ resource "google_billing_budget" "this" {
   amount {
     specified_amount {
       units         = tostring(var.amount)
-      currency_code = var.currency
+      currency_code = "GBP"
     }
   }
 
@@ -17,7 +21,8 @@ resource "google_billing_budget" "this" {
   }
 
   budget_filter {
-    calendar_period = "MONTH"
-    projects        = length(var.projects) > 0 ? toset(var.projects) : null
+    calendar_period    = "MONTH"
+    projects           = local.kind == "projects" ? [element(split("/", var.scope), 1)] : null
+    resource_ancestors = local.kind == "folders" || local.kind == "organizations" ? [var.scope] : null
   }
 }

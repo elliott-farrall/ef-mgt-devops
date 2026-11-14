@@ -7,9 +7,10 @@ Binding for this repository and every future `ef-*` repository.
 - Everything lower kebab-case, prefixed `ef-`: repos `ef-<env>-<name>`, GCP
   projects `ef-<env>-<name>`, folders `ef-<env>` under `ef-root`, TFC projects
   mirror the folders, workspaces mirror repos (`app` adds `-<env>`).
-- In code, use the short platform names: `cf` for Cloudflare, `gh` for GitHub
-  (`cf.yaml`, `modules/cf`, `03-cf.sh`). Provider resource names keep their
-  upstream spelling (`cloudflare_zone`). Long names only in prose.
+- In code, use the short platform names: `gh` for GitHub, `cf` for Cloudflare
+  if it ever returns (`gh.yaml`, `modules/gh-repository`). Provider resource
+  names keep their upstream spelling (`github_repository`). Long names only
+  in prose.
 - Service accounts: `sa-<scope>-<purpose>`. `sa-adm-tfc` is the platform
   administration identity — org-level roles, used by the `ef-mgt-devops`
   workspace for high-level operations. `sa-<env>-tfc` (`sa-mgt-tfc`,
@@ -55,7 +56,7 @@ Binding for this repository and every future `ef-*` repository.
   Everything a file does is said by its name, its code, or `docs/`;
   work-in-progress notes belong in the runbook, never in the tree.
 - Each `environments/<name>/*.yaml` has one top-level key matching the
-  filename (`gcp:`, `gh:`, `tfc:`, `cf:`) with its variables nested
+  filename (`gcp:`, `gh:`, `tfc:`) with its variables nested
   underneath; `locals.tf` merges the files and exposes the namespaces.
 - YAML files use **block style only** — no flow/JSON syntax (`{...}` mappings
   or `[...]` inline sequences). One entry per line keeps diffs reviewable.
@@ -65,15 +66,15 @@ Binding for this repository and every future `ef-*` repository.
   for exactly this reason). `.schemas/` is exempt: JSON Schema regex
   patterns and prose descriptions legitimately carry quotes.
 - Optional inputs with platform defaults are omitted from the YAML; the
-  defaults live in `locals.tf`: `cf.zones[].plan` = `free`,
-  `tfc.hostname` = `app.terraform.io`,
+  defaults live in `locals.tf`: `tfc.hostname` = `app.terraform.io`,
   `tfc.projects[].workspaces[].working_directory` = `infrastructure`,
-  `auto_apply` = `false`.
+  `tfc.projects[].workspaces[].auto_apply` = `false`,
+  `gcp.billing` currency = GBP in the module.
 - Platform-wide inputs are **registries**: GCP `folders` and `projects`
   (flat entries of `{ name, parent }` — the parent pointer carries the
   hierarchy, `root` marks children of the organisation root), TFC
   `projects` (entries of `name` with optional nested `workspaces`),
-  GitHub repositories, Cloudflare zones, and billing budgets.
+  GitHub repositories, DNS zones, and billing budgets.
   Provisioning anything new is a data change here — never a new variable,
   and never a hardcoded singular resource. Hierarchies live in data as
   parent pointers, never as nested YAML: HCL has no recursion, so every
@@ -86,12 +87,16 @@ Binding for this repository and every future `ef-*` repository.
   and modules receive their config slice, not the whole merged map.
 - Modules are named `<platform>-<resource>` in the singular
   (`gcp-folders`, `gcp-project`, `gcp-service-account`, `gcp-iam-binding`,
-  `gcp-budget`, `tfc-project`, `tfc-workspace`, `cf-zone`,
+  `gcp-budget`, `gcp-dns`, `tfc-project`, `tfc-workspace`,
   `gh-repository`): each provisions one instance of a resource family.
   Multiplicity comes from `for_each` at the call site, never from looping
   inside the module.
 - Module call grammar: `source`, then `for_each`; blank line; inputs;
-  blank line; `depends_on`.
+  blank line; `depends_on`. The `for_each` local is named after the
+  module, pluralised: `gcp-project` ← `local.gcp_projects`,
+  `gcp-iam-binding` ← `local.gcp_iam_bindings`. A module without
+  `for_each` takes one local of the same name (`gcp-folders` ←
+  `local.gcp_folders`).
 - Every module call binds to exactly one local: `for_each` iterates a
   `local.*` collection, and each argument is a pass-through of
   `each.value`, a key, or a bare data/local reference. No comprehensions,
@@ -129,7 +134,7 @@ Binding for this repository and every future `ef-*` repository.
   (namespace `elliott-farrall`), consumers pin `version`.
 - Secrets never appear in YAML or code — TFC sensitive variables only.
 - Cross-stack references resolve by name via provider data sources
-  (`google_folders`, `cloudflare_zones`, …) — never hardcoded IDs, and no
+  (`google_folders`, `google_dns_managed_zone`, …) — never hardcoded IDs, and no
   `terraform_remote_state` coupling: the management plane publishes no
   outputs.
 
@@ -137,9 +142,9 @@ Binding for this repository and every future `ef-*` repository.
 
 - Steady state is code-only: console changes are read-only; any manual change
   is drift and must be adopted or reverted within one working day. The one
-  sanctioned exception: the TFC GitHub App installation and each workspace's
-  repository link are click-ops — Terraform ignores `vcs_repo` rather than
-  managing the App it cannot see.
+  sanctioned exception: installing the TFC GitHub App itself — a console
+  action done once; its installation ID then makes every workspace's
+  repository link pure Terraform.
 - Every change arrives as a PR; CI runs fmt/validate/plan; merge to `main`
   triggers the TFC run. GitHub Actions holds no cloud apply credentials.
 - Structural resources (folders, projects, workspaces, zones) may only be
