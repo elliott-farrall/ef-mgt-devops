@@ -12,6 +12,8 @@ module "gcp-project" {
   folder_id          = each.value.folder_id
   billing_account_id = each.value.billing_account_id
   labels             = each.value.labels
+
+  depends_on = [module.gcp-folders]
 }
 
 module "gcp-service-account" {
@@ -20,18 +22,19 @@ module "gcp-service-account" {
 
   name    = each.value.name
   project = each.value.project
+
+  depends_on = [module.gcp-project]
 }
 
 module "gcp-iam-binding" {
   source   = "./modules/gcp-iam-binding"
   for_each = local.gcp_bindings
 
-  role            = each.value.role
-  member          = each.value.member
-  folder          = each.value.folder
-  project         = each.value.project
-  organisation    = each.value.organisation
-  billing_account = each.value.billing_account
+  scope  = each.value.scope
+  role   = each.value.role
+  member = each.value.member
+
+  depends_on = [module.gcp-folders, module.gcp-project, module.gcp-service-account]
 }
 
 module "gcp-budget" {
@@ -44,6 +47,8 @@ module "gcp-budget" {
   amount             = each.value.amount
   thresholds         = each.value.thresholds
   projects           = each.value.projects
+
+  depends_on = [module.gcp-project]
 }
 
 module "tfc-project" {
@@ -63,6 +68,8 @@ module "tfc-workspace" {
   project_id        = each.value.project_id
   working_directory = each.value.working_directory
   auto_apply        = each.value.auto_apply
+
+  depends_on = [module.tfc-project]
 }
 
 module "cf-zone" {

@@ -4,6 +4,10 @@ resource "tfe_workspace" "this" {
   project_id        = var.project_id
   working_directory = var.working_directory
   auto_apply        = var.auto_apply
+
+  lifecycle {
+    ignore_changes = [vcs_repo]
+  }
 }
 
 resource "tfe_workspace_settings" "this" {

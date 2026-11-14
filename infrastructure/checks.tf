@@ -1,10 +1,3 @@
-check "folder_tree_depth" {
-  assert {
-    condition     = local.gcp_tree_depth <= 4
-    error_message = "gcp.folders nests at depth ${local.gcp_tree_depth}; locals.tf unrolls 4 levels — extend the unroll deliberately (see docs/standards.md) or flatten the tree."
-  }
-}
-
 check "account_unique" {
   assert {
     condition     = length(data.cloudflare_accounts.ef.accounts) == 1
@@ -19,5 +12,19 @@ check "budget_projects_exist" {
       alltrue([for p in try(b.projects, []) : contains(keys(local.gcp_projects), p)])
     ])
     error_message = "Every budget projects entry must name a project declared in the folder tree."
+  }
+}
+
+check "project_parents_exist" {
+  assert {
+    condition     = alltrue([for p in local.config.gcp.projects : contains(keys(local.gcp_folders.folders), p.parent)])
+    error_message = "Every project parent must name a folder in gcp.folders."
+  }
+}
+
+check "iam_projects_exist" {
+  assert {
+    condition     = alltrue([for sa in local.config.gcp.iam : contains(keys(local.gcp_projects), sa.project)])
+    error_message = "Every service account hosting project must name a project in gcp.projects."
   }
 }

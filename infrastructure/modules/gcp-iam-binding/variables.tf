@@ -1,3 +1,13 @@
+variable "scope" {
+  description = "Binding target as a resolved ancestor path: folders/<ID>, projects/<id>, organizations/<ID>, or billingAccounts/<ID>."
+  type        = string
+
+  validation {
+    condition     = can(regex("^(folders|projects|organizations|billingAccounts)/.+$", var.scope))
+    error_message = "scope must be a resolved ancestor path: folders/, projects/, organizations/, or billingAccounts/."
+  }
+}
+
 variable "role" {
   description = "IAM role to bind."
   type        = string
@@ -6,28 +16,4 @@ variable "role" {
 variable "member" {
   description = "Member, e.g. serviceAccount:<email>."
   type        = string
-}
-
-variable "folder" {
-  description = "Folder resource name (folders/<ID>) when the scope is a folder."
-  type        = string
-  default     = null
-}
-
-variable "project" {
-  description = "Project ID when the scope is a project."
-  type        = string
-  default     = null
-}
-
-variable "organisation" {
-  description = "Organisation ID when the scope is the organisation."
-  type        = string
-  default     = null
-}
-
-variable "billing_account" {
-  description = "Billing account ID when the scope is billing."
-  type        = string
-  default     = null
 }

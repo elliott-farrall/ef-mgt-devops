@@ -11,6 +11,12 @@ Integration.
 - A GCP **billing account is set up and linked to the organisation** with a live
   payment method — projects cannot be created or attached to folders without
   it. (Billing → Billing account; confirm `EF_BILLING_ACCOUNT` matches.)
+- The **TFC GitHub App is installed and approved** for the
+  `elliott-farrall` GitHub account — click-ops, deliberately not managed by
+  Terraform (installation `ghain-x7fuTaprjUwwgnx3`). Each workspace's
+  repository link is likewise click-ops, made once per workspace in the TFC
+  UI; the `tfe_workspace` resources ignore `vcs_repo` changes so the
+  console link and the code never fight.
 - Domain `elliott-farrall.phd` registered in Cloudflare.
 - Repository `ef-mgt-devops` exists and this scaffold is on `main`.
 - Local tooling: `gcloud` authenticated, `terraform`, `jq`, `curl`, `git`.
@@ -29,7 +35,7 @@ Integration.
 | 2 | Seed Terraform Cloud | script | `bootstrap/02-tfc.sh` | Deployment plane exists |
 | 3 | Seed Cloudflare | script | `bootstrap/03-cf.sh` | DNS platform seeded |
 | 4 | Adopt via import | local TF | `bootstrap/04-import.sh` | Seed state in code's home |
-| 5 | Prove the loop | TFC | install the TFC GitHub App (TFC → settings → integrations/github), connect workspace VCS, run plan → **No changes** | Code-only steady state begins |
+| 5 | Prove the loop | TFC | connect the workspace to its repository in the TFC UI (click-ops), run a full plan → **No changes** | Code-only steady state begins |
 | 6 | Close out | script + console | `bootstrap/05-cleanup.sh`, then manual checklist | Bootstrapped, closed, documented |
 
 `bootstrap/run.sh` runs Steps 1–4. Step 5 is the PR itself; Step 6 closes out with

@@ -66,15 +66,16 @@ reuse flows through hub services and lib modules — never shared projects.
 
 ## Self-management and extensibility
 
-`ef-mgt-devops` is the root of the system: it creates the GCP folder tree
-(folders with projects hanging off them, nested arbitrarily in the YAML), the
-TFC projects and *every* workspace, the GitHub repositories and their branch
-protection, and the DNS zones — including its own. The `environments/mgt/*.yaml`
-files are therefore registries: `locals.tf` unrolls the folder tree into flat
-keyed nodes (4 levels deep, with a check block refusing deeper), and
-everything else is a `for_each` keyed by name. Nothing is special-cased: this
-repo appears in its own `gh.repositories` and `tfc.workspaces` lists exactly
-like a future `ef-app-identity` would.
+`ef-mgt-devops` is the root of the system: it creates the GCP folder
+tree and projects, the TFC projects and *every*
+workspace, the GitHub repositories and their branch protection, and the DNS
+zones — including its own. The `environments/mgt/*.yaml` files are
+therefore registries of flat entries: hierarchy is expressed by
+`parent` pointers, not nesting — the data stays trivially readable and
+the code stays free of unroll machinery. Everything iterates with a
+`for_each` keyed by name. Nothing is special-cased: this repo appears in
+its own `gh.repositories` and `tfc.workspaces` lists exactly like a
+future `ef-app-identity` would.
 
 Bringing up another project is then mechanical:
 
@@ -136,17 +137,18 @@ Each platform does exactly one job:
 
 ## Integration
 
-The platforms are joined by exactly four links — nothing authenticates to
+The platforms are joined by exactly five links — nothing authenticates to
 anything else, anywhere:
 
 | Link | Mechanism | Credential |
 |------|-----------|------------|
-| GitHub ↔ TFC | TFC GitHub App: webhook runs on `main`, status checks on PRs | App installation; no cloud creds |
-| TFC → GCP | Workload identity federation: run exchanges OIDC token | `sa-mgt-tfc`, bound at folder `ef-mgt` |
+| GitHub ↔ TFC | TFC GitHub App: webhook runs on `main`, status checks on PRs | App installation and workspace links — click-ops, ignored by TF (`ignore_changes = [vcs_repo]`) |
+| TFC → GCP | Workload identity federation: run exchanges OIDC token | `sa-adm-tfc` (mgt plane), `sa-<env>-tfc` (workload planes) |
 | TFC → Cloudflare | Cloudflare provider on the apex zone | Zone-scoped API token as sensitive variable |
+| TFC → GitHub | GitHub provider (`integrations/github`) manages repo settings and branch protection | Fine-grained token as sensitive variable, this repository only |
 | Cloudflare → GCP | NS delegation of future subzones to Cloud DNS | Zone records only (deferred) |
 
-A fifth link exists only during bootstrap: the operator's machine authenticates
+A sixth link exists only during bootstrap: the operator's machine authenticates
 to TFC with a user token for `init`/`import` (Step 4) and it is revoked at
 Step 6. In steady state, no human credential touches the deployment path.
 

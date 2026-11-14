@@ -15,16 +15,23 @@ gcp:
 
   folders:
     - name: ef-root
-      folders:
-        - name: ef-mgt
-          projects:
-            - ef-mgt-devops
-        - name: ef-hub
-        - name: ef-app
-          folders:
-            - name: ef-dev
-            - name: ef-pre
-            - name: ef-prd
+      parent: root
+    - name: ef-mgt
+      parent: ef-root
+    - name: ef-hub
+      parent: ef-root
+    - name: ef-app
+      parent: ef-root
+    - name: ef-dev
+      parent: ef-app
+    - name: ef-pre
+      parent: ef-app
+    - name: ef-prd
+      parent: ef-app
+
+  projects:
+    - name: ef-mgt-devops
+      parent: ef-mgt
 
   iam:
     - name: sa-adm-tfc

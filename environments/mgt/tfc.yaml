@@ -5,6 +5,5 @@ tfc:
     - name: ef-mgt
       workspaces:
         - name: ef-mgt-devops
-          repo: ef-mgt-devops
     - name: ef-hub
     - name: ef-app

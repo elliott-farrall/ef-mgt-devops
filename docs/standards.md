@@ -69,17 +69,16 @@ Binding for this repository and every future `ef-*` repository.
   `tfc.hostname` = `app.terraform.io`,
   `tfc.projects[].workspaces[].working_directory` = `infrastructure`,
   `auto_apply` = `false`.
-- Platform-wide inputs are **registries**: the GCP folder tree
-  (`folders:` — entries of `name`, optional `projects` (leaf IDs), and
-  optional nested `folders` of the same shape), the TFC project tree
-  (`projects:` — entries of `name` with optional nested `workspaces`),
-  GitHub repositories, Cloudflare zones, and billing budgets
-  (`gcp.billing.budgets`). Provisioning anything new is a
-  data change here — never a new variable, and never a hardcoded singular
-  resource. `locals.tf` unrolls the trees into flat keyed nodes (GCP: 4
-  folder levels, enforced by a `check` block; TFC: fixed two levels, with a
-  validation guarding project references); recursive modules are banned —
-  their cache layout breaks `terraform init` reruns.
+- Platform-wide inputs are **registries**: GCP `folders` and `projects`
+  (flat entries of `{ name, parent }` — the parent pointer carries the
+  hierarchy, `root` marks children of the organisation root), TFC
+  `projects` (entries of `name` with optional nested `workspaces`),
+  GitHub repositories, Cloudflare zones, and billing budgets.
+  Provisioning anything new is a data change here — never a new variable,
+  and never a hardcoded singular resource. Hierarchies live in data as
+  parent pointers, never as nested YAML: HCL has no recursion, so every
+  level of nesting buys a flatten chain in `locals.tf`. Recursive
+  modules are banned — their cache layout breaks `terraform init` reruns.
 - Registry entries inherit platform defaults declared in `locals.tf` and may
   override them with optional blocks (`settings:`, `protection:`); modules
   receive the merged, keyed maps — never raw YAML entries.
@@ -113,10 +112,15 @@ Binding for this repository and every future `ef-*` repository.
 - Data sources live in the root `data.tf`; modules receive resolved IDs
   and names, keeping them thin resource wrappers. Cross-module wiring is
   done only in the root `main.tf`.
+- Cross-module ordering is stated with explicit `depends_on` even where
+  value references already imply it: folders → projects → service
+  accounts → bindings, projects → budgets, tfc-projects → workspaces.
+  The wiring graph in `main.tf` should be readable without tracing
+  expressions.
 - `check` blocks live in `checks.tf` — root or module — never in
   `main.tf`. A check belongs in the module that owns the invariant; the
-  root `checks.tf` keeps only checks on root's own derivation
-  (placeholders, tree depth).
+  root `checks.tf` keeps cross-registry referential integrity
+  (project→folder, iam→project, budget→project, account uniqueness).
 - `main.tf` is composition only — no hand-written resources beyond trivial glue.
 - Validation is Terraform-native: `validation`, `precondition`, and `check`
   blocks must fail bad input at plan time.
@@ -132,7 +136,10 @@ Binding for this repository and every future `ef-*` repository.
 ## Review rules
 
 - Steady state is code-only: console changes are read-only; any manual change
-  is drift and must be adopted or reverted within one working day.
+  is drift and must be adopted or reverted within one working day. The one
+  sanctioned exception: the TFC GitHub App installation and each workspace's
+  repository link are click-ops — Terraform ignores `vcs_repo` rather than
+  managing the App it cannot see.
 - Every change arrives as a PR; CI runs fmt/validate/plan; merge to `main`
   triggers the TFC run. GitHub Actions holds no cloud apply credentials.
 - Structural resources (folders, projects, workspaces, zones) may only be

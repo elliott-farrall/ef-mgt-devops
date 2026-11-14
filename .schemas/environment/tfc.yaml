@@ -13,13 +13,13 @@ properties:
       - organisation
       - projects
     properties:
+      organisation:
+        type: string
+        description: TFC organisation handle.
       hostname:
         type: string
         default: "app.terraform.io"
         description: TFC API hostname; omit for the cloud.
-      organisation:
-        type: string
-        description: TFC organisation handle.
       projects:
         type: array
         description: Plane projects, mirroring the top-level GCP folders.
@@ -47,15 +47,11 @@ definitions:
     additionalProperties: false
     required:
       - name
-      - repo
     properties:
       name:
         type: string
         pattern: "^ef-[a-z0-9-]+$"
         description: Workspace name; mirrors its repository.
-      repo:
-        type: string
-        description: GitHub repository name the workspace is VCS-connected to.
       working_directory:
         type: string
         default: "infrastructure"
