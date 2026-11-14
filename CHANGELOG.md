@@ -9,6 +9,7 @@
 - Record WIF token-glue dry-run item; GOOGLE_CREDENTIALS stays banned
 - Add detailed resource map section to design.md
 - Rename docs to uppercase, add session work
+- Regenerate CHANGELOG from squashed history
 
 ### 🚜 Refactor
 

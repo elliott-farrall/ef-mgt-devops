@@ -56,6 +56,8 @@
             terraform-docs
             yaml-language-server
             gettext
+            git-cliff
+            commitlint
           ];
 
           bootstrap.packages = with pkgs; [

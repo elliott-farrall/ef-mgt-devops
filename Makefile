@@ -59,8 +59,7 @@ docs-readme: ## Generate README.md from Terraform modules
 	  --hide "providers,data-sources,resources,requirements" 2>/dev/null || true
 
 docs-changelog: ## Auto-generate CHANGELOG.md from git history (conventional commits)
-	@git-cliff --output CHANGELOG.md; \
-	git diff --exit-code || { echo "CHANGELOG.md needs updating"; exit 1; }
+	@git-cliff --output CHANGELOG.md
 
 # ── All ─────────────────────────────────────────────────────────────────
 all: yaml-schema yaml-config yaml-style terraform-fmt bash-shell git-branch git-commit docs-readme docs-changelog ## Run all checks

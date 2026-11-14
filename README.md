@@ -24,7 +24,7 @@ The EF platform management plane in code: GCP organisation structure, Terraform 
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_environment"></a> [environment](#input\_environment) | Environment slot selecting environments/<name>/ YAML inputs, naming, labels, and policy. The only top-level variable; no default by design. | `string` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment slot selecting environments/<name>/ YAML inputs, naming, labels, and policy. The only top-level variable; no default by design. | `string` | `"mgt"` | no |
 
 ## Outputs
 
