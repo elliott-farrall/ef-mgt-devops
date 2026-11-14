@@ -3,6 +3,9 @@
 ### 🐛 Bug Fixes
 
 - Fall back to git symbolic-ref for local git-branch checks
+- Docs-changelog writes unconditionally, update README from terraform-docs
+- Update billing_account_id to match schema pattern
+- Update billing_id schema, refresh CHANGELOG
 
 ### 📚 Documentation
 
@@ -10,6 +13,8 @@
 - Add detailed resource map section to design.md
 - Rename docs to uppercase, add session work
 - Regenerate CHANGELOG from squashed history
+- Regenerate CHANGELOG from squashed history
+- Regenerate CHANGELOG
 
 ### 🚜 Refactor
 
@@ -18,6 +23,9 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Add contribution guides, issue/PR templates, and CI pipeline restructuring
+- Refresh CHANGELOG from current history
+- Refresh CHANGELOG
+- Add cliff.toml config, refresh CHANGELOG
 
 ### 💼 Other
 

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../../.schemas/environment/billing.yaml
 billing:
   name: billing
-  billing_account_id: 012345-6789AB-CDEF01
+  billing_account_id: 012345-ABCDEF-012345678901
   budgets:
     - name: total
       amount: 30
