@@ -38,3 +38,46 @@ jobs:
         run: |
           terraform init -backend=false
           terraform validate
+
+  yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install-checkers
+        run: pipx install check-jsonschema
+
+      - name: schema-metaschema
+        run: check-jsonschema --check-metaschema .schemas/environment/*.yaml
+
+      - name: config-validation
+        run: |
+          for env_dir in environments/*/; do
+            for f in "$env_dir"*.yaml; do
+              name=$(basename "$f")
+              schema=".schemas/environment/$name"
+              [ -f "$schema" ] || { echo "::error file=$f::no schema $schema"; exit 1; }
+              check-jsonschema --schemafile "$schema" "$f"
+            done
+          done
+
+      - name: style-block-and-plain
+        run: |
+          files=$(ls environments/*/*.yaml bootstrap/inventory.yaml 2>/dev/null || true)
+          [ -n "$files" ] || exit 0
+          if grep -rnE '(: *[([{"])|(^[[:space:]]*- *\{)' $files; then
+            echo "::error::YAML config must be block style with plain scalars (see docs/standards.md)"
+            exit 1
+          fi
+
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck
+        run: shellcheck -x -S warning bootstrap/*.sh
+
+      - name: bash-syntax
+        run: |
+          for s in bootstrap/*.sh; do bash -n "$s"; done

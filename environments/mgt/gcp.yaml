@@ -1,5 +1,7 @@
 gcp:
   organisation: elliott-farrall.phd
+  region: europe-west2
+
   billing:
     name: ef-billing
     currency: GBP
@@ -10,7 +12,6 @@ gcp:
           - 0.5
           - 0.8
           - 1.0
-  region: europe-west2
 
   folders:
     - name: ef-root

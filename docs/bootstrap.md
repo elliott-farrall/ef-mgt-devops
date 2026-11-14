@@ -62,23 +62,24 @@ Authoritative mapping from `04-import.sh`. Extend as module resources land.
 
 | Terraform address | Source (inventory key) | Import ID format |
 |---|---|---|
-| `module.gcp_org.google_folder.tree["ef-root"]` | `folder_ef-root` | `folders/<ID>` |
-| `module.gcp_org.google_folder.tree["ef-mgt"]` | `folder_ef-mgt` | `folders/<ID>` |
-| `module.gcp_org.google_folder.tree["ef-hub"]` | `folder_ef-hub` | `folders/<ID>` |
-| `module.gcp_org.google_folder.tree["ef-app"]` | `folder_ef-app` | `folders/<ID>` |
-| `module.gcp_org.google_folder.tree["ef-dev"]` | `folder_ef-dev` | `folders/<ID>` |
-| `module.gcp_org.google_folder.tree["ef-pre"]` | `folder_ef-pre` | `folders/<ID>` |
-| `module.gcp_org.google_folder.tree["ef-prd"]` | `folder_ef-prd` | `folders/<ID>` |
-| `module.gcp_org.google_project.platform["ef-mgt-devops"]` | `landing_project` | `<project-number>` |
-| `module.tfc.tfe_project.planes["ef-mgt"]` | `tfc_project_ef-mgt` | `prj-<ID>` |
-| `module.tfc.tfe_project.planes["ef-hub"]` | `tfc_project_ef-hub` | `prj-<ID>` |
-| `module.tfc.tfe_project.planes["ef-app"]` | `tfc_project_ef-app` | `prj-<ID>` |
-| `module.tfc.tfe_workspace.registry["ef-mgt-devops"]` | `tfc_workspace` | `<ws-ID>` |
-| `module.tfc.tfe_workspace_settings.registry["ef-mgt-devops"]` | `tfc_workspace` | `<ws-ID>` |
-| `module.cf.cloudflare_zone.registry["elliott-farrall.phd"]` | `cf_zone_apex` | `<zone-ID>` |
-| `module.gh.github_repository.registry["ef-mgt-devops"]` | `gh_repository` | `ef-mgt-devops` (repo slug) |
-| `module.gcp_org.google_service_account.platform["sa-<env>-tfc"]` | `sa_<env>_tfc` | `projects/<project>/serviceAccounts/<email>` |
-| `module.gcp_org.google_folder_iam_member.platform[...]` | created by first apply | bindings may also be imported as `<folder>/<role>/<member>` |
+| `module.gcp-folder-root["ef-root"].google_folder.this` | `folder_ef-root` | `folders/<ID>` |
+| `module.gcp-folder-plane["ef-mgt"].google_folder.this` | `folder_ef-mgt` | `folders/<ID>` |
+| `module.gcp-folder-plane["ef-hub"].google_folder.this` | `folder_ef-hub` | `folders/<ID>` |
+| `module.gcp-folder-plane["ef-app"].google_folder.this` | `folder_ef-app` | `folders/<ID>` |
+| `module.gcp-folder-ladder["ef-dev"].google_folder.this` | `folder_ef-dev` | `folders/<ID>` |
+| `module.gcp-folder-ladder["ef-pre"].google_folder.this` | `folder_ef-pre` | `folders/<ID>` |
+| `module.gcp-folder-ladder["ef-prd"].google_folder.this` | `folder_ef-prd` | `folders/<ID>` |
+| `module.gcp-project["ef-mgt-devops"].google_project.this` | `landing_project` | `<project-number>` |
+| `module.tfc-project["ef-mgt"].tfe_project.this` | `tfc_project_ef-mgt` | `prj-<ID>` |
+| `module.tfc-project["ef-hub"].tfe_project.this` | `tfc_project_ef-hub` | `prj-<ID>` |
+| `module.tfc-project["ef-app"].tfe_project.this` | `tfc_project_ef-app` | `prj-<ID>` |
+| `module.tfc-workspace["ef-mgt-devops"].tfe_workspace.this` | `tfc_workspace` | `<ws-ID>` |
+| `module.tfc-workspace["ef-mgt-devops"].tfe_workspace_settings.this` | `tfc_workspace` | `<ws-ID>` |
+| `module.cf-zone["elliott-farrall.phd"].cloudflare_zone.this` | `cf_zone_apex` | `<zone-ID>` |
+| `module.gh-repository["ef-mgt-devops"].github_repository.this` | `gh_repository` | `ef-mgt-devops` (repo slug) |
+| `module.gcp-service-account["sa-<env>-tfc"].google_service_account.this` | `sa_<env>_tfc` | `projects/<project>/serviceAccounts/<email>` |
+| `module.gcp-iam-binding[*].*` | created by first apply | IAM bindings are additive; no import required |
+| `module.gcp-budget[*].google_billing_budget.this` | created by first apply | budgets did not exist before adoption |
 
 ## Contract
 

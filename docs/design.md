@@ -86,8 +86,11 @@ Bringing up another project is then mechanical:
 3. Scaffold the new repository to the same layout contract
    ([standards.md](standards.md)); its workspace already exists, so its first
    PR plans against real state from day one.
-4. The new repo then manages *its own* resources. Cross-project reads go
-   through `terraform_remote_state`, never through this repository's state.
+4. The new repo then manages *its own* resources. Cross-project
+   references resolve **by name through provider data sources**
+   (`google_folders`, `cloudflare_zones`, …) — this repository publishes no
+   outputs and nothing couples to its internals. Names are the stable
+   contract; IDs are looked up.
 
 Plane boundaries stay hard: `ef-mgt-devops` provisions landing spots, but
 workload resources live only in their own environment's projects, under their

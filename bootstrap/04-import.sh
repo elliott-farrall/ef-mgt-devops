@@ -2,7 +2,7 @@
 source "$(dirname "$0")/00-lib.sh"
 require_env TFC_TOKEN
 
-cd "$REPO_ROOT/infrastructure"
+cd "$REPO_ROOT/infrastructure" || exit 1
 
 export TF_ADDRESS="https://app.terraform.io"
 export TF_CREDENTIALS="env"
@@ -21,26 +21,27 @@ import_one() {
   terraform import -input=false "$addr" "$id" || die "import failed for $addr"
 }
 
-G="module.gcp_org"
-import_one "$G.google_folder.tree[\"ef-root\"]" "folders/$(inventory_get folder_ef-root)"
-for f in ef-mgt ef-hub ef-app ef-dev ef-pre ef-prd; do
-  import_one "$G.google_folder.tree[\"$f\"]" "folders/$(inventory_get "folder_${f}")"
+import_one "module.gcp-folder-root[\"ef-root\"].google_folder.this" "folders/$(inventory_get folder_ef-root)"
+for f in ef-mgt ef-hub ef-app; do
+  import_one "module.gcp-folder-plane[\"$f\"].google_folder.this" "folders/$(inventory_get "folder_${f}")"
 done
-import_one "$G.google_project.platform[\"ef-mgt-devops\"]" "$(inventory_get landing_project)"
-import_one "$G.google_service_account.platform[\"sa-mgt-tfc\"]" "$(inventory_get sa_mgt_tfc)"
-for sa in sa-adm-tfc sa-hub-tfc sa-dev-tfc sa-pre-tfc sa-prd-tfc; do
-  import_one "$G.google_service_account.platform[\"$sa\"]" "$(inventory_get "sa_${sa//-/_}")"
+for f in ef-dev ef-pre ef-prd; do
+  import_one "module.gcp-folder-ladder[\"$f\"].google_folder.this" "folders/$(inventory_get "folder_${f}")"
+done
+import_one "module.gcp-project[\"ef-mgt-devops\"].google_project.this" "$(inventory_get landing_project)"
+
+for sa in sa-adm-tfc sa-mgt-tfc sa-hub-tfc sa-dev-tfc sa-pre-tfc sa-prd-tfc; do
+  import_one "module.gcp-service-account[\"$sa\"].google_service_account.this" "$(inventory_get "sa_${sa//-/_}")"
 done
 
-T="module.tfc"
 for p in ef-mgt ef-hub ef-app; do
-  import_one "$T.tfe_project.planes[\"$p\"]" "$(inventory_get "tfc_project_${p}")"
+  import_one "module.tfc-project[\"$p\"].tfe_project.this" "$(inventory_get "tfc_project_${p}")"
 done
-import_one "$T.tfe_workspace.registry[\"ef-mgt-devops\"]" "$(inventory_get tfc_workspace)"
-import_one "$T.tfe_workspace_settings.registry[\"ef-mgt-devops\"]" "$(inventory_get tfc_workspace)"
+import_one "module.tfc-workspace[\"ef-mgt-devops\"].tfe_workspace.this" "$(inventory_get tfc_workspace)"
+import_one "module.tfc-workspace[\"ef-mgt-devops\"].tfe_workspace_settings.this" "$(inventory_get tfc_workspace)"
 
-import_one "module.cf.cloudflare_zone.registry[\"elliott-farrall.phd\"]" "$(inventory_get cf_zone_apex)"
-import_one "module.gh.github_repository.registry[\"ef-mgt-devops\"]" "$(inventory_get gh_repository)"
+import_one "module.cf-zone[\"elliott-farrall.phd\"].cloudflare_zone.this" "$(inventory_get cf_zone_apex)"
+import_one "module.gh-repository[\"ef-mgt-devops\"].github_repository.this" "$(inventory_get gh_repository)"
 
 
 log "import complete — now prove the loop: terraform plan must show no diff"

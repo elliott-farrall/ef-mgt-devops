@@ -4,8 +4,7 @@ The EF platform management plane in code: GCP organisation structure,
 Terraform Cloud, and Cloudflare — plus the bootstrap scripts and runbook.
 
 - **Status:** scaffolding (`feature/initialise`). All inputs are concrete;
-  the `check` block in `infrastructure/main.tf` guards against placeholders
-  reappearing.
+  CI validates every YAML config against its schema on each PR.
 - **Design:** [`docs/design.md`](docs/design.md) — the design document itself
   (decisions and rationale).
 - **Bring-up:** [`docs/bootstrap.md`](docs/bootstrap.md) — scripts create,

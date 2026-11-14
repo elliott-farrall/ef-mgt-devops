@@ -84,7 +84,29 @@ Binding for this repository and every future `ef-*` repository.
   override them with optional blocks (`settings:`, `protection:`); modules
   receive the merged, keyed maps — never raw YAML entries.
 - All derivation in `locals.tf`; resources and modules consume locals only,
-  and modules receive their platform's slice of the config, not the whole map.
+  and modules receive their config slice, not the whole merged map.
+- Modules are named `<platform>-<resource>` in the singular
+  (`gcp-folder`, `gcp-project`, `gcp-service-account`, `gcp-iam-binding`,
+  `gcp-budget`, `tfc-project`, `tfc-workspace`, `cf-zone`,
+  `gh-repository`): each provisions one instance of a resource family.
+  Multiplicity comes from `for_each` at the call site, never from looping
+  inside the module.
+- Module call grammar: `source`, then `for_each`; blank line; inputs;
+  blank line; `depends_on`.
+- A self-referential tree is flattened into one collection —
+  `local.gcp_folders` (name → `{ parent, depth }`) — and the folder module
+  is called once per depth level (`gcp-folder-root`, `-plane`, `-ladder`,
+  `-leaf`), each filtering that collection. Terraform cannot order sibling
+  instances of the same module set, so a single loop over parents and
+  children is not expressible; merged `all_folder_ids` / `all_folder_names`
+  locals hide the layering from downstream calls.
+- Data sources live in the root `data.tf`; modules receive resolved IDs
+  and names, keeping them thin resource wrappers. Cross-module wiring is
+  done only in the root `main.tf`.
+- `check` blocks live in `checks.tf` — root or module — never in
+  `main.tf`. A check belongs in the module that owns the invariant; the
+  root `checks.tf` keeps only checks on root's own derivation
+  (placeholders, tree depth).
 - `main.tf` is composition only — no hand-written resources beyond trivial glue.
 - Validation is Terraform-native: `validation`, `precondition`, and `check`
   blocks must fail bad input at plan time.
@@ -92,7 +114,10 @@ Binding for this repository and every future `ef-*` repository.
   `ef-lib-*` and publish by git tag to the private registry
   (namespace `elliott-farrall`), consumers pin `version`.
 - Secrets never appear in YAML or code — TFC sensitive variables only.
-- Cross-stack reads via `terraform_remote_state`, never hardcoded IDs.
+- Cross-stack references resolve by name via provider data sources
+  (`google_folders`, `cloudflare_zones`, …) — never hardcoded IDs, and no
+  `terraform_remote_state` coupling: the management plane publishes no
+  outputs.
 
 ## Review rules
 

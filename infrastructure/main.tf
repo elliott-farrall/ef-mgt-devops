@@ -1,62 +1,109 @@
-module "gcp_org" {
-  source       = "./modules/gcp-org"
-  folders      = local.gcp_folder_nodes
-  projects     = local.gcp_project_nodes
-  organisation = local.gcp.organisation
-  billing      = local.gcp.billing
-  iam          = local.gcp.iam
-  labels       = local.labels
+module "gcp-folder-root" {
+  source   = "./modules/gcp-folder"
+  for_each = { for k, v in local.gcp_folders : k => v if v.depth == 1 }
+
+  name   = each.key
+  parent = data.google_organization.ef.name
 }
 
-module "tfc" {
-  source       = "./modules/tfc"
-  organisation = local.tfc.organisation
-  projects     = local.tfc_project_names
-  workspaces   = local.tfc_workspace_nodes
+module "gcp-folder-plane" {
+  source   = "./modules/gcp-folder"
+  for_each = { for k, v in local.gcp_folders : k => v if v.depth == 2 }
+
+  name   = each.key
+  parent = module.gcp-folder-root[each.value.parent].folder_name
 }
 
-module "cf" {
-  source  = "./modules/cf"
-  account = local.cf.account
-  zones   = local.cf_zones
+module "gcp-folder-ladder" {
+  source   = "./modules/gcp-folder"
+  for_each = { for k, v in local.gcp_folders : k => v if v.depth == 3 }
+
+  name   = each.key
+  parent = module.gcp-folder-plane[each.value.parent].folder_name
 }
 
-module "gh" {
-  source       = "./modules/gh"
-  repositories = local.gh_repositories
-  protections  = local.gh_protections
+module "gcp-folder-leaf" {
+  source   = "./modules/gcp-folder"
+  for_each = { for k, v in local.gcp_folders : k => v if v.depth == 4 }
+
+  name   = each.key
+  parent = module.gcp-folder-ladder[each.value.parent].folder_name
 }
 
-check "config_placeholders" {
-  assert {
-    condition = alltrue([
-      for v in [local.gcp.organisation, local.gcp.billing, local.cf.account] :
-      !strcontains(lower(tostring(v)), "replace_me")
-    ])
-    error_message = "environments/${var.environment}/ still contains REPLACE_ME placeholders — fill in real IDs before planning."
-  }
+module "gcp-project" {
+  source   = "./modules/gcp-project"
+  for_each = local.gcp_project_nodes
+
+  name               = each.key
+  folder_id          = local.all_folder_ids[each.value.parent]
+  billing_account_id = data.google_billing_account.ef.billing_account
+  labels             = local.labels
 }
 
-check "folder_tree_depth" {
-  assert {
-    condition     = !local.gcp_tree_too_deep
-    error_message = "gcp.folders nests deeper than the 4 folder levels locals.tf unrolls — extend the unroll deliberately (see docs/standards.md) or flatten the tree."
-  }
+module "gcp-service-account" {
+  source   = "./modules/gcp-service-account"
+  for_each = { for sa in local.gcp.iam : sa.name => sa }
+
+  name    = each.key
+  project = module.gcp-project[each.value.project].project_id
 }
 
-check "iam_projects_exist" {
-  assert {
-    condition     = alltrue([for sa in local.gcp.iam : contains(keys(local.gcp_project_nodes), sa.project)])
-    error_message = "Every gcp.iam entry must name a hosting project declared in the folder tree."
-  }
+module "gcp-iam-binding" {
+  source   = "./modules/gcp-iam-binding"
+  for_each = { for x in local.gcp_iam_bindings : x.key => x }
+
+  role            = each.value.role
+  member          = "serviceAccount:${module.gcp-service-account[each.value.sa].email}"
+  folder          = startswith(each.value.scope, "folder:") ? local.all_folder_names[trimprefix(each.value.scope, "folder:")] : null
+  project         = startswith(each.value.scope, "project:") ? module.gcp-project[trimprefix(each.value.scope, "project:")].project_id : null
+  organisation    = each.value.scope == "organisation" ? data.google_organization.ef.org_id : null
+  billing_account = each.value.scope == "billing" ? data.google_billing_account.ef.billing_account : null
 }
 
-check "budget_projects_exist" {
-  assert {
-    condition = alltrue([
-      for b in local.gcp.billing.budgets :
-      alltrue([for p in try(b.projects, []) : contains(keys(local.gcp_project_nodes), p)])
-    ])
-    error_message = "Every budget projects entry must name a project declared in the folder tree."
-  }
+module "gcp-budget" {
+  source   = "./modules/gcp-budget"
+  for_each = { for b in local.gcp.billing.budgets : b.name => b }
+
+  name               = each.value.name
+  billing_account_id = data.google_billing_account.ef.billing_account
+  currency           = local.gcp.billing.currency
+  amount             = each.value.amount
+  thresholds         = each.value.thresholds
+  projects           = each.value.projects
+}
+
+module "tfc-project" {
+  source   = "./modules/tfc-project"
+  for_each = toset(local.tfc_project_names)
+
+  name         = each.value
+  organization = data.tfe_organization.ef.name
+}
+
+module "tfc-workspace" {
+  source   = "./modules/tfc-workspace"
+  for_each = local.tfc_workspace_nodes
+
+  name              = each.value.name
+  organization      = data.tfe_organization.ef.name
+  project_id        = module.tfc-project[each.value.project].id
+  working_directory = each.value.working_directory
+  auto_apply        = each.value.auto_apply
+}
+
+module "cf-zone" {
+  source   = "./modules/cf-zone"
+  for_each = local.cf_zones
+
+  account_id = data.cloudflare_accounts.ef.accounts[0].id
+  zone       = each.value.name
+  plan       = each.value.plan
+}
+
+module "gh-repository" {
+  source   = "./modules/gh-repository"
+  for_each = local.gh_repositories
+
+  repository = each.value
+  protection = local.gh_protections[each.key]
 }

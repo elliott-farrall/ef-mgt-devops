@@ -72,12 +72,26 @@ locals {
     )]...
   )
 
-  gcp_folder_nodes = {
-    for k, v in merge(
-      local.folder_nodes_1, local.folder_nodes_2,
-      local.folder_nodes_3, local.folder_nodes_4,
-    ) : k => { parent = v }
-  }
+  gcp_folders = merge(
+    { for k, v in local.folder_nodes_1 : k => { parent = "", depth = 1 } },
+    { for k, v in local.folder_nodes_2 : k => { parent = v, depth = 2 } },
+    { for k, v in local.folder_nodes_3 : k => { parent = v, depth = 3 } },
+    { for k, v in local.folder_nodes_4 : k => { parent = v, depth = 4 } },
+  )
+
+  all_folder_ids = merge(
+    { for k, m in module.gcp-folder-root : k => m.folder_id },
+    { for k, m in module.gcp-folder-plane : k => m.folder_id },
+    { for k, m in module.gcp-folder-ladder : k => m.folder_id },
+    { for k, m in module.gcp-folder-leaf : k => m.folder_id },
+  )
+
+  all_folder_names = merge(
+    { for k, m in module.gcp-folder-root : k => m.folder_name },
+    { for k, m in module.gcp-folder-plane : k => m.folder_name },
+    { for k, m in module.gcp-folder-ladder : k => m.folder_name },
+    { for k, m in module.gcp-folder-leaf : k => m.folder_name },
+  )
 
   gcp_project_nodes = {
     for k, v in merge(
@@ -86,19 +100,19 @@ locals {
     ) : k => { parent = v }
   }
 
-  gcp_tree_too_deep = length(flatten(
-    [for f in local.gcp.folders : flatten(
-      [for c in try(f.folders, []) : flatten(
-        [for g in try(c.folders, []) : flatten(
-          [for d in try(g.folders, []) : try(d.folders, [])]
-        )]
-      )]
-    )],
-  )) > 0
+  gcp_tree_depth = max(
+    length(local.gcp.folders) > 0 ? 1 : 0,
+    length(flatten([for f in local.gcp.folders : try(f.folders, [])])) > 0 ? 2 : 0,
+    length(flatten([for f in local.gcp.folders : flatten([for c in try(f.folders, []) : try(c.folders, [])])])) > 0 ? 3 : 0,
+    length(flatten([for f in local.gcp.folders : flatten([for c in try(f.folders, []) : flatten([for g in try(c.folders, []) : try(g.folders, [])])])])) > 0 ? 4 : 0,
+    length(flatten([for f in local.gcp.folders : flatten([for c in try(f.folders, []) : flatten([for g in try(c.folders, []) : flatten([for d in try(g.folders, []) : try(d.folders, [])])])])])) > 0 ? 5 : 0,
+  )
 
   repository   = basename(abspath("${path.root}/.."))
   gcp_region   = local.gcp.region
   tfc_hostname = try(local.tfc.hostname, "app.terraform.io")
+
+  gcp_iam_bindings = flatten([for sa in local.gcp.iam : [for b in sa.bindings : [for r in b.roles : { key = "${sa.name}|${b.scope}|${r}", sa = sa.name, scope = b.scope, role = r }]]])
 
   tfc_plane_project = "ef-${var.environment}"
 
@@ -130,7 +144,7 @@ locals {
     required_approving_review_count = 0
     dismiss_stale_reviews           = true
     strict_status_checks            = true
-    status_checks                   = ["ci / terraform (pull_request)", "ci / branch-name (pull_request)"]
+    status_checks                   = ["ci / branch-name (pull_request)", "ci / terraform (pull_request)", "ci / yaml (pull_request)", "ci / shell (pull_request)"]
   }
 
   gh_repositories = {
