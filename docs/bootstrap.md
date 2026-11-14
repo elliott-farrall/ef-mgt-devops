@@ -15,8 +15,8 @@ Integration.
 - Repository `ef-mgt-devops` exists and this scaffold is on `main`.
 - Local tooling: `gcloud` authenticated, `terraform`, `jq`, `curl`, `git`.
 - Environment variables (never committed):
-  `EF_ORG_ID`, `EF_BILLING_ACCOUNT`, `TFC_TOKEN`, `CF_API_TOKEN`,
-  `CF_ACCOUNT_ID`, `GITHUB_TOKEN`.
+  `EF_ORG_ID` (or `EF_ORG_DOMAIN` to resolve it), `EF_BILLING_ACCOUNT`,
+  `TFC_TOKEN`, `CF_API_TOKEN`, `CF_ACCOUNT_ID`, `GITHUB_TOKEN`.
 - `bootstrap/inventory.yaml` present (values are appended by the scripts). It is
   **transient**: it exists to hand IDs from the seed scripts to the import, and
   `05-cleanup.sh` deletes it at close-out.
@@ -34,6 +34,25 @@ Integration.
 
 `bootstrap/run.sh` runs Steps 1–4. Step 5 is the PR itself; Step 6 closes out with
 `bootstrap/05-cleanup.sh`.
+
+## Script scope (to implement during bootstrap prep)
+
+- `01-gcp.sh`: landing project + billing link + API enablement; service
+  accounts and IAM bindings are declared in `gcp.folders` placement (plus
+  the root org/billing list) — `sa-adm-tfc` for platform administration,
+  one `sa-<env>-tfc` per plane — plus the bootstrap-only
+  `sa-adm-bootstrap` that config never declares; workload identity pool +
+  OIDC provider for TFC (the `ef-mgt-devops` workspace assumes
+  `sa-adm-tfc`); organisation policies (required labels, prevent project
+  deletion, allowed regions).
+- `02-tfc.sh`: global variable set `ef-global` (org/billing/cf IDs);
+  workspace `ef-mgt-devops` in project `ef-mgt`, VCS detached until Step 5;
+  sensitive variables (`CLOUDFLARE_API_TOKEN`, `GITHUB_TOKEN`) created via
+  API — values never pass through this repository.
+- `03-cf.sh`: scoped token `ef-tfc-mgt-devops` (Zone.DNS:Edit + Zone.Zone:Read
+  on the apex zone only) straight into the TFC sensitive variable; record the
+  nameservers for the registrar check.
+- `04-import.sh`: extend the import list as the module resources above land.
 
 ## Import address list
 
@@ -56,6 +75,8 @@ Authoritative mapping from `04-import.sh`. Extend as module resources land.
 | `module.tfc.tfe_workspace_settings.registry["ef-mgt-devops"]` | `tfc_workspace` | `<ws-ID>` |
 | `module.cf.cloudflare_zone.registry["elliott-farrall.phd"]` | `cf_zone_apex` | `<zone-ID>` |
 | `module.gh.github_repository.registry["ef-mgt-devops"]` | `gh_repository` | `ef-mgt-devops` (repo slug) |
+| `module.gcp_org.google_service_account.platform["sa-<env>-tfc"]` | `sa_<env>_tfc` | `projects/<project>/serviceAccounts/<email>` |
+| `module.gcp_org.google_folder_iam_member.platform[...]` | created by first apply | bindings may also be imported as `<folder>/<role>/<member>` |
 
 ## Contract
 

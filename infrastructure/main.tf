@@ -1,10 +1,12 @@
 module "gcp_org" {
-  source          = "./modules/gcp-org"
-  folders         = local.gcp_folder_nodes
-  projects        = local.gcp_project_nodes
-  organisation_id = local.gcp.organisation_id
-  billing_account = local.gcp.billing_account
-  labels          = local.labels
+  source           = "./modules/gcp-org"
+  folders          = local.gcp_folder_nodes
+  projects         = local.gcp_project_nodes
+  organisation     = local.gcp.organisation
+  billing          = local.gcp.billing
+  landing_project  = local.landing_project
+  service_accounts = local.gcp_service_accounts
+  labels           = local.labels
 }
 
 module "tfc" {
@@ -15,9 +17,9 @@ module "tfc" {
 }
 
 module "cf" {
-  source = "./modules/cf"
-  config = local.cf
-  labels = local.labels
+  source  = "./modules/cf"
+  account = local.cf.account
+  zones   = local.cf_zones
 }
 
 module "gh" {
@@ -29,7 +31,7 @@ module "gh" {
 check "config_placeholders" {
   assert {
     condition = alltrue([
-      for v in [local.gcp.organisation_id, local.gcp.billing_account, local.cf.account_id] :
+      for v in [local.gcp.organisation, local.gcp.billing, local.cf.account] :
       !strcontains(lower(tostring(v)), "replace_me")
     ])
     error_message = "environments/${var.environment}/ still contains REPLACE_ME placeholders — fill in real IDs before planning."

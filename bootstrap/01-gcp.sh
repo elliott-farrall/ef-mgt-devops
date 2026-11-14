@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/00-lib.sh"
-require_env EF_ORG_ID EF_BILLING_ACCOUNT
+require_env EF_BILLING_ACCOUNT
 
-ORG="$EF_ORG_ID"
+ORG="${EF_ORG_ID:-}"
+if [[ -z "$ORG" ]]; then
+  ORG_DOMAIN="${EF_ORG_DOMAIN:-elliott-farrall.phd}"
+  ORG="$(gcloud organizations list --filter="display_name=${ORG_DOMAIN}" --format='value(name)' | head -n1)"
+fi
+[[ -n "$ORG" ]] || die "organisation not resolved — set EF_ORG_ID or EF_ORG_DOMAIN"
 log "seeding GCP for organisation $ORG"
 
-folder_id() { # name -> "folders/123..." or empty
+folder_id() {
   gcloud resource-manager folders list --organization="$ORG" \
     --filter="displayName=$1" --format="value(name)" 2>/dev/null | head -n1
 }
 
-ensure_folder() { # name parent-resource-id
+ensure_folder() {
   local name="$1" parent="$2" existing
   existing="$(folder_id "$name")"
   if [[ -n "$existing" ]]; then
@@ -30,17 +35,5 @@ for f in ef-mgt ef-hub ef-app; do ensure_folder "$f" "$ROOT"; done
 APP="folders/$(inventory_get folder_ef-app)"
 for f in ef-dev ef-pre ef-prd; do ensure_folder "$f" "$APP"; done
 
-# TODO (implement during bootstrap prep, same get-or-create pattern):
-#  [ ] landing project ef-mgt-devops under ef-mgt, linked to $EF_BILLING_ACCOUNT,
-#      standard labels applied; enable APIs: cloudresourcemanager, iamcredentials,
-#      orgpolicy, serviceusage (project-level enablement is fine here).
-#  [ ] service accounts sa-mgt-tfc + sa-adm-bootstrap in the landing project.
-#  [ ] IAM: role bindings for sa-mgt-tfc at folder ef-mgt (folderManager,
-#      orgAdministrator-equivalent scoped set); sa-adm-bootstrap at org level
-#      (deleted at Step 6).
-#  [ ] Workload identity pool + provider for Terraform Cloud (attribute:
-#      assertion.vcs/repo == elliott-farrall/ef-mgt-devops).
-#  [ ] Org policies: constraints/required.labels, prevent project deletion,
-#      allowed regions [europe-west2, us-central1] — naming per docs/standards.md.
 
 log "done — commit the updated inventory.yaml"

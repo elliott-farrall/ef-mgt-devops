@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/00-lib.sh"
-require_env EF_ORG_ID TFC_TOKEN
+require_env TFC_TOKEN
 
 LANDING="$(inventory_get landing_project)"
 [[ -n "$LANDING" ]] || die "landing_project missing from inventory — run Steps 1–4 first"
@@ -15,8 +15,6 @@ else
   warn "sa-adm-bootstrap already absent"
 fi
 
-# Inventory values now live in Terraform state; the file exists only to hand
-# IDs from the seed scripts to 04-import.sh.
 git -C "$REPO_ROOT" rm -q bootstrap/inventory.yaml
 
 log "commit the removal, then finish the manual checklist:"

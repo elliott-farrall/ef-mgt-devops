@@ -12,14 +12,30 @@ variable "projects" {
   }))
 }
 
-variable "organisation_id" {
-  description = "Numeric GCP organisation ID."
+variable "organisation" {
+  description = "Domain the GCP organisation is registered under; resolved via data.google_organization."
   type        = string
 }
 
-variable "billing_account" {
-  description = "Billing account to attach to created projects."
+variable "billing" {
+  description = "Billing account display name; resolved via data.google_billing_account."
   type        = string
+}
+
+variable "landing_project" {
+  description = "Project that hosts every platform service account."
+  type        = string
+}
+
+variable "service_accounts" {
+  description = "Platform identities with their bindings; scopes derived from tree placement in locals.tf."
+  type = list(object({
+    name = string
+    bindings = list(object({
+      scope = string
+      roles = list(string)
+    }))
+  }))
 }
 
 variable "labels" {

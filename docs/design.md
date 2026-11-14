@@ -30,8 +30,15 @@ structural.
 - **Modules start local.** `infrastructure/modules/` until code genuinely must
   cross repositories; then extract to `ef-lib-*` and publish by tag. Premature
   extraction is the failure mode this guards against.
-- **Least privilege.** One workload identity per scope, bound at the matching
-  folder. The only org-level identity (`sa-adm-bootstrap`) is deleted at Step 6.
+- **Least privilege.** Two kinds of identity. `sa-adm-tfc` is the platform
+  administration identity: folder management at `ef-root` plus
+  organisation- and billing-scope read, used by the `ef-mgt-devops`
+  workspace because the platform structure is its workload. Each plane
+  identity `sa-<env>-tfc` (mgt, hub, dev, pre, prd) is bound only at its
+  own folder — project creation and editor — never above. All are declared
+  in `gcp.folders` placement (org/billing scopes in the root list), never
+  in the console. The bootstrap-only `sa-adm-bootstrap` is never declared
+  and is deleted at Step 6.
 - **The management plane provisions the rest.** This repository manages itself
   *and* every other IaC project: its YAML inputs are registries — the GCP
   folder tree, TFC projects and workspaces, GitHub repositories, Cloudflare

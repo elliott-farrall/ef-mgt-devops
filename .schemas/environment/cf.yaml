@@ -10,12 +10,13 @@ properties:
     type: object
     additionalProperties: false
     required:
-      - account_id
+      - account
       - zones
     properties:
-      account_id:
+      account:
         type: string
-        description: Cloudflare account ID.
+        minLength: 1
+        description: Cloudflare account display name; resolved to its ID by data.cloudflare_accounts.
       zones:
         type: array
         description: Zone registry; provisioned by modules/cf.
@@ -25,13 +26,13 @@ properties:
           additionalProperties: false
           required:
             - name
-            - plan
           properties:
             name:
               type: string
               description: Zone name (apex or delegated subzone).
             plan:
               type: string
+              default: free
               enum:
                 - free
                 - basic

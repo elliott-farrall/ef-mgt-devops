@@ -18,13 +18,6 @@ resource "tfe_workspace" "registry" {
   working_directory = each.value.working_directory
   auto_apply        = each.value.auto_apply
 
-  # Step 5 attaches the VCS repo via the GitHub App integration; the token ID
-  # comes from data.tfe_organization_integration (API: integrations/github):
-  # vcs_repo {
-  #   identifier     = "${var.organisation}/${each.value.repo}"
-  #   branch         = "main"
-  #   oauth_token_id = data.tfe_organization_integration.github.id
-  # }
 }
 
 resource "tfe_workspace_settings" "registry" {
@@ -34,5 +27,3 @@ resource "tfe_workspace_settings" "registry" {
   execution_mode = "remote"
 }
 
-# TODO (bootstrap prep): global variable set (org/billing/CF account IDs) and
-# the tfe_organization_integration data source once the GitHub App is installed.

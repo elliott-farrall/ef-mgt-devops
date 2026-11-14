@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/00-lib.sh"
 
-require_env EF_ORG_ID EF_BILLING_ACCOUNT TFC_TOKEN CF_API_TOKEN CF_ACCOUNT_ID GITHUB_TOKEN
+require_env EF_BILLING_ACCOUNT TFC_TOKEN CF_API_TOKEN CF_ACCOUNT_ID GITHUB_TOKEN
 
 log "preflight: tools"
 for t in gcloud terraform jq curl git; do

@@ -10,32 +10,56 @@ properties:
     type: object
     additionalProperties: false
     required:
-      - organisation_id
-      - billing_account
+      - organisation
+      - billing
       - region
       - landing_project
       - folders
     properties:
-      organisation_id:
+      organisation:
         type: string
-        pattern: "^[0-9]{6,}$"
-        description: Numeric GCP organisation ID (IAM & Admin → Settings).
-      billing_account:
+        pattern: '^[a-z0-9.-]+\.[a-z]{2,}$'
+        description: Domain the GCP organisation is registered under; resolved to its numeric ID by data.google_organization.
+      billing:
         type: string
-        pattern: "^[0-9]{6}-[A-Z0-9]{6}-[A-Z0-9]{6}$"
-        description: Billing account ID (XXXXXX-XXXXXX-XXXXXX), linked to the organisation with a live payment method.
+        minLength: 1
+        description: Billing account display name; resolved to its ID by data.google_billing_account.
       region:
         type: string
         description: Default region for the google provider.
       landing_project:
         type: string
-        description: Project the google provider operates in (service accounts, APIs).
+        description: Project the google provider operates in; hosts every platform service account.
       folders:
         type: array
         description: The folder tree, rooted at ef-root; unrolled by locals and provisioned by modules/gcp-org.
         minItems: 1
         items:
           $ref: "#/definitions/folder"
+      service_accounts:
+        type: array
+        description: Bindings at scopes the tree cannot imply — organisation and billing.
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - name
+            - scope
+            - roles
+          properties:
+            name:
+              type: string
+              pattern: "^sa-[a-z0-9-]+$"
+            scope:
+              enum:
+                - organisation
+                - billing
+            roles:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                pattern: "^roles/[a-zA-Z.]+$"
 definitions:
   folder:
     type: object
@@ -49,12 +73,42 @@ definitions:
         description: Folder display name; lower kebab-case, ef- prefixed.
       projects:
         type: array
-        description: Project IDs created directly under this folder (leaves).
+        description: Projects created directly under this folder (leaves).
         items:
-          type: string
-          pattern: "^ef-[a-z0-9-]+$"
+          oneOf:
+            - type: string
+              pattern: "^ef-[a-z0-9-]+$"
+            - type: object
+              additionalProperties: false
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  pattern: "^ef-[a-z0-9-]+$"
+                service_accounts:
+                  $ref: "#/definitions/folder/properties/service_accounts"
       folders:
         type: array
         description: Nested folders of the same shape.
         items:
           $ref: "#/definitions/folder"
+      service_accounts:
+        type: array
+        description: Identities bound at this folder.
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - name
+            - roles
+          properties:
+            name:
+              type: string
+              pattern: "^sa-[a-z0-9-]+$"
+            roles:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                pattern: "^roles/[a-zA-Z.]+$"

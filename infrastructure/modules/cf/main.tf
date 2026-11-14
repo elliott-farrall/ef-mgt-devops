@@ -1,10 +1,18 @@
-resource "cloudflare_zone" "registry" {
-  for_each = { for z in var.config.zones : z.name => z }
-
-  account_id = var.config.account_id
-  zone       = each.value.name
-  plan       = each.value.plan
+data "cloudflare_accounts" "ef" {
+  name = var.account
 }
 
-# TODO (bootstrap prep): zone settings (TLS, minify); scoped API token
-# rotation story; NS-check wait lives in the seed script.
+resource "cloudflare_zone" "registry" {
+  for_each = var.zones
+
+  account_id = data.cloudflare_accounts.ef.accounts[0].id
+  zone       = each.value.name
+  plan       = each.value.plan
+
+  lifecycle {
+    precondition {
+      condition     = length(data.cloudflare_accounts.ef.accounts) == 1
+      error_message = "cf.account '${var.account}' must match exactly one Cloudflare account."
+    }
+  }
+}

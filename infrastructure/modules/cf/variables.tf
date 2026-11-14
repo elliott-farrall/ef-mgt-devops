@@ -1,9 +1,12 @@
-variable "config" {
-  type        = map(any)
-  description = "Platform config namespace from environments/<name>/<file>.yaml, passed as a locals slice."
+variable "account" {
+  description = "Cloudflare account display name; resolved via data.cloudflare_accounts."
+  type        = string
 }
 
-variable "labels" {
-  type        = map(string)
-  description = "Mandatory label set (reserved for parity; Cloudflare zones take no labels)."
+variable "zones" {
+  description = "Zone entries keyed by name with defaults applied in locals.tf."
+  type = map(object({
+    name = string
+    plan = string
+  }))
 }

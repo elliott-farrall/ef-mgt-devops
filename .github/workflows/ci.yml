@@ -7,10 +7,19 @@ permissions:
   contents: read
 
 jobs:
+  branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: enforce-convention
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          echo "$HEAD_REF" | grep -Eq '^(feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert)/[a-z0-9][a-z0-9._-]*$' || {
+            echo "::error::branch '$HEAD_REF' must be <type>/<kebab-name>, type in feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert"
+            exit 1
+          }
+
   terraform:
-    # fmt + validate only, no backend: GitHub Actions holds no cloud
-    # credentials. The plan-only pass is enabled after bootstrap Step 5
-    # wires the TFC workspace.
     runs-on: ubuntu-latest
     defaults:
       run:

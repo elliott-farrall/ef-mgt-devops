@@ -23,6 +23,7 @@ variable "protections" {
     allows_force_pushes             = bool
     allows_deletions                = bool
     require_conversation_resolution = bool
+    required_linear_history         = bool
     required_approving_review_count = number
     dismiss_stale_reviews           = bool
     strict_status_checks            = bool

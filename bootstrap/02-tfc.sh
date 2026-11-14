@@ -12,7 +12,7 @@ log "seeding Terraform Cloud organisation $ORG"
 
 ORG_ID="$(tfc "$API/organizations/$ORG" | jq -r '.data.id')"
 
-ensure_project() { # name
+ensure_project() {
   local name="$1" id
   id="$(tfc "$API/organizations/$ORG/projects?search[name]=$name" \
         | jq -r --arg n "$name" '.data[] | select(.attributes.name==$n) | .id' | head -n1)"
@@ -29,13 +29,5 @@ ensure_project() { # name
 
 for p in ef-mgt ef-hub ef-app; do ensure_project "$p"; done
 
-# TODO (implement during bootstrap prep, same pattern):
-#  [ ] global variable set "ef-global": org/billing/cf account IDs
-#      (non-sensitive) applied to all future workspaces.
-#  [ ] workspace ef-mgt-devops in project ef-mgt: environment = mgt,
-#      working directory infrastructure/, VCS left detached until Step 5.
-#      Record tfc_varset_global + tfc_workspace in inventory.
-#  [ ] sensitive variables (CLOUDFLARE_API_TOKEN, GITHUB_TOKEN) created via
-#      API — values never pass through this repository.
 
 log "done — commit the updated inventory.yaml"

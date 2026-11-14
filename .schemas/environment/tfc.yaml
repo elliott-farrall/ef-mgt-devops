@@ -10,13 +10,13 @@ properties:
     type: object
     additionalProperties: false
     required:
-      - hostname
       - organisation
       - projects
     properties:
       hostname:
         type: string
-        description: TFC API hostname (app.terraform.io for the cloud).
+        default: "app.terraform.io"
+        description: TFC API hostname; omit for the cloud.
       organisation:
         type: string
         description: TFC organisation handle.
@@ -48,8 +48,6 @@ definitions:
     required:
       - name
       - repo
-      - working_directory
-      - auto_apply
     properties:
       name:
         type: string
@@ -60,7 +58,9 @@ definitions:
         description: GitHub repository name the workspace is VCS-connected to.
       working_directory:
         type: string
-        description: Terraform root inside the repository (infrastructure).
+        default: "infrastructure"
+        description: Terraform root inside the repository; omit for the standard layout.
       auto_apply:
         type: boolean
+        default: false
         description: Run policy — true for dev-style planes, false where apply needs confirmation.

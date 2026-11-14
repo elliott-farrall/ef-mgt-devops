@@ -1,6 +1,5 @@
 cf:
-  account_id: "6c70a9f7539a46f128c27bfae8772c43"
+  account: "Elliott Farrall"
 
   zones:
     - name: elliott-farrall.phd
-      plan: free

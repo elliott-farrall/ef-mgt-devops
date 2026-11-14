@@ -14,8 +14,6 @@ export TF_VAR_environment="mgt"
 log "init against remote workspace $TF_WORKSPACE"
 terraform init -backend-config="organization=${EF_TFC_ORG:-elliott-farrall}"
 
-# Import list: terraform address -> inventory value. Keep in sync with the
-# authoritative table in docs/bootstrap.md.
 import_one() {
   local addr="$1" id="$2"
   [[ -n "$id" && "$id" != "folders/" ]] || { warn "skipping $addr — inventory key empty"; return 0; }
@@ -29,6 +27,10 @@ for f in ef-mgt ef-hub ef-app ef-dev ef-pre ef-prd; do
   import_one "$G.google_folder.tree[\"$f\"]" "folders/$(inventory_get "folder_${f}")"
 done
 import_one "$G.google_project.platform[\"ef-mgt-devops\"]" "$(inventory_get landing_project)"
+import_one "$G.google_service_account.platform[\"sa-mgt-tfc\"]" "$(inventory_get sa_mgt_tfc)"
+for sa in sa-adm-tfc sa-hub-tfc sa-dev-tfc sa-pre-tfc sa-prd-tfc; do
+  import_one "$G.google_service_account.platform[\"$sa\"]" "$(inventory_get "sa_${sa//-/_}")"
+done
 
 T="module.tfc"
 for p in ef-mgt ef-hub ef-app; do
@@ -39,10 +41,6 @@ import_one "$T.tfe_workspace_settings.registry[\"ef-mgt-devops\"]" "$(inventory_
 
 import_one "module.cf.cloudflare_zone.registry[\"elliott-farrall.phd\"]" "$(inventory_get cf_zone_apex)"
 import_one "module.gh.github_repository.registry[\"ef-mgt-devops\"]" "$(inventory_get gh_repository)"
-# module.gh.github_branch_protection.main is created by the first apply —
-# it does not exist yet, so there is nothing to import.
 
-# TODO: extend the list when the IAM/WIF/orgpolicy resources land in the
-# modules (they import with composite addresses — see docs/bootstrap.md).
 
 log "import complete — now prove the loop: terraform plan must show no diff"

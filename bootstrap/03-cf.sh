@@ -21,10 +21,5 @@ else
 fi
 inventory_set "cf_zone_apex" "$zone_id"
 
-# TODO (implement during bootstrap prep):
-#  [ ] create scoped token "ef-tfc-mgt-devops": permissions Zone.DNS:Edit +
-#      Zone.Zone:Read, resources Zone scoped to $zone_id ONLY. Value goes
-#      straight into the TFC sensitive variable — never into a file here.
-#  [ ] record nameservers for the registrar check in docs/bootstrap.md output.
 
 log "done — commit the updated inventory.yaml"

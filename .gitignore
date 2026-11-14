@@ -1,4 +1,3 @@
-# Terraform
 .terraform/
 *.tfstate
 *.tfstate.*
@@ -6,13 +5,11 @@ crash.log
 crash.*.log
 .terraform.tfstate.lock.info
 
-# Credentials — never commit
 .env
 *.pem
 *.p12
 gcloud-*.json
 
-# Editor/OS noise
 .DS_Store
 .idea/
 .vscode/

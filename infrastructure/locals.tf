@@ -1,7 +1,6 @@
 locals {
   env_dir = "${path.root}/../environments/${var.environment}"
 
-  # One file per platform concern; alphabetical merge keeps this order stable.
   config = merge([for f in sort(fileset(local.env_dir, "*.yaml")) : yamldecode(file("${local.env_dir}/${f}"))]...)
 
   gcp = local.config.gcp
@@ -9,9 +8,8 @@ locals {
   cf  = local.config.cf
   gh  = local.config.gh
 
-  # GCP folder tree -> flat keyed nodes (name -> parent folder, "" = org
-  # root). HCL has no recursion, so the tree is unrolled per depth level and
-  # merged; the depth guard fails any plan that nests beyond 4 folder levels.
+  cf_zones = { for z in local.config.cf.zones : z.name => merge({ plan = "free" }, z) }
+
   folder_nodes_1 = { for f in local.gcp.folders : f.name => "" }
 
   folder_nodes_2 = merge(
@@ -40,14 +38,14 @@ locals {
 
   project_nodes_1 = merge(
     [for f in local.gcp.folders :
-      { for p in try(f.projects, []) : p => f.name }
+      { for p in try(f.projects, []) : try(p.name, p) => f.name }
     ]...
   )
 
   project_nodes_2 = merge(
     [for f in local.gcp.folders : merge(
       [for c in try(f.folders, []) :
-        { for p in try(c.projects, []) : p => c.name }
+        { for p in try(c.projects, []) : try(p.name, p) => c.name }
       ]...
     )]...
   )
@@ -56,7 +54,7 @@ locals {
     [for f in local.gcp.folders : merge(
       [for c in try(f.folders, []) : merge(
         [for g in try(c.folders, []) :
-          { for p in try(g.projects, []) : p => g.name }
+          { for p in try(g.projects, []) : try(p.name, p) => g.name }
         ]...
       )]...
     )]...
@@ -67,7 +65,7 @@ locals {
       [for c in try(f.folders, []) : merge(
         [for g in try(c.folders, []) : merge(
           [for d in try(g.folders, []) :
-            { for p in try(d.projects, []) : p => d.name }
+            { for p in try(d.projects, []) : try(p.name, p) => d.name }
           ]...
         )]...
       )]...
@@ -88,7 +86,6 @@ locals {
     ) : k => { parent = v }
   }
 
-  # True when a 5th folder level exists anywhere in the tree.
   gcp_tree_too_deep = length(flatten(
     [for f in local.gcp.folders : flatten(
       [for c in try(f.folders, []) : flatten(
@@ -102,20 +99,39 @@ locals {
   repository      = basename(abspath("${path.root}/.."))
   landing_project = local.gcp.landing_project
   gcp_region      = local.gcp.region
-  tfc_hostname    = local.tfc.hostname
+  tfc_hostname    = try(local.tfc.hostname, "app.terraform.io")
+
+  sa_folder_1 = flatten([for x1 in local.gcp.folders : [for sa in try(x1.service_accounts, []) : { name = sa.name, scope = "folder:${x1.name}", roles = sa.roles }]])
+  sa_folder_2 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : [for sa in try(x2.service_accounts, []) : { name = sa.name, scope = "folder:${x2.name}", roles = sa.roles }]])])
+  sa_folder_3 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : flatten([for x3 in try(x2.folders, []) : [for sa in try(x3.service_accounts, []) : { name = sa.name, scope = "folder:${x3.name}", roles = sa.roles }]])])])
+  sa_folder_4 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : flatten([for x3 in try(x2.folders, []) : flatten([for x4 in try(x3.folders, []) : [for sa in try(x4.service_accounts, []) : { name = sa.name, scope = "folder:${x4.name}", roles = sa.roles }]])])])])
+
+  sa_folder_entries = concat(local.sa_folder_1, local.sa_folder_2, local.sa_folder_3, local.sa_folder_4)
+
+  sa_project_1 = flatten([for x1 in local.gcp.folders : [for p in try(x1.projects, []) : [for sa in try(try(p.service_accounts, []), []) : { name = sa.name, scope = "project:${try(p.name, p)}", roles = sa.roles }]]])
+  sa_project_2 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : [for p in try(x2.projects, []) : [for sa in try(try(p.service_accounts, []), []) : { name = sa.name, scope = "project:${try(p.name, p)}", roles = sa.roles }]]])])
+  sa_project_3 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : flatten([for x3 in try(x2.folders, []) : [for p in try(x3.projects, []) : [for sa in try(try(p.service_accounts, []), []) : { name = sa.name, scope = "project:${try(p.name, p)}", roles = sa.roles }]]])])])
+  sa_project_4 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : flatten([for x3 in try(x2.folders, []) : flatten([for x4 in try(x3.folders, []) : [for p in try(x4.projects, []) : [for sa in try(try(p.service_accounts, []), []) : { name = sa.name, scope = "project:${try(p.name, p)}", roles = sa.roles }]]])])])])
+
+  sa_project_entries = concat(local.sa_project_1, local.sa_project_2, local.sa_project_3, local.sa_project_4)
+
+  sa_entries = concat(local.sa_folder_entries, local.sa_project_entries, try(local.gcp.service_accounts, []))
+
+  gcp_service_accounts = [
+    for n in distinct([for e in local.sa_entries : e.name]) : {
+      name     = n
+      bindings = [for e in local.sa_entries : { scope = e.scope, roles = e.roles } if e.name == n]
+    }
+  ]
 
   tfc_plane_project = "ef-${var.environment}"
 
-  # TFC: flatten the nested project -> workspaces declarations into keyed
-  # nodes. Depth is fixed at two levels (the platform's own limit).
   tfc_project_names = [for p in local.tfc.projects : p.name]
 
-  tfc_workspace_list = flatten([for p in local.tfc.projects : [for ws in try(p.workspaces, []) : { name = ws.name, project = p.name, repo = ws.repo, working_directory = ws.working_directory, auto_apply = ws.auto_apply }]])
+  tfc_workspace_list = flatten([for p in local.tfc.projects : [for ws in try(p.workspaces, []) : { name = ws.name, project = p.name, repo = ws.repo, working_directory = try(ws.working_directory, "infrastructure"), auto_apply = try(ws.auto_apply, false) }]])
 
   tfc_workspace_nodes = { for w in local.tfc_workspace_list : w.name => w }
 
-  # GitHub platform defaults; registry entries override via optional
-  # settings: (repository) and protection: (branch rule) blocks.
   gh_repository_defaults = {
     visibility             = "private"
     has_issues             = true
@@ -134,10 +150,11 @@ locals {
     allows_force_pushes             = false
     allows_deletions                = false
     require_conversation_resolution = true
+    required_linear_history         = true
     required_approving_review_count = 0
     dismiss_stale_reviews           = true
     strict_status_checks            = true
-    status_checks                   = ["ci / terraform (pull_request)"]
+    status_checks                   = ["ci / terraform (pull_request)", "ci / branch-name (pull_request)"]
   }
 
   gh_repositories = {

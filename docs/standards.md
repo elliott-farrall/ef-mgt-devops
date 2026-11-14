@@ -10,7 +10,18 @@ Binding for this repository and every future `ef-*` repository.
 - In code, use the short platform names: `cf` for Cloudflare, `gh` for GitHub
   (`cf.yaml`, `modules/cf`, `03-cf.sh`). Provider resource names keep their
   upstream spelling (`cloudflare_zone`). Long names only in prose.
-- Service accounts: `sa-<scope>-<purpose>` (`sa-mgt-tfc`, `sa-adm-bootstrap`).
+- Service accounts: `sa-<scope>-<purpose>`. `sa-adm-tfc` is the platform
+  administration identity — org-level roles, used by the `ef-mgt-devops`
+  workspace for high-level operations. `sa-<env>-tfc` (`sa-mgt-tfc`,
+  `sa-hub-tfc`, `sa-dev-tfc`, `sa-pre-tfc`, `sa-prd-tfc`) are plane
+  identities, each declared under the folder it acts on; only
+  organisation- and billing-scope bindings go in the root
+  `service_accounts` list. Identities are hosted by the landing project.
+  `sa-adm-bootstrap` is the exception: bootstrap-only, never declared,
+  deleted at close-out.
+- PR branches: `<type>/<kebab-name>`, type one of `feature`, `fix`, `hotfix`,
+  `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `revert`.
+  Enforced by the `branch-name` CI check, which is required on `main`.
 - Mandatory labels on every label-capable resource: `environment`,
   `managed_by: terraform`, `repository`, `tfc_project`.
 
@@ -28,8 +39,7 @@ Binding for this repository and every future `ef-*` repository.
 - `.schemas/environment/` — JSON Schema (draft-07, in YAML) mirroring the
   `environments/<env>/` filenames; every registry change lands in its schema
   in the same PR. Instances bind to them with a `yaml-language-server`
-  modeline — the only permitted top-of-file comment, because it is functional
-  metadata, not prose.
+  modeline — one of the two permitted comment forms.
 - `docs/` — exactly three files: `design.md` (decisions and rationale),
   `standards.md` (binding rules), `bootstrap.md` (bring-up procedure);
   `README.md` points here. New documentation extends these three; it does not
@@ -38,13 +48,20 @@ Binding for this repository and every future `ef-*` repository.
 ## Code rules
 
 - Exactly one top-level variable: `environment`, no default.
-- No comments at the top of files — the filename and `docs/` say what a file
-  is for; comments inside bodies explain only the non-obvious.
+- No comments in code, YAML, or config files — none. Two functional
+  exceptions only: shell shebangs and `yaml-language-server` modelines.
+  Everything a file does is said by its name, its code, or `docs/`;
+  work-in-progress notes belong in the runbook, never in the tree.
 - Each `environments/<name>/*.yaml` has one top-level key matching the
   filename (`gcp:`, `gh:`, `tfc:`, `cf:`) with its variables nested
   underneath; `locals.tf` merges the files and exposes the namespaces.
 - YAML files use **block style only** — no flow/JSON syntax (`{...}` mappings
   or `[...]` inline sequences). One entry per line keeps diffs reviewable.
+- Optional inputs with platform defaults are omitted from the YAML; the
+  defaults live in `locals.tf`: `cf.zones[].plan` = `free`,
+  `tfc.hostname` = `app.terraform.io`,
+  `tfc.projects[].workspaces[].working_directory` = `infrastructure`,
+  `auto_apply` = `false`.
 - Platform-wide inputs are **registries**: the GCP folder tree
   (`folders:` — entries of `name`, optional `projects` (leaf IDs), and
   optional nested `folders` of the same shape), the TFC project tree

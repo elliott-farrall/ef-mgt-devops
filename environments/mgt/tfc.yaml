@@ -1,14 +1,10 @@
 tfc:
-  hostname: "app.terraform.io"
   organisation: "elliott-farrall"
 
-  # TFC structure: projects, each with its workspaces nested inside.
   projects:
     - name: ef-mgt
       workspaces:
         - name: ef-mgt-devops
           repo: ef-mgt-devops
-          working_directory: infrastructure
-          auto_apply: false
     - name: ef-hub
     - name: ef-app

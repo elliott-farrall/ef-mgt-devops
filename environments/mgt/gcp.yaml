@@ -1,20 +1,77 @@
 gcp:
-  organisation_id: "544969985088"
-  billing_account: "016263-85CCCB-076ADE"
+  organisation: "elliott-farrall.phd"
+  billing: "ef-billing"
   region: "europe-west2"
   landing_project: "ef-mgt-devops"
 
-  # Folder tree. Each folder: name, optional projects (leaf IDs), and
-  # optional folders nested with the same shape.
   folders:
     - name: ef-root
+      service_accounts:
+        - name: sa-adm-tfc
+          roles:
+            - roles/resourcemanager.folderAdmin
+            - roles/resourcemanager.projectCreator
       folders:
         - name: ef-mgt
+          service_accounts:
+            - name: sa-mgt-tfc
+              roles:
+                - roles/resourcemanager.projectCreator
+                - roles/editor
           projects:
-            - ef-mgt-devops
+            - name: ef-mgt-devops
+              service_accounts:
+                - name: sa-adm-tfc
+                  roles:
+                    - roles/iam.serviceAccountUser
+                - name: sa-mgt-tfc
+                  roles:
+                    - roles/iam.serviceAccountUser
+                - name: sa-hub-tfc
+                  roles:
+                    - roles/iam.serviceAccountUser
+                - name: sa-dev-tfc
+                  roles:
+                    - roles/iam.serviceAccountUser
+                - name: sa-pre-tfc
+                  roles:
+                    - roles/iam.serviceAccountUser
+                - name: sa-prd-tfc
+                  roles:
+                    - roles/iam.serviceAccountUser
         - name: ef-hub
+          service_accounts:
+            - name: sa-hub-tfc
+              roles:
+                - roles/resourcemanager.projectCreator
+                - roles/editor
         - name: ef-app
           folders:
             - name: ef-dev
+              service_accounts:
+                - name: sa-dev-tfc
+                  roles:
+                    - roles/resourcemanager.projectCreator
+                    - roles/editor
             - name: ef-pre
+              service_accounts:
+                - name: sa-pre-tfc
+                  roles:
+                    - roles/resourcemanager.projectCreator
+                    - roles/editor
             - name: ef-prd
+              service_accounts:
+                - name: sa-prd-tfc
+                  roles:
+                    - roles/resourcemanager.projectCreator
+                    - roles/editor
+
+  service_accounts:
+    - name: sa-adm-tfc
+      scope: organisation
+      roles:
+        - roles/browser
+    - name: sa-adm-tfc
+      scope: billing
+      roles:
+        - roles/billing.user

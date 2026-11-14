@@ -29,6 +29,7 @@ resource "github_branch_protection" "main" {
   allows_force_pushes             = each.value.allows_force_pushes
   allows_deletions                = each.value.allows_deletions
   require_conversation_resolution = each.value.require_conversation_resolution
+  required_linear_history         = each.value.required_linear_history
 
   required_pull_request_reviews {
     required_approving_review_count = each.value.required_approving_review_count

@@ -74,6 +74,8 @@ properties:
                   type: boolean
                 require_conversation_resolution:
                   type: boolean
+                required_linear_history:
+                  type: boolean
                 required_approving_review_count:
                   type: integer
                   minimum: 0
