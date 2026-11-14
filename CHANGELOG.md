@@ -1,0 +1,181 @@
+## [unreleased]
+
+### 📚 Documentation
+
+- Design.md — distilled decisions and rationale
+- Rename conventions.md to standards.md
+- Standards.md YAML namespace list includes gh:
+- Drop ef-iam import row (missed in previous sweep)
+- GitHub App linking is a prerequisite, not a step
+- Record WIF token-glue dry-run item; GOOGLE_CREDENTIALS stays banned
+- Add detailed resource map section to design.md
+- Update bootstrap.md for scripts/ rename and YAML config
+- Remove lowercase docs files (replaced with uppercase)
+
+### 🚜 Refactor
+
+- Split devshells into default and bootstrap
+- Organize CI pipeline and streamline README generation
+
+### ⚙️ Miscellaneous Tasks
+
+- Parallel yaml/schema/shell/terraform lanes; drop placeholder check
+
+### 💼 Other
+
+- Initial repository layout per design doc v1.8 §5.1
+- Cf/gh short names, namespaced YAML, no top-of-file comments
+- Manage GitHub via integrations/github provider
+- Promote to top level, drop scripts/
+- 05-cleanup closes out; run.sh always imports; design.md is the doc
+- YAML inputs drive everything; this plane provisions itself and the rest
+- Full PR/branch policy surface as defaults + per-repo overrides
+- .schemas/environment/ for language-server validation
+- Fill account_id (6c70a9f7539a46f128c27bfae8772c43)
+- Real org + billing IDs; billing setup as bootstrap prerequisite
+- Nested resources tree; organisation spelling throughout
+- Block style only, no flow/JSON syntax
+- Folders-tree shape — children renamed folders, projects as attribute
+- Nest workspaces inside projects; drop redundant project key
+- Resolve org + billing by name, not stored IDs
+- Billing_display_name = ef-billing — final placeholder resolved
+- All inputs concrete — placeholder era over
+- Name-based CF account, SA registry, full PR/branch policy
+- Workload identity for every environment scope
+- Placement-is-scope SAs + platform defaults
+- Split sa-adm-tfc; drop additional_roles machinery
+- Identities move to dedicated ef-iam project under ef-root
+- Iam block replaces placement-based service_accounts
+- Per-SA project; landing/identity_project keys dropped
+- Drop ef-iam; identities hosted in ef-mgt-devops
+- Plain scalars, no quote marks in config files
+- Cost control registry
+- GBP, single ef-budget-total at 30/month account-wide
+- Billing after region, blank line between
+- Platform-resource modules; checks in checks.tf, mostly in modules
+- Gcp_tree_depth replaces the too_deep boolean
+- Root publishes only what has consumers
+- None published — cross-stack refs resolve by name via data sources
+- Singular, instance-per-call; module call grammar pinned
+- One gcp_folders collection with depth tags
+- One call, loop inside — the clean answer to the tree
+- Gcp-folder renamed gcp-folders for clarity
+- One local per module call, pure pass-through arguments
+- Every argument now sourced from a named local
+- Loop elements are argument lists — each.value.<input> only
+- Organisation spelling through our identifiers
+- Tfc_organization alias renamed tfc_organisation — last of our identifiers
+- Eleven top-levels — config, one per module, one for checks
+- Hierarchy as parent pointers, not nesting — flatten chains gone
+- Billing after region, blank line between
+- Explicit depends_on for the provisioning order
+- Vcs_repo wired to the GitHub App installation ID
+- App and VCS linking stay click-ops; TF ignores vcs_repo
+- Takes scope, resolves it internally
+- Three arguments, full stop
+- GBP hardcoded, scope replaces projects filter
+- For_each names = module name, pluralised
+- Organisation set once on the provider, dropped from modules
+- Cloudflare out, Cloud DNS in — apex zone + record rights for planes
+- Mirror live Cloudflare zone into the records registry
+- Proton-only records; Azure verification and research delegation dropped
+- Links the GitHub repository via vcs_repo
+- Resolve GitHub App installation by name via data source
+- Owns the App installation lookup
+- Data sources always in data.tf, module or root
+- Decouple workspace name from repo; add environment variable
+- Workload identity pool, per-identity providers, SA bindings
+- Identities typed as keyed map (for_each needs it)
+- Fold into gcp-service-account; WIF_PROVIDER workspace variable
+- WIF_PROVIDER as env-category variable
+- Full GCP auth set provisioned automatically per workspace
+- Provider-named modules and identifiers across the repo
+- Outputs are whole resources, one per resource created
+- Issuer is config, not a constant
+- Folders and projects moved above billing
+- One service_accounts registry replaces iam + workload_identity.providers
+- Three ordered registries — service_accounts, workload_identities, iam_members
+- Split YAML by setup concern, not by platform
+- Billing.yaml — the money gets its own concern file
+- Environments as a list; identities and core roles derived
+- Folder-scoped federation, zero workspace references
+- Federation issuer derived from organisation.tfe.hostname
+- A project is one entry — repo, workspace, GCP project
+- Per-environment pools, environments is a pure list
+- Default: true on a project marks the platform home
+- Project types — software, infrastructure, module
+- Domain.yaml is a list of domains; zone names generated
+- Library environment type — the registry's home
+- Projects declare a suffix; names are generated
+- Environment types renamed — folder and infrastructure
+- Devops project description -> DevOps Management
+- Gh in organisation; billing names generated from suffixes
+- Align code, schemas, and docs with the frozen config
+- Rewrite document per new structure
+- Remove all code references from Platforms section, focus on deployed resources only
+- List actual deployed resources per platform
+- Remove inventory.yaml — scripts query APIs directly
+- Collapse 6 scripts into single bootstrap.sh
+- Rename to scripts/, read config from YAML
+- Remove GITHUB_TOKEN requirement
+- Resolve billing account via gcloud instead of env var
+- Remove nix-shell dependency, add flake for devshell
+- Use yq to read YAML config instead of hardcoded values
+- Only create what TF cannot — seed landing project and mgt workspace
+- Remove custom functions, go fully linear
+- Rename ORG_DOMAIN to GCP_DOMAIN for clarity
+- Read billing account from YAML, rename API to TFC_API
+- Replace curl with tfccli for TFC operations
+- Use sa-mgt-tfc instead of sa-adm-bootstrap, import it
+- Only create ef-root and ef-mgt folders, not the full tree
+- Structured step-by-step layout, no loops
+- Rename BILLING_ACCOUNT to GCP_BILLING_ACCOUNT, drop TFC_TOKEN
+- Prefix all variables with platform domain
+- Read GH_OWNER from organisation.yaml instead of hardcoding
+- Replace GCP_LANDING with GCP_DEFAULT_PROJECT from YAML
+- Consolidate all YAML reads into single config section
+- Remove all folder creation — let Terraform manage them
+- Restructure into 4 steps with imports.tf rendering
+- Use pystache template for imports rendering
+- Move template to infrastructure/imports.tf.tmpl
+- Explicit import blocks in template with named placeholders
+- Fix jq quoting — use --arg flags for clean JSON construction
+- Use Terraform import blocks instead of CLI commands
+- Remove comment header from imports.tf.tmpl
+- Remove blank first line from imports.tf.tmpl
+- Replace pystache/json with sed — pure bash templating
+- Use pystache env rendering — export vars, read from os.environ
+- Use envsubst for template rendering
+- Use envsubst for template rendering — no python needed
+- Add numbered substeps (1.1, 1.2, etc.) for every resource created
+- Indent substep logs with │  for visual nesting
+- Indent substep logs with tree-style prefixes
+- Move resource ID lookups into their creation steps
+- Proper step/substep/log helpers — four logging functions
+- Right-justify substep text for aligned connectors
+- Align all text under consistent connector columns
+- Align substep text under fixed column
+- Simplify logging to aligned tree connectors
+- Drop [ef] prefix and Step from headers
+- Restore step numbers to headers as 1) 2) 3) 4)
+- Use dot-separated numbering — 1. for steps, 1.1. for substeps
+- Use horizontal connectors in tree logging
+- Add trailing dot to substep numbers (1.1. → 1.2. etc)
+- Add auth pre-checks for GCP and TFC before running
+- Rename pre-checks to step 0 with numbered substeps (0.1, 0.2)
+- Move TF_TOKEN export into step 0.2 with its check
+- Reorganise layout — Dependencies then Config before Prerequisites
+- Move Terraform backend config to step 0.3 prerequisites
+- Rename SA_EMAIL to GCP_SA_EMAIL, remove all EF_ env var fallbacks
+- Derive TF_ADDRESS from TFC_HOSTNAME instead of hardcoded value
+- TF_WORKSPACE matches GCP_DEFAULT_PROJECT for consistency
+- Standardize all variables to ${VAR} syntax consistently
+- Verify auth org membership in prerequisites
+- Remove cd — use -chdir and explicit paths instead
+- Move auth checks into their respective steps, TF vars into deploy step
+- Use tfc CLI instead of raw curl for auth verification
+- Structural cleanup — merge redundant calls, derive constants
+- Remove dead TF_VAR_services_list export
+- Pass services attribute to google-project module
+- Complete end-to-end chain from YAML to terraform resource
+- Remove module comments as requested
