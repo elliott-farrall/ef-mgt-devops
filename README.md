@@ -3,6 +3,21 @@
 The EF platform management plane in code: GCP organisation structure, Terraform Cloud, and DNS — plus the bootstrap scripts and runbook
 
 <!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+| ---- | ------- |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9.0 |
+| <a name="requirement_github"></a> [github](#requirement\_github) | >= 6.0 |
+| <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
+| <a name="requirement_tfe"></a> [tfe](#requirement\_tfe) | >= 0.84 |
+
+## Providers
+
+| Name | Version |
+| ---- | ------- |
+| <a name="provider_google"></a> [google](#provider\_google) | 8.11.0 |
+
 ## Modules
 
 | Name | Source | Version |
@@ -19,6 +34,13 @@ The EF platform management plane in code: GCP organisation structure, Terraform 
 | <a name="module_tfe-project"></a> [tfe-project](#module\_tfe-project) | ./modules/tfe-project | n/a |
 | <a name="module_tfe-registry-module"></a> [tfe-registry-module](#module\_tfe-registry-module) | ./modules/tfe-registry-module | n/a |
 | <a name="module_tfe-workspace"></a> [tfe-workspace](#module\_tfe-workspace) | ./modules/tfe-workspace | n/a |
+
+## Resources
+
+| Name | Type |
+| ---- | ---- |
+| [google_billing_account.ef](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/billing_account) | data source |
+| [google_organization.ef](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/organization) | data source |
 
 ## Inputs
 
