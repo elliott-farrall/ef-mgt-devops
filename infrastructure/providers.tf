@@ -1,6 +1,5 @@
 provider "google" {
-  project = local.landing_project
-  region  = local.gcp_region
+  region = local.gcp_region
 }
 
 provider "tfe" {

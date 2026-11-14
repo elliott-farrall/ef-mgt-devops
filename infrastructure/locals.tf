@@ -96,33 +96,9 @@ locals {
     )],
   )) > 0
 
-  repository      = basename(abspath("${path.root}/.."))
-  landing_project = local.gcp.landing_project
-  gcp_region      = local.gcp.region
-  tfc_hostname    = try(local.tfc.hostname, "app.terraform.io")
-
-  sa_folder_1 = flatten([for x1 in local.gcp.folders : [for sa in try(x1.service_accounts, []) : { name = sa.name, scope = "folder:${x1.name}", roles = sa.roles }]])
-  sa_folder_2 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : [for sa in try(x2.service_accounts, []) : { name = sa.name, scope = "folder:${x2.name}", roles = sa.roles }]])])
-  sa_folder_3 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : flatten([for x3 in try(x2.folders, []) : [for sa in try(x3.service_accounts, []) : { name = sa.name, scope = "folder:${x3.name}", roles = sa.roles }]])])])
-  sa_folder_4 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : flatten([for x3 in try(x2.folders, []) : flatten([for x4 in try(x3.folders, []) : [for sa in try(x4.service_accounts, []) : { name = sa.name, scope = "folder:${x4.name}", roles = sa.roles }]])])])])
-
-  sa_folder_entries = concat(local.sa_folder_1, local.sa_folder_2, local.sa_folder_3, local.sa_folder_4)
-
-  sa_project_1 = flatten([for x1 in local.gcp.folders : [for p in try(x1.projects, []) : [for sa in try(try(p.service_accounts, []), []) : { name = sa.name, scope = "project:${try(p.name, p)}", roles = sa.roles }]]])
-  sa_project_2 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : [for p in try(x2.projects, []) : [for sa in try(try(p.service_accounts, []), []) : { name = sa.name, scope = "project:${try(p.name, p)}", roles = sa.roles }]]])])
-  sa_project_3 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : flatten([for x3 in try(x2.folders, []) : [for p in try(x3.projects, []) : [for sa in try(try(p.service_accounts, []), []) : { name = sa.name, scope = "project:${try(p.name, p)}", roles = sa.roles }]]])])])
-  sa_project_4 = flatten([for x1 in local.gcp.folders : flatten([for x2 in try(x1.folders, []) : flatten([for x3 in try(x2.folders, []) : flatten([for x4 in try(x3.folders, []) : [for p in try(x4.projects, []) : [for sa in try(try(p.service_accounts, []), []) : { name = sa.name, scope = "project:${try(p.name, p)}", roles = sa.roles }]]])])])])
-
-  sa_project_entries = concat(local.sa_project_1, local.sa_project_2, local.sa_project_3, local.sa_project_4)
-
-  sa_entries = concat(local.sa_folder_entries, local.sa_project_entries, try(local.gcp.service_accounts, []))
-
-  gcp_service_accounts = [
-    for n in distinct([for e in local.sa_entries : e.name]) : {
-      name     = n
-      bindings = [for e in local.sa_entries : { scope = e.scope, roles = e.roles } if e.name == n]
-    }
-  ]
+  repository   = basename(abspath("${path.root}/.."))
+  gcp_region   = local.gcp.region
+  tfc_hostname = try(local.tfc.hostname, "app.terraform.io")
 
   tfc_plane_project = "ef-${var.environment}"
 

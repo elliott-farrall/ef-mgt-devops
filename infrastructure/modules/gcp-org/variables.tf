@@ -18,19 +18,24 @@ variable "organisation" {
 }
 
 variable "billing" {
-  description = "Billing account display name; resolved via data.google_billing_account."
-  type        = string
+  description = "Billing account name, currency, and budget alert registry from gcp.billing."
+  type = object({
+    name     = string
+    currency = string
+    budgets = list(object({
+      name       = string
+      amount     = number
+      thresholds = list(number)
+      projects   = optional(list(string), [])
+    }))
+  })
 }
 
-variable "landing_project" {
-  description = "Project that hosts every platform service account."
-  type        = string
-}
-
-variable "service_accounts" {
-  description = "Platform identities with their bindings; scopes derived from tree placement in locals.tf."
+variable "iam" {
+  description = "Platform identities with their hosting project and IAM bindings, from gcp.iam."
   type = list(object({
-    name = string
+    name    = string
+    project = string
     bindings = list(object({
       scope = string
       roles = list(string)

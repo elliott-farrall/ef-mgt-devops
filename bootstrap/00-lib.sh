@@ -19,9 +19,9 @@ inventory_set() {
   local key="$1" value="$2"
   touch "$INVENTORY"
   if grep -q "^${key}:" "$INVENTORY"; then
-    sed -i "s|^${key}:.*|${key}: \"${value}\"|" "$INVENTORY"
+    sed -i "s|^${key}:.*|${key}: ${value}|" "$INVENTORY"
   else
-    printf '%s: "%s"\n' "$key" "$value" >> "$INVENTORY"
+    printf '%s: %s\n' "$key" "$value" >> "$INVENTORY"
   fi
   log "inventory: ${key} = ${value}"
 }

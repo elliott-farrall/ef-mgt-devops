@@ -14,11 +14,13 @@ Binding for this repository and every future `ef-*` repository.
   administration identity — org-level roles, used by the `ef-mgt-devops`
   workspace for high-level operations. `sa-<env>-tfc` (`sa-mgt-tfc`,
   `sa-hub-tfc`, `sa-dev-tfc`, `sa-pre-tfc`, `sa-prd-tfc`) are plane
-  identities, each declared under the folder it acts on; only
-  organisation- and billing-scope bindings go in the root
-  `service_accounts` list. Identities are hosted by the landing project.
-  `sa-adm-bootstrap` is the exception: bootstrap-only, never declared,
-  deleted at close-out.
+  identities, bound only at their own folders. All identities and every
+  binding live in one place: the `gcp.iam` list, where each entry names
+  its hosting `project` and every binding carries its explicit scope
+  (`folder:`, `project:`, `organisation`, `billing`). All platform
+  identities live in the landing project `ef-mgt-devops`, declared like
+  any other project in the tree. `sa-adm-bootstrap` is the exception:
+  bootstrap-only, never declared, deleted at close-out.
 - PR branches: `<type>/<kebab-name>`, type one of `feature`, `fix`, `hotfix`,
   `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `revert`.
   Enforced by the `branch-name` CI check, which is required on `main`.
@@ -57,6 +59,11 @@ Binding for this repository and every future `ef-*` repository.
   underneath; `locals.tf` merges the files and exposes the namespaces.
 - YAML files use **block style only** — no flow/JSON syntax (`{...}` mappings
   or `[...]` inline sequences). One entry per line keeps diffs reviewable.
+- Values are **plain scalars — no quote marks** in `environments/` and
+  `bootstrap/inventory.yaml`. A value that would need quoting is reworded
+  instead (no `: ` inside strings — the repository description uses `-`
+  for exactly this reason). `.schemas/` is exempt: JSON Schema regex
+  patterns and prose descriptions legitimately carry quotes.
 - Optional inputs with platform defaults are omitted from the YAML; the
   defaults live in `locals.tf`: `cf.zones[].plan` = `free`,
   `tfc.hostname` = `app.terraform.io`,
@@ -66,7 +73,8 @@ Binding for this repository and every future `ef-*` repository.
   (`folders:` — entries of `name`, optional `projects` (leaf IDs), and
   optional nested `folders` of the same shape), the TFC project tree
   (`projects:` — entries of `name` with optional nested `workspaces`),
-  GitHub repositories, and Cloudflare zones. Provisioning anything new is a
+  GitHub repositories, Cloudflare zones, and billing budgets
+  (`gcp.billing.budgets`). Provisioning anything new is a
   data change here — never a new variable, and never a hardcoded singular
   resource. `locals.tf` unrolls the trees into flat keyed nodes (GCP: 4
   folder levels, enforced by a `check` block; TFC: fixed two levels, with a

@@ -3,7 +3,7 @@ data "google_organization" "ef" {
 }
 
 data "google_billing_account" "ef" {
-  display_name = var.billing
+  display_name = var.billing.name
 }
 
 resource "google_folder" "tree" {
@@ -34,16 +34,16 @@ resource "google_project" "platform" {
 }
 
 resource "google_service_account" "platform" {
-  for_each = { for sa in var.service_accounts : sa.name => sa }
+  for_each = { for sa in var.iam : sa.name => sa }
 
   account_id   = each.value.name
   display_name = each.value.name
-  project      = var.landing_project
+  project      = each.value.project
 }
 
 locals {
   bindings = flatten([
-    for sa in var.service_accounts : [
+    for sa in var.iam : [
       for b in sa.bindings : [
         for r in b.roles : {
           key   = "${sa.name}|${b.scope}|${r}"
@@ -60,7 +60,7 @@ locals {
   org_bindings     = { for x in local.bindings : x.key => x if x.scope == "organisation" }
   billing_bindings = { for x in local.bindings : x.key => x if x.scope == "billing" }
 
-  member = { for sa in var.service_accounts : sa.name => "serviceAccount:${google_service_account.platform[sa.name].email}" }
+  member = { for sa in var.iam : sa.name => "serviceAccount:${google_service_account.platform[sa.name].email}" }
 }
 
 resource "google_folder_iam_member" "platform" {
@@ -93,4 +93,30 @@ resource "google_billing_account_iam_member" "platform" {
   billing_account_id = data.google_billing_account.ef.billing_account
   role               = each.value.role
   member             = local.member[each.value.sa]
+}
+
+resource "google_billing_budget" "registry" {
+  for_each = { for b in var.billing.budgets : b.name => b }
+
+  billing_account = data.google_billing_account.ef.billing_account
+  display_name    = each.value.name
+
+  amount {
+    specified_amount {
+      units         = tostring(each.value.amount)
+      currency_code = var.billing.currency
+    }
+  }
+
+  dynamic "threshold_rules" {
+    for_each = each.value.thresholds
+    content {
+      threshold_percent = threshold_rules.value
+    }
+  }
+
+  budget_filter {
+    calendar_period = "MONTH"
+    projects        = length(each.value.projects) > 0 ? toset(each.value.projects) : null
+  }
 }

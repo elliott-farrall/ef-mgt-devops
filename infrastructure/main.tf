@@ -1,12 +1,11 @@
 module "gcp_org" {
-  source           = "./modules/gcp-org"
-  folders          = local.gcp_folder_nodes
-  projects         = local.gcp_project_nodes
-  organisation     = local.gcp.organisation
-  billing          = local.gcp.billing
-  landing_project  = local.landing_project
-  service_accounts = local.gcp_service_accounts
-  labels           = local.labels
+  source       = "./modules/gcp-org"
+  folders      = local.gcp_folder_nodes
+  projects     = local.gcp_project_nodes
+  organisation = local.gcp.organisation
+  billing      = local.gcp.billing
+  iam          = local.gcp.iam
+  labels       = local.labels
 }
 
 module "tfc" {
@@ -42,5 +41,22 @@ check "folder_tree_depth" {
   assert {
     condition     = !local.gcp_tree_too_deep
     error_message = "gcp.folders nests deeper than the 4 folder levels locals.tf unrolls — extend the unroll deliberately (see docs/standards.md) or flatten the tree."
+  }
+}
+
+check "iam_projects_exist" {
+  assert {
+    condition     = alltrue([for sa in local.gcp.iam : contains(keys(local.gcp_project_nodes), sa.project)])
+    error_message = "Every gcp.iam entry must name a hosting project declared in the folder tree."
+  }
+}
+
+check "budget_projects_exist" {
+  assert {
+    condition = alltrue([
+      for b in local.gcp.billing.budgets :
+      alltrue([for p in try(b.projects, []) : contains(keys(local.gcp_project_nodes), p)])
+    ])
+    error_message = "Every budget projects entry must name a project declared in the folder tree."
   }
 }

@@ -37,14 +37,16 @@ Integration.
 
 ## Script scope (to implement during bootstrap prep)
 
-- `01-gcp.sh`: landing project + billing link + API enablement; service
-  accounts and IAM bindings are declared in `gcp.folders` placement (plus
-  the root org/billing list) — `sa-adm-tfc` for platform administration,
-  one `sa-<env>-tfc` per plane — plus the bootstrap-only
-  `sa-adm-bootstrap` that config never declares; workload identity pool +
-  OIDC provider for TFC (the `ef-mgt-devops` workspace assumes
-  `sa-adm-tfc`); organisation policies (required labels, prevent project
-  deletion, allowed regions).
+- `01-gcp.sh`: landing project `ef-mgt-devops` (provider operating
+  context and identity hosting) + billing link + API enablement; service
+  accounts and every IAM binding are declared in `gcp.iam` —
+  `sa-adm-tfc` for platform administration, one `sa-<env>-tfc` per plane,
+  each naming its hosting project — plus the bootstrap-only
+  `sa-adm-bootstrap` that config never declares;
+  workload identity pool + OIDC provider for TFC, hosted in
+  `ef-mgt-devops` (the `ef-mgt-devops` workspace assumes `sa-adm-tfc`);
+  organisation policies
+  (required labels, prevent project deletion, allowed regions).
 - `02-tfc.sh`: global variable set `ef-global` (org/billing/cf IDs);
   workspace `ef-mgt-devops` in project `ef-mgt`, VCS detached until Step 5;
   sensitive variables (`CLOUDFLARE_API_TOKEN`, `GITHUB_TOKEN`) created via

@@ -35,10 +35,13 @@ structural.
   organisation- and billing-scope read, used by the `ef-mgt-devops`
   workspace because the platform structure is its workload. Each plane
   identity `sa-<env>-tfc` (mgt, hub, dev, pre, prd) is bound only at its
-  own folder — project creation and editor — never above. All are declared
-  in `gcp.folders` placement (org/billing scopes in the root list), never
-  in the console. The bootstrap-only `sa-adm-bootstrap` is never declared
-  and is deleted at Step 6.
+  own folder — project creation and editor — never above. Each identity
+  names its hosting project in `gcp.iam`, and all of them name
+  `ef-mgt-devops`: the platform's own landing project holds the service
+  accounts and the workload identity pool, one project fewer to audit.
+  Everything is declared in one readable block — `gcp.iam`, one entry per
+  identity with explicit scopes — never in the console. The bootstrap-only
+  `sa-adm-bootstrap` is never declared and is deleted at Step 6.
 - **The management plane provisions the rest.** This repository manages itself
   *and* every other IaC project: its YAML inputs are registries — the GCP
   folder tree, TFC projects and workspaces, GitHub repositories, Cloudflare
@@ -95,6 +98,22 @@ Policy is data too. Repository settings and branch protection live in
 admin-enforced — and any registry entry may override them with an optional
 `settings:` or `protection:` block. A new repo gets the house rules for free;
 deviations are visible in the YAML where a reviewer can see them.
+
+## Cost control
+
+GCP budgets alert; they never cap — so the platform treats the two
+mechanisms separately. Budget alerts are declared in `gcp.billing.budgets`:
+a monthly amount in `billing.currency`, a list of threshold fractions
+(0.5, 0.8, 1.0), and an optional `projects` filter that scopes the budget
+to tree projects — omit it for an account-wide budget. The convention is
+one account-wide budget plus one per plane as planes acquire projects.
+Notifications go to billing-account recipients by default; a Pub/Sub
+channel per budget is the steady-state upgrade.
+
+The real guardrails against runaway spend are structural, not monetary:
+the organisation policies (allowed regions, required labels), the
+manual-confirm gates on mgt/hub/prd applies, and weekly drift checks
+that catch surprise resources before they bill a second month.
 
 ## Platform roles
 

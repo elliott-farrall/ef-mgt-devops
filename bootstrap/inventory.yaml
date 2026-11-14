@@ -1,23 +1,23 @@
-landing_project: ""
-folder_ef-root: ""
-folder_ef-mgt: ""
-folder_ef-hub: ""
-folder_ef-app: ""
-folder_ef-dev: ""
-folder_ef-pre: ""
-folder_ef-prd: ""
-sa_adm_tfc: ""
-sa_mgt_tfc: ""
-sa_hub_tfc: ""
-sa_dev_tfc: ""
-sa_pre_tfc: ""
-sa_prd_tfc: ""
-sa_adm_bootstrap: ""
-wif_pool: ""
-tfc_project_ef-mgt: ""
-tfc_project_ef-hub: ""
-tfc_project_ef-app: ""
-tfc_varset_global: ""
-tfc_workspace: ""
-cf_zone_apex: ""
-gh_repository: ""
+landing_project: 
+folder_ef-root: 
+folder_ef-mgt: 
+folder_ef-hub: 
+folder_ef-app: 
+folder_ef-dev: 
+folder_ef-pre: 
+folder_ef-prd: 
+sa_adm_tfc: 
+sa_mgt_tfc: 
+sa_hub_tfc: 
+sa_dev_tfc: 
+sa_pre_tfc: 
+sa_prd_tfc: 
+sa_adm_bootstrap: 
+wif_pool: 
+tfc_project_ef-mgt: 
+tfc_project_ef-hub: 
+tfc_project_ef-app: 
+tfc_varset_global: 
+tfc_workspace: 
+cf_zone_apex: 
+gh_repository: 
