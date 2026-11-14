@@ -52,11 +52,25 @@ definitions:
     additionalProperties: false
     required:
       - name
+      - environment
     properties:
       name:
         type: string
         pattern: "^ef-[a-z0-9-]+$"
-        description: Workspace name; mirrors its repository.
+        description: Workspace name; unique across the platform, e.g. ef-app-identity-dev.
+      environment:
+        type: string
+        enum:
+          - mgt
+          - hub
+          - dev
+          - pre
+          - prd
+        description: Environment slot injected as the terraform "environment" variable.
+      repo:
+        type: string
+        pattern: "^ef-[a-z0-9-]+$"
+        description: GitHub repository this workspace builds; defaults to the workspace name (app workspaces share one repo across environments).
       working_directory:
         type: string
         default: "infrastructure"

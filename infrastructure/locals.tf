@@ -15,10 +15,17 @@ locals {
     }
   }
 
+  gcp_wif_by_sa = { for p in local.config.gcp.workload_identity.providers : p.service_account => p }
+
   gcp_service_accounts = {
     for sa in local.config.gcp.iam : sa.name => {
-      name    = sa.name
-      project = module.gcp-project[sa.project].project_id
+      name                = sa.name
+      project             = module.gcp-project[sa.project].project_id
+      pool                = google_iam_workload_identity_pool.tfc.workload_identity_pool_id
+      pool_project_number = module.gcp-project[local.config.gcp.workload_identity.pool_project].project_number
+      provider_name       = local.gcp_wif_by_sa[sa.name].name
+      attribute_condition = local.gcp_wif_by_sa[sa.name].attribute_condition
+      subject             = local.gcp_wif_by_sa[sa.name].subject
     }
   }
 
@@ -60,13 +67,16 @@ locals {
   }
 
   tfc_workspaces = {
-    for w in flatten([for p in local.config.tfc.projects : [for ws in try(p.workspaces, []) : { name = ws.name, project = p.name, working_directory = try(ws.working_directory, "infrastructure"), auto_apply = try(ws.auto_apply, false) }]]) : w.name => {
-      name                       = w.name
-      project_id                 = module.tfc-project[w.project].id
-      working_directory          = w.working_directory
-      auto_apply                 = w.auto_apply
-      github_owner               = local.config.gh.owner
-      github_app_installation_id = data.tfe_github_app_installation.ef.id
+    for w in flatten([for p in local.config.tfc.projects : [for ws in try(p.workspaces, []) : { name = ws.name, project = p.name, environment = ws.environment, repo = try(ws.repo, ws.name), working_directory = try(ws.working_directory, "infrastructure"), auto_apply = try(ws.auto_apply, false) }]]) : w.name => {
+      name                    = w.name
+      project_id              = module.tfc-project[w.project].id
+      working_directory       = w.working_directory
+      auto_apply              = w.auto_apply
+      environment             = w.environment
+      repo                    = w.repo
+      github_owner            = local.config.gh.owner
+      github_app_installation = local.config.tfc.github_app_installation
+      wif_provider            = "//iam.googleapis.com/projects/${module.gcp-project[local.config.gcp.workload_identity.pool_project].project_number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.tfc.workload_identity_pool_id}/providers/tfc-${w.environment}"
     }
   }
 

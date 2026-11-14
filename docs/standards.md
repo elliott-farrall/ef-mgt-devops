@@ -6,7 +6,10 @@ Binding for this repository and every future `ef-*` repository.
 
 - Everything lower kebab-case, prefixed `ef-`: repos `ef-<env>-<name>`, GCP
   projects `ef-<env>-<name>`, folders `ef-<env>` under `ef-root`, TFC projects
-  mirror the folders, workspaces mirror repos (`app` adds `-<env>`).
+  mirror the folders. Workspaces are registry entries with an explicit
+  `environment`; `repo` defaults to the workspace name, so one repository
+  can carry several environments (`ef-app-identity-dev/pre/prd` all build
+  `ef-app-identity`).
 - In code, use the short platform names: `gh` for GitHub, `cf` for Cloudflare
   if it ever returns (`gh.yaml`, `modules/gh-repository`). Provider resource
   names keep their upstream spelling (`github_repository`). Long names only
@@ -114,9 +117,11 @@ Binding for this repository and every future `ef-*` repository.
   sibling instances of one module set. The tree arrives as one flat
   collection, `local.gcp_folders` (name → `{ parent }`); parent
   references are validated by the module's own checks.
-- Data sources live in the root `data.tf`; modules receive resolved IDs
-  and names, keeping them thin resource wrappers. Cross-module wiring is
-  done only in the root `main.tf`.
+- Data sources always live in a `data.tf` — root or module — never in
+  `main.tf`. A module's lookup belongs in that module's `data.tf`; the
+  root `data.tf` holds only lookups shared by several modules
+  (`google_organization`, `google_billing_account`). Cross-module wiring
+  is done only in the root `main.tf`.
 - Cross-module ordering is stated with explicit `depends_on` even where
   value references already imply it: folders → projects → service
   accounts → bindings, projects → budgets, tfc-projects → workspaces.
@@ -126,7 +131,10 @@ Binding for this repository and every future `ef-*` repository.
   `main.tf`. A check belongs in the module that owns the invariant; the
   root `checks.tf` keeps cross-registry referential integrity
   (project→folder, iam→project, budget→project, account uniqueness).
-- `main.tf` is composition only — no hand-written resources beyond trivial glue.
+- `main.tf` is composition only — no hand-written resources beyond trivial
+  glue. The single sanctioned glue resource is the workload identity pool:
+  it is a platform singleton, while its providers and bindings live in
+  `gcp-service-account` with the identities they authenticate.
 - Validation is Terraform-native: `validation`, `precondition`, and `check`
   blocks must fail bad input at plan time.
 - Modules stay repo-local until code must cross repositories; then extract to
@@ -136,7 +144,10 @@ Binding for this repository and every future `ef-*` repository.
 - Cross-stack references resolve by name via provider data sources
   (`google_folders`, `google_dns_managed_zone`, …) — never hardcoded IDs, and no
   `terraform_remote_state` coupling: the management plane publishes no
-  outputs.
+  outputs. The federation chain is convention-locked: workspace in
+  environment `<env>` authenticates through provider `tfc-<env>` and
+  receives `WIF_PROVIDER` as a run environment variable; the SA of that environment holds
+  the `workloadIdentityUser` binding.
 
 ## Review rules
 

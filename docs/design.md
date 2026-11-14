@@ -79,10 +79,10 @@ future `ef-app-identity` would.
 
 Bringing up another project is then mechanical:
 
-1. Add entries to the registries here — `gh.repositories`, a workspace
-   nested under its `tfc.projects` entry (run policy travels with it), and
-   `gcp.folders` (add the project to its folder's `projects` list) if it
-   needs a new project.
+1. Add entries to the registries here — `gh.repositories`, one workspace
+   per deployment environment nested under its `tfc.projects` entry (each
+   carries `environment` and run policy, `repo` defaults to the name), and
+   `gcp.projects` if it needs a new project.
 2. Merge the PR; the mgt run creates the repo, workspace, and project.
 3. Scaffold the new repository to the same layout contract
    ([standards.md](standards.md)); its workspace already exists, so its first
@@ -147,7 +147,7 @@ anything else, anywhere:
 | Link | Mechanism | Credential |
 |------|-----------|------------|
 | GitHub ↔ TFC | TFC GitHub App: webhook runs on `main`, status checks on PRs | App installed once as a prerequisite; workspace links managed by Terraform via the installation ID |
-| TFC → GCP | Workload identity federation: run exchanges OIDC token | `sa-adm-tfc` (mgt plane), `sa-<env>-tfc` (workload planes) |
+| TFC → GCP | Workload identity federation: run exchanges its OIDC token at the `ef-tfc` pool; provider `tfc-<env>` (CEL condition on the workspace claim) binds to the environment's service account via `workloadIdentityUser`; runs receive `WIF_PROVIDER` as a workspace environment variable | `sa-adm-tfc` (mgt plane), `sa-<env>-tfc` (workload planes) |
 | TFC → GitHub | GitHub provider (`integrations/github`) manages repo settings and branch protection | Fine-grained token as sensitive variable, this repository only |
 
 A fourth link exists only during bootstrap: the operator's machine authenticates

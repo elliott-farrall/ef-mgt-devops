@@ -1,3 +1,8 @@
+resource "google_iam_workload_identity_pool" "tfc" {
+  workload_identity_pool_id = local.config.gcp.workload_identity.pool
+  project                   = module.gcp-project[local.config.gcp.workload_identity.pool_project].project_id
+}
+
 module "gcp-folders" {
   source = "./modules/gcp-folders"
 
@@ -20,8 +25,13 @@ module "gcp-service-account" {
   source   = "./modules/gcp-service-account"
   for_each = local.gcp_service_accounts
 
-  name    = each.value.name
-  project = each.value.project
+  name                = each.value.name
+  project             = each.value.project
+  pool                = each.value.pool
+  pool_project_number = each.value.pool_project_number
+  provider_name       = each.value.provider
+  attribute_condition = each.value.attribute_condition
+  subject             = each.value.subject
 
   depends_on = [module.gcp-project]
 }
@@ -73,12 +83,15 @@ module "tfc-workspace" {
   source   = "./modules/tfc-workspace"
   for_each = local.tfc_workspaces
 
-  name                       = each.value.name
-  project_id                 = each.value.project_id
-  working_directory          = each.value.working_directory
-  auto_apply                 = each.value.auto_apply
-  github_owner               = each.value.github_owner
-  github_app_installation_id = each.value.github_app_installation_id
+  name                    = each.value.name
+  project_id              = each.value.project_id
+  working_directory       = each.value.working_directory
+  auto_apply              = each.value.auto_apply
+  environment             = each.value.environment
+  repo                    = each.value.repo
+  github_owner            = each.value.github_owner
+  github_app_installation = each.value.github_app_installation
+  wif_provider            = each.value.wif_provider
 
   depends_on = [module.tfc-project, module.gh-repository]
 }

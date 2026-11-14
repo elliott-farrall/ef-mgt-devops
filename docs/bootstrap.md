@@ -62,6 +62,11 @@ with `bootstrap/04-cleanup.sh`.
 - DNS zones (apex and future delegations) are pure Terraform — created on
   first apply, no seed script, no import.
 - `03-import.sh`: extend the import list as the module resources above land.
+- Dry-run validation item: confirm how the run's injected OIDC token reaches
+  the google provider's `external_credentials` block in a classic workspace
+  (sensitive run-time variable vs ADC external-account config), and wire the
+  stack provider block accordingly. `GOOGLE_CREDENTIALS` must never appear:
+  the whole chain exists to avoid static keys.
 
 ## Import address list
 

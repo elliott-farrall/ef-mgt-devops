@@ -71,6 +71,31 @@ gcp:
     - name: ef-mgt-devops
       parent: ef-mgt
 
+  workload_identity:
+    pool: ef-tfc
+    pool_project: ef-mgt-devops
+    providers:
+      - name: tfc-mgt
+        service_account: sa-adm-tfc
+        attribute_condition: assertion.workspace_name == "ef-mgt-devops"
+        subject: ef-mgt-devops
+      - name: tfc-hub
+        service_account: sa-hub-tfc
+        attribute_condition: assertion.workspace_name == "ef-hub-network"
+        subject: ef-hub-network
+      - name: tfc-dev
+        service_account: sa-dev-tfc
+        attribute_condition: assertion.workspace_name.endsWith("-dev")
+        subject: tfc-dev
+      - name: tfc-pre
+        service_account: sa-pre-tfc
+        attribute_condition: assertion.workspace_name.endsWith("-pre")
+        subject: tfc-pre
+      - name: tfc-prd
+        service_account: sa-prd-tfc
+        attribute_condition: assertion.workspace_name.endsWith("-prd")
+        subject: tfc-prd
+
   iam:
     - name: sa-adm-tfc
       project: ef-mgt-devops

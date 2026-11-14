@@ -16,6 +16,7 @@ properties:
       - dns
       - folders
       - projects
+      - workload_identity
       - iam
     properties:
       organisation:
@@ -68,6 +69,48 @@ properties:
       region:
         type: string
         description: Default region for the google provider.
+      workload_identity:
+        type: object
+        additionalProperties: false
+        required:
+          - pool
+          - pool_project
+          - providers
+        properties:
+          pool:
+            type: string
+            pattern: '^[a-z0-9-]+$'
+            description: Workload identity pool id.
+          pool_project:
+            type: string
+            pattern: '^ef-[a-z0-9-]+$'
+            description: Project hosting the pool; must exist in the tree.
+          providers:
+            type: array
+            minItems: 1
+            items:
+              type: object
+              additionalProperties: false
+              required:
+                - name
+                - service_account
+                - attribute_condition
+                - subject
+              properties:
+                name:
+                  type: string
+                  pattern: '^tfc-[a-z0-9-]+$'
+                service_account:
+                  type: string
+                  pattern: '^sa-[a-z0-9-]+$'
+                attribute_condition:
+                  type: string
+                  minLength: 1
+                  description: CEL condition restricting which TFC tokens this provider accepts.
+                subject:
+                  type: string
+                  minLength: 1
+                  description: Subject claim bound to the service account via workloadIdentityUser.
       dns:
         type: object
         additionalProperties: false

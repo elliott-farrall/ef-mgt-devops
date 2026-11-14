@@ -1,5 +1,5 @@
 variable "name" {
-  description = "Workspace name; also the repository it links to."
+  description = "Workspace name; unique across the platform."
   type        = string
 }
 
@@ -18,12 +18,27 @@ variable "auto_apply" {
   type        = bool
 }
 
+variable "environment" {
+  description = "Environment slot injected as the terraform environment variable."
+  type        = string
+}
+
+variable "repo" {
+  description = "GitHub repository this workspace builds."
+  type        = string
+}
+
 variable "github_owner" {
   description = "GitHub account owning the repository."
   type        = string
 }
 
-variable "github_app_installation_id" {
-  description = "TFC GitHub App installation ID (prerequisite); links the workspace to its repository."
+variable "github_app_installation" {
+  description = "Name of the TFC GitHub App installation; resolved by data.tfe_github_app_installation within this module."
+  type        = string
+}
+
+variable "wif_provider" {
+  description = "Full WIF provider resource name this workspace authenticates through; exposed to runs as the WIF_PROVIDER variable."
   type        = string
 }

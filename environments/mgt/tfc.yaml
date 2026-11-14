@@ -6,5 +6,6 @@ tfc:
     - name: ef-mgt
       workspaces:
         - name: ef-mgt-devops
+          environment: mgt
     - name: ef-hub
     - name: ef-app
