@@ -29,8 +29,11 @@ yaml-style: ## Check YAML is block-style with plain scalars
 terraform-fmt: ## Format-check Terraform files
 	terraform fmt -recursive -check infrastructure
 
+terraform-init: ## Initialize Terraform configuration
+	terraform init -backend=false -chdir=infrastructure
+
 terraform-validate: ## Validate Terraform configuration
-	cd infrastructure && terraform init -backend=false && terraform validate
+	terraform validate -chdir=infrastructure
 
 terraform: terraform-fmt terraform-validate ## Run all Terraform checks
 
@@ -56,7 +59,7 @@ docs-readme: ## Generate README.md from Terraform modules
 	@cd infrastructure && terraform-docs markdown table . \
 	  --output-file ../README.md \
 	  --output-mode inject \
-	  --hide "providers,data-sources,resources,requirements" 2>/dev/null || true
+	  2>/dev/null || true
 
 docs-changelog: ## Auto-generate CHANGELOG.md from git history (conventional commits)
 	@git-cliff --output CHANGELOG.md
