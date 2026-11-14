@@ -11,3 +11,11 @@ resource "google_project" "this" {
     prevent_destroy = true
   }
 }
+
+resource "google_project_service" "apis" {
+  for_each = { for s in var.services : s => s }
+
+  service            = each.value
+  project            = google_project.this.project_id
+  disable_on_destroy = false
+}

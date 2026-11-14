@@ -132,3 +132,8 @@ definitions:
             description: Exact required CI check names.
             items:
               type: string
+      services:
+        type: array
+        description: GCP APIs to enable for this project. Bootstrap enables them once; Terraform manages them via google_project_service resources thereafter.
+        items:
+          type: string

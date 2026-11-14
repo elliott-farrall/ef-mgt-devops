@@ -27,6 +27,7 @@ locals {
       folder_id          = module.google-folder.google_folder["ef-${p.env}"].folder_id
       billing_account_id = data.google_billing_account.ef.billing_account
       labels             = { environment = p.env, managed_by = "terraform", repository = p.repo, tfc_project = "ef-${p.env}" }
+      services           = try(p.services, [])
     }
   }
 

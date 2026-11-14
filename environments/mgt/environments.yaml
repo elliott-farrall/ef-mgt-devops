@@ -11,6 +11,12 @@ environments:
         type: infrastructure
         description: DevOps Management.
         default: true
+        services:
+          - iam.googleapis.com
+          - serviceusage.googleapis.com
+          - cloudbilling.googleapis.com
+          - dns.googleapis.com
+          - compute.googleapis.com
 
   - name: hub
     type: infrastructure

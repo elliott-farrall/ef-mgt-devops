@@ -1,41 +1,47 @@
 {
-  description = "EF Cloud Infrastructure Framework — management plane";
-
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    systems.url = "github:nix-systems/default";
   };
 
-  outputs = inputs @ { flake-parts, nixpkgs, ... }:
+  outputs = inputs @ { flake-parts, nixpkgs, systems, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      systems = builtins.attrNames systems;
 
-      perSystem = { config, self', inputs', pkgs, system, ... }: {
+      perSystem = { pkgs, ... }: {
         devShells.default = pkgs.mkShell {
-          name = "ef-dev";
-
           packages = with pkgs; [
-            # Bootstrap & CI tooling
+            gcloud-sdk
+            terraform
+            gh
+            jq
+            git
+            python3Packages.check-jsonschema
+            python3Packages.pyyaml
+            yaml-language-server
+          ];
+
+          environment.variables = {
+            TF_VAR_environment = "mgt";
+          };
+        };
+
+        devShells.bootstrap = pkgs.mkShell {
+          packages = with pkgs; [
             gcloud-sdk
             terraform
             tfccli
             gh
             jq
-            curl
             git
-
-            # Schema validation & templating
-            python3Packages.check-jsonschema
-            python3Packages.pyyaml
-            yaml-language-server
             gettext
+            yq
           ];
 
-          shellHook = ''
-            export TF_VAR_environment=mgt
-            echo "EF devshell ready."
-            echo "Run: scripts/bootstrap.sh"
-          '';
+          environment.variables = {
+            TF_VAR_environment = "mgt";
+          };
         };
       };
     };

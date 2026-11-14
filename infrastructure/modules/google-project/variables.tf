@@ -18,3 +18,9 @@ variable "labels" {
   type        = map(string)
   default     = {}
 }
+
+variable "services" {
+  description = "List of GCP APIs to enable for this project."
+  type        = list(string)
+  default     = []
+}

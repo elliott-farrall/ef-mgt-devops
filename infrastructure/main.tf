@@ -12,6 +12,7 @@ module "google-project" {
   folder_id          = each.value.folder_id
   billing_account_id = each.value.billing_account_id
   labels             = each.value.labels
+  services           = each.value.services
 
   depends_on = [module.google-folder]
 }
