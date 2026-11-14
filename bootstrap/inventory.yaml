@@ -14,9 +14,9 @@ sa_pre_tfc:
 sa_prd_tfc: 
 sa_adm_bootstrap: 
 wif_pool: 
-tfc_project_ef-mgt: 
-tfc_project_ef-hub: 
-tfc_project_ef-app: 
+tfe_project_ef-mgt: 
+tfe_project_ef-hub: 
+tfe_project_ef-app: 
 tfc_varset_global: 
-tfc_workspace: 
-gh_repository: 
+tfe_workspace: 
+github_repository: 

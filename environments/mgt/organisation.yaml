@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=../../.schemas/environment/organisation.yaml
+organisation:
+  gcp:
+    domain: elliott-farrall.phd
+    region: europe-west2
+    billing:
+      name: ef-billing
+      budgets:
+        - name: ef-budget-total
+          amount: 30
+          thresholds:
+            - 0.5
+            - 0.8
+            - 1.0
+
+  tfe:
+    organisation: elliott-farrall
+    github_app_installation: Terraform Cloud
+
+  github:
+    owner: elliott-farrall

@@ -4,7 +4,7 @@ variable "name" {
 }
 
 variable "folder_id" {
-  description = "Numeric parent folder ID from module.gcp-folders."
+  description = "Numeric parent folder ID from module.google-folder."
   type        = string
 }
 

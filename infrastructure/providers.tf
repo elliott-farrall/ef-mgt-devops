@@ -1,13 +1,13 @@
 provider "google" {
-  region = local.config.gcp.region
+  region = local.config.organisation.gcp.region
 }
 
 provider "tfe" {
-  hostname     = try(local.config.tfc.hostname, "app.terraform.io")
-  organization = local.config.tfc.organisation
+  hostname     = try(local.config.organisation.tfe.hostname, "app.terraform.io")
+  organization = local.config.organisation.tfe.organisation
 }
 
 
 provider "github" {
-  owner = local.config.gh.owner
+  owner = local.config.organisation.github.owner
 }

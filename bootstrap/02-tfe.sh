@@ -24,7 +24,7 @@ ensure_project() {
           -d "$(jq -n --arg n "$name" --arg o "$ORG_ID" '{data:{type:"projects",attributes:{name:$n,settings:{execution-mode:"remote"},auto-destroy-activity-duration:-1},relationships:{organization:{data:{type:"organizations",id:$o}}}}}')" \
           | jq -r '.data.id')"
   fi
-  inventory_set "tfc_project_${name}" "$id"
+  inventory_set "tfe_project_${name}" "$id"
 }
 
 for p in ef-mgt ef-hub ef-app; do ensure_project "$p"; done

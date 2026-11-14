@@ -31,3 +31,11 @@ resource "tfe_variable" "wif_provider" {
   workspace_id = tfe_workspace.this.id
   description  = "Workload identity provider this workspace authenticates through, exposed to the run environment."
 }
+
+resource "tfe_variable" "gcp_impersonate_service_account" {
+  key          = "GOOGLE_IMPERSONATE_SERVICE_ACCOUNT"
+  value        = var.gcp_service_account_email
+  category     = "env"
+  workspace_id = tfe_workspace.this.id
+  description  = "Service account this workspace becomes in GCP after workload identity token exchange."
+}

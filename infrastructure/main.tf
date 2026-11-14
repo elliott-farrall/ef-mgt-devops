@@ -1,55 +1,66 @@
 resource "google_iam_workload_identity_pool" "tfc" {
-  workload_identity_pool_id = local.config.gcp.workload_identity.pool
-  project                   = module.gcp-project[local.config.gcp.workload_identity.pool_project].project_id
+  workload_identity_pool_id = local.config.environments.workload_identities.pool
+  project                   = module.google-project[local.config.environments.workload_identities.pool_project].google_project.project_id
 }
 
-module "gcp-folders" {
-  source = "./modules/gcp-folders"
+module "google-folder" {
+  source = "./modules/google-folder"
 
-  tree = local.gcp_folders
+  tree = local.google_folders
 }
 
-module "gcp-project" {
-  source   = "./modules/gcp-project"
-  for_each = local.gcp_projects
+module "google-project" {
+  source   = "./modules/google-project"
+  for_each = local.google_projects
 
   name               = each.value.name
   folder_id          = each.value.folder_id
   billing_account_id = each.value.billing_account_id
   labels             = each.value.labels
 
-  depends_on = [module.gcp-folders]
+  depends_on = [module.google-folder]
 }
 
-module "gcp-service-account" {
-  source   = "./modules/gcp-service-account"
-  for_each = local.gcp_service_accounts
+module "google-service-account" {
+  source   = "./modules/google-service-account"
+  for_each = local.google_service_accounts
 
-  name                = each.value.name
-  project             = each.value.project
-  pool                = each.value.pool
-  pool_project_number = each.value.pool_project_number
-  provider_name       = each.value.provider
-  attribute_condition = each.value.attribute_condition
-  subject             = each.value.subject
+  name    = each.value.name
+  project = each.value.project
 
-  depends_on = [module.gcp-project]
+  depends_on = [module.google-project]
 }
 
-module "gcp-iam-binding" {
-  source   = "./modules/gcp-iam-binding"
-  for_each = local.gcp_iam_bindings
+module "google-workload-identity-provider" {
+  source   = "./modules/google-workload-identity-provider"
+  for_each = local.google_workload_identity_providers
+
+  name                  = each.value.name
+  pool                  = each.value.pool
+  project               = each.value.project
+  pool_project_number   = each.value.pool_project_number
+  issuer                = each.value.issuer
+  service_account_email = each.value.service_account_email
+  attribute_condition   = each.value.attribute_condition
+  subject               = each.value.subject
+
+  depends_on = [module.google-service-account]
+}
+
+module "google-iam-member" {
+  source   = "./modules/google-iam-member"
+  for_each = local.google_iam_members
 
   scope  = each.value.scope
   role   = each.value.role
   member = each.value.member
 
-  depends_on = [module.gcp-folders, module.gcp-project, module.gcp-service-account]
+  depends_on = [module.google-folder, module.google-project, module.google-service-account]
 }
 
-module "gcp-budget" {
-  source   = "./modules/gcp-budget"
-  for_each = local.gcp_budgets
+module "google-billing-budget" {
+  source   = "./modules/google-billing-budget"
+  for_each = local.google_billing_budgets
 
   name               = each.value.name
   billing_account_id = each.value.billing_account_id
@@ -57,48 +68,49 @@ module "gcp-budget" {
   thresholds         = each.value.thresholds
   scope              = each.value.scope
 
-  depends_on = [module.gcp-project]
+  depends_on = [module.google-project]
 }
 
-module "gcp-dns" {
-  source   = "./modules/gcp-dns"
-  for_each = local.gcp_dns
+module "google-dns-managed-zone" {
+  source   = "./modules/google-dns-managed-zone"
+  for_each = local.google_dns_managed_zones
 
   name       = each.value.name
   domain     = each.value.domain
   project_id = each.value.project_id
   records    = each.value.records
 
-  depends_on = [module.gcp-project]
+  depends_on = [module.google-project]
 }
 
-module "tfc-project" {
-  source   = "./modules/tfc-project"
-  for_each = local.tfc_projects
+module "tfe-project" {
+  source   = "./modules/tfe-project"
+  for_each = local.tfe_projects
 
   name = each.value.name
 }
 
-module "tfc-workspace" {
-  source   = "./modules/tfc-workspace"
-  for_each = local.tfc_workspaces
+module "tfe-workspace" {
+  source   = "./modules/tfe-workspace"
+  for_each = local.tfe_workspaces
 
-  name                    = each.value.name
-  project_id              = each.value.project_id
-  working_directory       = each.value.working_directory
-  auto_apply              = each.value.auto_apply
-  environment             = each.value.environment
-  repo                    = each.value.repo
-  github_owner            = each.value.github_owner
-  github_app_installation = each.value.github_app_installation
-  wif_provider            = each.value.wif_provider
+  name                      = each.value.name
+  project_id                = each.value.project_id
+  working_directory         = each.value.working_directory
+  auto_apply                = each.value.auto_apply
+  environment               = each.value.environment
+  repo                      = each.value.repo
+  github_owner              = each.value.github_owner
+  github_app_installation   = each.value.github_app_installation
+  wif_provider              = each.value.wif_provider
+  gcp_service_account_email = each.value.gcp_service_account_email
 
-  depends_on = [module.tfc-project, module.gh-repository]
+  depends_on = [module.tfe-project, module.github-repository]
 }
 
-module "gh-repository" {
-  source   = "./modules/gh-repository"
-  for_each = local.gh_repositories
+module "github-repository" {
+  source   = "./modules/github-repository"
+  for_each = local.github_repositories
 
   repository = each.value.repository
   protection = each.value.protection

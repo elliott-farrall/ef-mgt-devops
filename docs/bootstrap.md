@@ -13,7 +13,7 @@ Integration.
   it. (Billing → Billing account; confirm `EF_BILLING_ACCOUNT` matches.)
 - The **TFC GitHub App is installed and approved** for the
   `elliott-farrall` GitHub account — the one console action, done once.
-  Its name (`Terraform Cloud`) is configured as `tfc.github_app_installation`
+  Its name (`Terraform Cloud`) is configured as `tfe.github_app_installation`
   and resolved to the installation ID by `data.tfe_github_app_installation`;
   Terraform then links every workspace to its repository automatically.
 - Domain `elliott-farrall.phd` registered (registrar: Cloudflare Registrar —
@@ -33,8 +33,8 @@ Integration.
 
 | # | Step | Mode | Command | Outcome |
 |---|------|------|---------|---------|
-| 1 | Seed GCP | script | `bootstrap/01-gcp.sh` | Hierarchy + IAM skeleton |
-| 2 | Seed Terraform Cloud | script | `bootstrap/02-tfc.sh` | Deployment plane exists |
+| 1 | Seed GCP | script | `bootstrap/01-google.sh` | Hierarchy + IAM skeleton |
+| 2 | Seed Terraform Cloud | script | `bootstrap/02-tfe.sh` | Deployment plane exists |
 | 3 | Adopt via import | local TF | `bootstrap/03-import.sh` | Seed state in code's home |
 | 4 | Prove the loop | TFC | run a full plan → **No changes** (workspace VCS link applied by this run); then point the registrar's nameservers at the Cloud DNS zone | Code-only steady state begins |
 | 5 | Close out | script + console | `bootstrap/04-cleanup.sh`, then manual checklist | Bootstrapped, closed, documented |
@@ -44,20 +44,21 @@ with `bootstrap/04-cleanup.sh`.
 
 ## Script scope (to implement during bootstrap prep)
 
-- `01-gcp.sh`: landing project `ef-mgt-devops` (provider operating
+- `01-google.sh`: landing project `ef-mgt-devops` (provider operating
   context and identity hosting) + billing link + API enablement; service
-  accounts and every IAM binding are declared in `gcp.iam` —
+  accounts and every IAM binding are declared in
+  `environments.service_accounts` and `environments.iam_members` —
   `sa-adm-tfc` for platform administration, one `sa-<env>-tfc` per plane,
   each naming its hosting project — plus the bootstrap-only
   `sa-adm-bootstrap` that config never declares;
-  workload identity pool + OIDC provider for TFC, hosted in
-  `ef-mgt-devops` (the `ef-mgt-devops` workspace assumes `sa-adm-tfc`);
+  workload identity pool + providers are Terraform's (root glue +
+  `google-workload-identity-provider`), hosted in `ef-mgt-devops` (the `ef-mgt-devops` workspace assumes `sa-adm-tfc`);
   organisation policies
   (required labels, prevent project deletion, allowed regions).
-- `02-tfc.sh`: global variable set `ef-global` (org/billing IDs);
+- `02-tfe.sh`: global variable set `ef-global` (org/billing IDs);
   workspace `ef-mgt-devops` in project `ef-mgt` (VCS link applied by the
       first apply);
-  sensitive variables (`CLOUDFLARE_API_TOKEN`, `GITHUB_TOKEN`) created via
+  sensitive variables (`GITHUB_TOKEN`) created via
   API — values never pass through this repository.
 - DNS zones (apex and future delegations) are pure Terraform — created on
   first apply, no seed script, no import.
@@ -74,23 +75,23 @@ Authoritative mapping from `03-import.sh`. Extend as module resources land.
 
 | Terraform address | Source (inventory key) | Import ID format |
 |---|---|---|
-| `module.gcp-folders.google_folder.tree["ef-root"]` | `folder_ef-root` | `folders/<ID>` |
-| `module.gcp-folders.google_folder.tree["ef-mgt"]` | `folder_ef-mgt` | `folders/<ID>` |
-| `module.gcp-folders.google_folder.tree["ef-hub"]` | `folder_ef-hub` | `folders/<ID>` |
-| `module.gcp-folders.google_folder.tree["ef-app"]` | `folder_ef-app` | `folders/<ID>` |
-| `module.gcp-folders.google_folder.tree["ef-dev"]` | `folder_ef-dev` | `folders/<ID>` |
-| `module.gcp-folders.google_folder.tree["ef-pre"]` | `folder_ef-pre` | `folders/<ID>` |
-| `module.gcp-folders.google_folder.tree["ef-prd"]` | `folder_ef-prd` | `folders/<ID>` |
-| `module.gcp-project["ef-mgt-devops"].google_project.this` | `landing_project` | `<project-number>` |
-| `module.tfc-project["ef-mgt"].tfe_project.this` | `tfc_project_ef-mgt` | `prj-<ID>` |
-| `module.tfc-project["ef-hub"].tfe_project.this` | `tfc_project_ef-hub` | `prj-<ID>` |
-| `module.tfc-project["ef-app"].tfe_project.this` | `tfc_project_ef-app` | `prj-<ID>` |
-| `module.tfc-workspace["ef-mgt-devops"].tfe_workspace.this` | `tfc_workspace` | `<ws-ID>` |
-| `module.tfc-workspace["ef-mgt-devops"].tfe_workspace_settings.this` | `tfc_workspace` | `<ws-ID>` |
-| `module.gh-repository["ef-mgt-devops"].github_repository.this` | `gh_repository` | `ef-mgt-devops` (repo slug) |
-| `module.gcp-service-account["sa-<env>-tfc"].google_service_account.this` | `sa_<env>_tfc` | `projects/<project>/serviceAccounts/<email>` |
-| `module.gcp-iam-binding[*].*` | created by first apply | IAM bindings are additive; no import required |
-| `module.gcp-budget[*].google_billing_budget.this` | created by first apply | budgets did not exist before adoption |
+| `module.google-folder.google_folder.tree["ef-root"]` | `folder_ef-root` | `folders/<ID>` |
+| `module.google-folder.google_folder.tree["ef-mgt"]` | `folder_ef-mgt` | `folders/<ID>` |
+| `module.google-folder.google_folder.tree["ef-hub"]` | `folder_ef-hub` | `folders/<ID>` |
+| `module.google-folder.google_folder.tree["ef-app"]` | `folder_ef-app` | `folders/<ID>` |
+| `module.google-folder.google_folder.tree["ef-dev"]` | `folder_ef-dev` | `folders/<ID>` |
+| `module.google-folder.google_folder.tree["ef-pre"]` | `folder_ef-pre` | `folders/<ID>` |
+| `module.google-folder.google_folder.tree["ef-prd"]` | `folder_ef-prd` | `folders/<ID>` |
+| `module.google-project["ef-mgt-devops"].google_project.this` | `landing_project` | `<project-number>` |
+| `module.tfe-project["ef-mgt"].tfe_project.this` | `tfe_project_ef-mgt` | `prj-<ID>` |
+| `module.tfe-project["ef-hub"].tfe_project.this` | `tfe_project_ef-hub` | `prj-<ID>` |
+| `module.tfe-project["ef-app"].tfe_project.this` | `tfe_project_ef-app` | `prj-<ID>` |
+| `module.tfe-workspace["ef-mgt-devops"].tfe_workspace.this` | `tfe_workspace` | `<ws-ID>` |
+| `module.tfe-workspace["ef-mgt-devops"].tfe_workspace_settings.this` | `tfe_workspace` | `<ws-ID>` |
+| `module.github-repository["ef-mgt-devops"].github_repository.this` | `github_repository` | `ef-mgt-devops` (repo slug) |
+| `module.google-service-account["sa-<env>-tfc"].google_service_account.this` | `sa_<env>_tfc` | `projects/<project>/serviceAccounts/<email>` |
+| `module.google-workload-identity-provider[*].*`, `module.google-iam-member[*].*` | created by first apply | federation grants and IAM bindings are additive; no import required |
+| `module.google-billing-budget[*].google_billing_budget.this` | created by first apply | budgets did not exist before adoption |
 
 ## Contract
 

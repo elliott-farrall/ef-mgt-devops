@@ -36,16 +36,18 @@ structural.
   workspace because the platform structure is its workload. Each plane
   identity `sa-<env>-tfc` (mgt, hub, dev, pre, prd) is bound only at its
   own folder — project creation and editor — never above. Each identity
-  names its hosting project in `gcp.iam`, and all of them name
+  names its hosting project in `environments.service_accounts`, and all of them name
   `ef-mgt-devops`: the platform's own landing project holds the service
   accounts and the workload identity pool, one project fewer to audit.
-  Everything is declared in one readable block — `gcp.iam`, one entry per
-  identity with explicit scopes — never in the console. The bootstrap-only
-  `sa-adm-bootstrap` is never declared and is deleted at Step 6.
+  Everything is declared in `environments.yaml`, three registries
+  read top to bottom — `service_accounts` (identity),
+  `workload_identities` (federation), `iam_members` (authorisation) —
+  never in the console. The bootstrap-only `sa-adm-bootstrap` is never
+  declared and is deleted at close-out.
 - **The management plane provisions the rest.** This repository manages itself
-  *and* every other IaC project: its YAML inputs are registries — the GCP
-  folder tree, DNS zones, TFC projects and workspaces, and GitHub
-  repositories. Landing a new `ef-*` project is a data change here, not new
+  *and* every other IaC project: its four YAML input files are registries
+  split by setup concern — organisation facts, domains and DNS,
+  environments, projects. Landing a new `ef-*` project is a data change here, not new
   machinery.
 
 ## Environment model
@@ -74,15 +76,16 @@ therefore registries of flat entries: hierarchy is expressed by
 `parent` pointers, not nesting — the data stays trivially readable and
 the code stays free of unroll machinery. Everything iterates with a
 `for_each` keyed by name. Nothing is special-cased: this repo appears in
-its own `gh.repositories` and `tfc.workspaces` lists exactly like a
+its own `projects.github` and `environments.tfe` workspace lists exactly like a
 future `ef-app-identity` would.
 
 Bringing up another project is then mechanical:
 
-1. Add entries to the registries here — `gh.repositories`, one workspace
-   per deployment environment nested under its `tfc.projects` entry (each
-   carries `environment` and run policy, `repo` defaults to the name), and
-   `gcp.projects` if it needs a new project.
+1. Add entries to the registries here — a `projects.github` repo (plus a
+   `projects.gcp` entry if it needs a new project), and one workspace per
+   deployment environment nested under its `environments.tfe.projects`
+   entry (each carries `environment` and run policy, `repo` defaults to
+   the name).
 2. Merge the PR; the mgt run creates the repo, workspace, and project.
 3. Scaffold the new repository to the same layout contract
    ([standards.md](standards.md)); its workspace already exists, so its first
@@ -108,7 +111,7 @@ deviations are visible in the YAML where a reviewer can see them.
 ## Cost control
 
 GCP budgets alert; they never cap — so the platform treats the two
-mechanisms separately. Budget alerts are declared in `gcp.billing.budgets`:
+mechanisms separately. Budget alerts are declared in `organisation.gcp.billing.budgets`:
 a monthly amount in GBP — the platform currency, hardcoded in the module,
 not config — a list of threshold fractions
 (0.5, 0.8, 1.0), and an optional `scope` naming a resolved ancestor
@@ -147,7 +150,7 @@ anything else, anywhere:
 | Link | Mechanism | Credential |
 |------|-----------|------------|
 | GitHub ↔ TFC | TFC GitHub App: webhook runs on `main`, status checks on PRs | App installed once as a prerequisite; workspace links managed by Terraform via the installation ID |
-| TFC → GCP | Workload identity federation: run exchanges its OIDC token at the `ef-tfc` pool; provider `tfc-<env>` (CEL condition on the workspace claim) binds to the environment's service account via `workloadIdentityUser`; runs receive `WIF_PROVIDER` as a workspace environment variable | `sa-adm-tfc` (mgt plane), `sa-<env>-tfc` (workload planes) |
+| TFC → GCP | Workload identity federation: run exchanges its OIDC token at the `ef-tfc` pool; provider `tfc-<env>` (CEL condition on the workspace claim) binds to the environment's service account via `workloadIdentityUser`; runs automatically receive `WIF_PROVIDER` and `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` as workspace environment variables | `sa-adm-tfc` (mgt plane), `sa-<env>-tfc` (workload planes) |
 | TFC → GitHub | GitHub provider (`integrations/github`) manages repo settings and branch protection | Fine-grained token as sensitive variable, this repository only |
 
 A fourth link exists only during bootstrap: the operator's machine authenticates

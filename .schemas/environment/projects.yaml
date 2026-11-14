@@ -1,24 +1,38 @@
 $schema: "http://json-schema.org/draft-07/schema#"
-title: GitHub environment inputs (gh.yaml)
-description: Registry of GitHub repositories with optional per-repo policy overrides.
+title: Project inputs (projects.yaml)
+description: The workload units — GCP projects and GitHub repositories, the two faces of every deployable thing.
 type: object
 additionalProperties: false
 required:
-  - gh
+  - projects
 properties:
-  gh:
+  projects:
     type: object
     additionalProperties: false
     required:
-      - owner
-      - repositories
+      - gcp
+      - github
     properties:
-      owner:
-        type: string
-        description: GitHub account or organisation owning the repositories.
-      repositories:
+      gcp:
         type: array
-        description: Repository registry; provisioned by modules/gh with platform defaults from locals.tf.
+        description: Flat project registry; each project names its parent folder from environments.yaml.
+        minItems: 1
+        items:
+          type: object
+          additionalProperties: false
+          required:
+            - name
+            - parent
+          properties:
+            name:
+              type: string
+              pattern: "^ef-[a-z0-9-]+$"
+            parent:
+              type: string
+              pattern: "^ef-[a-z0-9-]+$"
+      github:
+        type: array
+        description: Repository registry; provisioned with platform defaults from locals.tf.
         minItems: 1
         items:
           type: object

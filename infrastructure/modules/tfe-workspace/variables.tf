@@ -4,7 +4,7 @@ variable "name" {
 }
 
 variable "project_id" {
-  description = "Owning TFC project ID from module.tfc-project."
+  description = "Owning TFC project ID from module.tfe-project."
   type        = string
 }
 
@@ -40,5 +40,10 @@ variable "github_app_installation" {
 
 variable "wif_provider" {
   description = "Full WIF provider resource name this workspace authenticates through; exposed to runs as the WIF_PROVIDER variable."
+  type        = string
+}
+
+variable "gcp_service_account_email" {
+  description = "Service account the run impersonates once its workload identity token is exchanged."
   type        = string
 }

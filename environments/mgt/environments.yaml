@@ -1,0 +1,146 @@
+# yaml-language-server: $schema=../../.schemas/environment/environments.yaml
+environments:
+  folders:
+    - name: ef-root
+      parent: root
+    - name: ef-mgt
+      parent: ef-root
+    - name: ef-hub
+      parent: ef-root
+    - name: ef-app
+      parent: ef-root
+    - name: ef-dev
+      parent: ef-app
+    - name: ef-pre
+      parent: ef-app
+    - name: ef-prd
+      parent: ef-app
+
+  tfe:
+    projects:
+      - name: ef-mgt
+        workspaces:
+          - name: ef-mgt-devops
+            environment: mgt
+      - name: ef-hub
+      - name: ef-app
+
+  service_accounts:
+    - name: sa-adm-tfc
+      project: ef-mgt-devops
+    - name: sa-mgt-tfc
+      project: ef-mgt-devops
+    - name: sa-hub-tfc
+      project: ef-mgt-devops
+    - name: sa-dev-tfc
+      project: ef-mgt-devops
+    - name: sa-pre-tfc
+      project: ef-mgt-devops
+    - name: sa-prd-tfc
+      project: ef-mgt-devops
+
+  workload_identities:
+    pool: ef-tfc
+    pool_project: ef-mgt-devops
+    issuer: https://app.terraform.io
+    identities:
+      - name: tfc-mgt
+        service_account: sa-adm-tfc
+        attribute_condition: assertion.workspace_name == "ef-mgt-devops"
+        subject: ef-mgt-devops
+      - name: tfc-hub
+        service_account: sa-hub-tfc
+        attribute_condition: assertion.workspace_name == "ef-hub-network"
+        subject: ef-hub-network
+      - name: tfc-dev
+        service_account: sa-dev-tfc
+        attribute_condition: assertion.workspace_name.endsWith("-dev")
+        subject: tfc-dev
+      - name: tfc-pre
+        service_account: sa-pre-tfc
+        attribute_condition: assertion.workspace_name.endsWith("-pre")
+        subject: tfc-pre
+      - name: tfc-prd
+        service_account: sa-prd-tfc
+        attribute_condition: assertion.workspace_name.endsWith("-prd")
+        subject: tfc-prd
+
+  iam_members:
+    - scope: folder:ef-root
+      role: roles/resourcemanager.folderAdmin
+      member: sa-adm-tfc
+    - scope: folder:ef-root
+      role: roles/resourcemanager.projectCreator
+      member: sa-adm-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/iam.serviceAccountUser
+      member: sa-adm-tfc
+    - scope: organisation
+      role: roles/browser
+      member: sa-adm-tfc
+    - scope: billing
+      role: roles/billing.user
+      member: sa-adm-tfc
+    - scope: folder:ef-mgt
+      role: roles/resourcemanager.projectCreator
+      member: sa-mgt-tfc
+    - scope: folder:ef-mgt
+      role: roles/editor
+      member: sa-mgt-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/iam.serviceAccountUser
+      member: sa-mgt-tfc
+    - scope: folder:ef-hub
+      role: roles/resourcemanager.projectCreator
+      member: sa-hub-tfc
+    - scope: folder:ef-hub
+      role: roles/editor
+      member: sa-hub-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/iam.serviceAccountUser
+      member: sa-hub-tfc
+    - scope: folder:ef-dev
+      role: roles/resourcemanager.projectCreator
+      member: sa-dev-tfc
+    - scope: folder:ef-dev
+      role: roles/editor
+      member: sa-dev-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/iam.serviceAccountUser
+      member: sa-dev-tfc
+    - scope: folder:ef-pre
+      role: roles/resourcemanager.projectCreator
+      member: sa-pre-tfc
+    - scope: folder:ef-pre
+      role: roles/editor
+      member: sa-pre-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/iam.serviceAccountUser
+      member: sa-pre-tfc
+    - scope: folder:ef-prd
+      role: roles/resourcemanager.projectCreator
+      member: sa-prd-tfc
+    - scope: folder:ef-prd
+      role: roles/editor
+      member: sa-prd-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/iam.serviceAccountUser
+      member: sa-prd-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/dns.admin
+      member: sa-adm-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/dns.admin
+      member: sa-mgt-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/dns.admin
+      member: sa-hub-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/dns.admin
+      member: sa-dev-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/dns.admin
+      member: sa-pre-tfc
+    - scope: project:ef-mgt-devops
+      role: roles/dns.admin
+      member: sa-prd-tfc
