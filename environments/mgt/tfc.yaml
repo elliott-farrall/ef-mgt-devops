@@ -1,6 +1,12 @@
-# Terraform Cloud inputs — mgt environment.
+tfc:
+  hostname: "app.terraform.io"
+  organization: "elliott-farrall"
 
-tfc_hostname: "app.terraform.io"
-tfc_organization: "elliott-farrall"
-tfc_projects: ["ef-mgt", "ef-hub", "ef-app"]
-tfc_workspace: "ef-mgt-devops"
+  projects: ["ef-mgt", "ef-hub", "ef-app"]
+
+  workspaces:
+    - name: ef-mgt-devops
+      project: ef-mgt
+      repo: ef-mgt-devops
+      working_directory: infrastructure
+      auto_apply: false

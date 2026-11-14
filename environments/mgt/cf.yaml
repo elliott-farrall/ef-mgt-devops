@@ -1,0 +1,5 @@
+cf:
+  account_id: "REPLACE_ME"
+
+  zones:
+    - { name: elliott-farrall.phd, plan: free }

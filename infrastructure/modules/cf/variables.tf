@@ -1,6 +1,6 @@
 variable "config" {
   type        = map(any)
-  description = "Merged environment config map."
+  description = "Platform config namespace from environments/<name>/<file>.yaml, passed as a locals slice."
 }
 
 variable "labels" {

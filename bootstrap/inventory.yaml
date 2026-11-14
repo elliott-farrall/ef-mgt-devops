@@ -1,7 +1,3 @@
-# Record of bootstrap-created IDs — appended by scripts/bootstrap/*.sh and
-# committed. This file is the handover trail from seed scripts to Terraform
-# state (04-import.sh reads it). Empty values = not yet created.
-
 organization_id: ""
 billing_account: ""
 landing_project: ""
@@ -21,3 +17,4 @@ tfc_project_ef-app: ""
 tfc_varset_global: ""
 tfc_workspace: ""
 cf_zone_apex: ""
+gh_repository: ""

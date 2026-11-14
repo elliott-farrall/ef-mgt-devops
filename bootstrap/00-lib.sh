@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# Bootstrap helpers: logging + inventory.yaml updates.
-# Orchestration only — validation belongs to Terraform (docs/conventions.md).
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-INVENTORY="$REPO_ROOT/scripts/bootstrap/inventory.yaml"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+INVENTORY="$REPO_ROOT/bootstrap/inventory.yaml"
 
 log()  { printf '\033[1;36m[ef]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[ef] warn:\033[0m %s\n' "$*" >&2; }
@@ -17,7 +15,6 @@ require_env() {
   done
 }
 
-# inventory_set KEY VALUE — create/update a top-level key in inventory.yaml.
 inventory_set() {
   local key="$1" value="$2"
   touch "$INVENTORY"

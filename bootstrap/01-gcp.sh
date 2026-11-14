@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Step 1 — Seed GCP: landing project, folder tree, org policies, billing link,
-# service accounts (sa-mgt-tfc, sa-adm-bootstrap), TFC workload identity pool.
-# Get-or-create idempotent: safe to re-run. Creates and records only.
-source "$(dirname "$0")/lib.sh"
+source "$(dirname "$0")/00-lib.sh"
 require_env EF_ORG_ID EF_BILLING_ACCOUNT
 
 ORG="$EF_ORG_ID"
@@ -44,6 +41,6 @@ for f in ef-dev ef-pre ef-prd; do ensure_folder "$f" "$APP"; done
 #  [ ] Workload identity pool + provider for Terraform Cloud (attribute:
 #      assertion.vcs/repo == elliott-farrall/ef-mgt-devops).
 #  [ ] Org policies: constraints/required.labels, prevent project deletion,
-#      allowed regions [europe-west2, us-central1] — names per design §3.3.
+#      allowed regions [europe-west2, us-central1] — naming per docs/standards.md.
 
 log "done — commit the updated inventory.yaml"

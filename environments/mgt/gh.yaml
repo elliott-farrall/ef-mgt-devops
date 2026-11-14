@@ -1,0 +1,6 @@
+gh:
+  owner: "elliott-farrall"
+
+  repositories:
+    - name: ef-mgt-devops
+      description: "EF platform management plane: bootstrap scripts, platform IaC, runbook."

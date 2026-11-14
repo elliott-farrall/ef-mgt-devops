@@ -1,31 +1,19 @@
-# All complexity lives here: YAML load + merge, naming, labels. Modules and
-# resources consume these derived locals only.
-
 locals {
-  # environments/<name>/*.yaml, merged alphabetically into one flat config map.
-  env_dir    = "${path.root}/../environments/${var.environment}"
-  config     = merge([for f in sort(fileset(local.env_dir, "*.yaml")) : yamldecode(file("${local.env_dir}/${f}"))]...)
-  repository = basename(abspath("${path.root}/.."))
+  env_dir = "${path.root}/../environments/${var.environment}"
 
-  # GCP
-  organization_id = local.config.organization_id
-  billing_account = local.config.billing_account
-  gcp_region      = local.config.gcp_region
-  landing_project = local.config.landing_project
-  folders         = { for f in local.config.folders : f.name => f }
+  # One file per platform concern; alphabetical merge keeps this order stable.
+  config = merge([for f in sort(fileset(local.env_dir, "*.yaml")) : yamldecode(file("${local.env_dir}/${f}"))]...)
 
-  # Terraform Cloud
-  tfc_hostname     = local.config.tfc_hostname
-  tfc_organization = local.config.tfc_organization
-  tfc_projects     = local.config.tfc_projects
-  tfc_workspace    = local.config.tfc_workspace
+  gcp = local.config.gcp
+  tfc = local.config.tfc
+  cf  = local.config.cf
+  gh  = local.config.gh
 
-  # Cloudflare
-  cf_account_id = local.config.cf_account_id
-  cf_apex_zone  = local.config.cf_apex_zone
+  repository      = basename(abspath("${path.root}/.."))
+  landing_project = local.gcp.landing_project
+  gcp_region      = local.gcp.region
+  tfc_hostname    = local.tfc.hostname
 
-  # Naming: everything lower kebab-case, prefixed ef-, environment-scoped.
-  prefix            = "ef"
   tfc_plane_project = "ef-${var.environment}"
 
   labels = {

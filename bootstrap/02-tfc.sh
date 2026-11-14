@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Step 2 — Seed Terraform Cloud: projects (ef-mgt/ef-hub/ef-app), global
-# variable set, and the ef-mgt-devops workspace (environment = mgt).
-# Get-or-create idempotent. Requires a TFC user API token (TFC_TOKEN).
-source "$(dirname "$0")/lib.sh"
+source "$(dirname "$0")/00-lib.sh"
 require_env TFC_TOKEN
 
 ORG="${EF_TFC_ORG:-elliott-farrall}"
@@ -11,10 +8,9 @@ HDR=(-H "Authorization: Bearer $TFC_TOKEN" -H "Content-Type: application/vnd.api
 
 tfc() { curl -sf "${HDR[@]}" "$@"; }
 
-org_id() { tfc "$API/organizations/$ORG" | jq -r '.data.id'; }
 log "seeding Terraform Cloud organisation $ORG"
 
-ORG_ID="$(org_id)"
+ORG_ID="$(tfc "$API/organizations/$ORG" | jq -r '.data.id')"
 
 ensure_project() { # name
   local name="$1" id
@@ -34,12 +30,12 @@ ensure_project() { # name
 for p in ef-mgt ef-hub ef-app; do ensure_project "$p"; done
 
 # TODO (implement during bootstrap prep, same pattern):
-#  [ ] global variable set "ef-global": organization_id, billing_account,
-#      cf_account_id (non-sensitive) applied to all future workspaces.
+#  [ ] global variable set "ef-global": org/billing/cf account IDs
+#      (non-sensitive) applied to all future workspaces.
 #  [ ] workspace ef-mgt-devops in project ef-mgt: environment = mgt,
 #      working directory infrastructure/, VCS left detached until Step 5.
 #      Record tfc_varset_global + tfc_workspace in inventory.
-#  [ ] sensitive variables (CLOUDFLARE_API_TOKEN) created manually in the UI
-#      or via API — value never passes through this repository.
+#  [ ] sensitive variables (CLOUDFLARE_API_TOKEN, GITHUB_TOKEN) created via
+#      API — values never pass through this repository.
 
 log "done — commit the updated inventory.yaml"

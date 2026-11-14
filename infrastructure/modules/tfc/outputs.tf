@@ -1,5 +1,6 @@
-output "workspace_id" {
-  value = tfe_workspace.this.id
+output "workspace_ids" {
+  description = "Workspace IDs keyed by workspace name."
+  value       = { for k, w in tfe_workspace.registry : k => w.id }
 }
 
 output "project_ids" {

@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Step 3 — Seed Cloudflare: apex zone elliott-farrall.phd + a least-privilege
-# API token scoped to it (for the TFC workspace). Get-or-create idempotent.
-source "$(dirname "$0")/lib.sh"
+source "$(dirname "$0")/00-lib.sh"
 require_env CF_API_TOKEN CF_ACCOUNT_ID
 
 API="https://api.cloudflare.com/client/v4"

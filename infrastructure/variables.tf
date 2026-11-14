@@ -1,7 +1,6 @@
-# The only top-level variable. No default: omitting it is an error, by design.
 variable "environment" {
   type        = string
-  description = "Environment slot selecting environments/<name>/ YAML inputs, naming, labels, and policy."
+  description = "Environment slot selecting environments/<name>/ YAML inputs, naming, labels, and policy. The only top-level variable; no default by design."
 
   validation {
     condition     = contains(["mgt", "hub", "dev", "pre", "prd"], var.environment)

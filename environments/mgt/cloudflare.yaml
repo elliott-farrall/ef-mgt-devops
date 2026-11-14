@@ -1,6 +1,0 @@
-# Cloudflare inputs — mgt environment.
-# The API token is a secret: it lives only as a TFC sensitive variable
-# (CLOUDFLARE_API_TOKEN) — never here, never committed anywhere.
-
-cf_account_id: "REPLACE_ME"        # Cloudflare account ID
-cf_apex_zone: "elliott-farrall.phd"

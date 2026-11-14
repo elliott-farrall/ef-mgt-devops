@@ -1,6 +1,3 @@
-# Provider configuration consumes locals only — never raw var.* beyond
-# `environment`, never literals that belong in environments/<name>/*.yaml.
-
 provider "google" {
   project = local.landing_project
   region  = local.gcp_region
@@ -12,6 +9,10 @@ provider "tfe" {
 
 provider "cloudflare" {
   # Auth via CLOUDFLARE_API_TOKEN env var (TFC sensitive variable in steady
-  # state); account/zone scope lives on the resources. Never in code, never
-  # in YAML.
+  # state); account/zone scope lives on the resources.
+}
+
+provider "github" {
+  owner = local.gh.owner
+  # Auth via GITHUB_TOKEN env var (TFC sensitive variable in steady state).
 }

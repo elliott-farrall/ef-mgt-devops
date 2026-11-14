@@ -6,6 +6,7 @@ output "folder_ids" {
   )
 }
 
-output "landing_project_id" {
-  value = google_project.landing.project_id
+output "project_ids" {
+  description = "Platform project IDs keyed by project id."
+  value       = { for k, p in google_project.platform : k => p.project_id }
 }

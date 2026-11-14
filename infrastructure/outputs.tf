@@ -1,19 +1,24 @@
 output "folder_ids" {
-  description = "GCP folder IDs by name (ef-root, ef-mgt, ef-hub, ef-app, ef-dev, ef-pre, ef-prd)."
+  description = "GCP folder IDs by name (ef-root plus the registry)."
   value       = module.gcp_org.folder_ids
 }
 
-output "landing_project_id" {
-  description = "The ef-mgt-devops landing project ID."
-  value       = module.gcp_org.landing_project_id
+output "project_ids" {
+  description = "Platform project IDs keyed by project id."
+  value       = module.gcp_org.project_ids
 }
 
-output "tfc_workspace_id" {
-  description = "Terraform Cloud workspace ID for this repository."
-  value       = module.tfc.workspace_id
+output "tfc_workspace_ids" {
+  description = "Terraform Cloud workspace IDs keyed by workspace name."
+  value       = module.tfc.workspace_ids
 }
 
-output "cf_apex_zone_id" {
-  description = "Cloudflare apex zone ID."
-  value       = module.cloudflare.apex_zone_id
+output "cf_zone_ids" {
+  description = "Cloudflare zone IDs keyed by zone name."
+  value       = module.cf.zone_ids
+}
+
+output "gh_repository_ids" {
+  description = "GitHub repository slugs keyed by name."
+  value       = module.gh.repository_ids
 }

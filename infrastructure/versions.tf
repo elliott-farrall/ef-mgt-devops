@@ -14,5 +14,9 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 4.50"
     }
+    github = {
+      source  = "integrations/github"
+      version = ">= 6.0"
+    }
   }
 }
