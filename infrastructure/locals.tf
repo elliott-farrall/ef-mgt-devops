@@ -1,37 +1,40 @@
-# -- locals: YAML configs merged with environment name plus derived maps --
 locals {
+  # Load all YAML configs from env dir and merge them into one config object
   config = merge([for f in sort(fileset("${path.root}/../environments/${var.environment}", "*.yaml")) : yamldecode(file("${path.root}/../environments/${var.environment}/${f}"))]...)
 
-  infrastructure_environments = [for e in local.config.environments : e if e.type == "infrastructure"]
+  # Infrastructure environments — all top-level under org now (hub, mgt, dev, pre, prd)
+  infrastructure_environments = flatten([for e in local.config.environments : [e if e.type == "infrastructure"]])
 
-  google_folders = {
-    root_parent = data.google_organization.ef.name
-    folders     = { for e in [for x in local.config.environments : x if x.type != "library"] : "ef-${e.name}" => { parent = try(e.parent, null) == null ? "root" : "ef-${e.parent}" } }
-  }
+  # All projects: from environments/projects + libraries/projects
+  environment_projects = flatten([
+    for e in local.config.environments : 
+    [for p in try(e.projects, []) : merge(p, { name = "ef-${e.name}-${p.name}", env = e.name })],
+    for lib in try(local.config.projects, []) : merge(lib, { name = "ef-lib-${lib.name}", env = "lib" })
+  ])
 
-  environment_projects = flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { name = "ef-${e.name}-${p.name}", env = e.name, repo = try(p.repo, "ef-${e.name}-${p.name}") })]])
+  # Filter to infrastructure-type projects only
+  infrastructure_projects = [for p in local.environment_projects : p if try(p.type, "") == "infrastructure"]
 
-  infrastructure_projects = [for p in local.environment_projects : p if p.type == "infrastructure"]
-
+  # Default infrastructure project (devops)
   google_default_project = [for p in local.infrastructure_projects : p.name if try(p.default, false) != false][0]
 
-  google_workload_identity_pools = {
-    for e in local.infrastructure_environments : "ef-${e.name}-tfc" => {
-      name    = "ef-${e.name}-tfc"
-      project = module.google-project[local.google_default_project].google_project.project_id
-    }
+  # GCP resources — all projects directly under organization root (no intermediate folders)
+  google_folders = {
+    root_parent = data.google_organization.ef.name
+    folders     = { "root" => { parent = "root" } }
   }
 
   google_projects = {
     for p in local.infrastructure_projects : p.name => {
       name               = p.name
-      folder_id          = module.google-folder.google_folder["ef-${p.env}"].folder_id
+      folder_id          = null
       billing_account_id = data.google_billing_account.ef.billing_account
-      labels             = { environment = p.env, managed_by = "terraform", repository = p.repo, tfc_project = "ef-${p.env}" }
+      labels             = { environment = p.env, managed_by = "terraform", repository = try(p.repo, "ef-${p.env}-${p.name}") }
       services           = try(p.services, [])
     }
   }
 
+  # Service accounts per infrastructure environment
   google_service_accounts = {
     for e in local.infrastructure_environments : "sa-${e.name}-tfc" => {
       name    = "sa-${e.name}-tfc"
@@ -39,6 +42,15 @@ locals {
     }
   }
 
+  # WIF pools per infrastructure environment  
+  google_workload_identity_pools = {
+    for e in local.infrastructure_environments : "ef-${e.name}-tfc" => {
+      name    = "ef-${e.name}-tfc"
+      project = module.google-project[local.google_default_project].google_project.project_id
+    }
+  }
+
+  # WIF providers binding SAs to pools
   google_workload_identity_providers = {
     for e in local.infrastructure_environments : "tfc-${e.name}" => {
       name                  = "tfc-${e.name}"
@@ -52,6 +64,7 @@ locals {
     }
   }
 
+  # Role assignments for workload repos
   google_env_role_pairs = [
     { own = true, role = "roles/resourcemanager.projectCreator" },
     { own = true, role = "roles/editor" },
@@ -59,33 +72,31 @@ locals {
     { own = false, role = "roles/dns.admin" },
   ]
 
+  # Platform roles for management SA
   google_platform_role_pairs = [
-    { scope = "folder:root", role = "roles/resourcemanager.folderAdmin" },
-    { scope = "folder:root", role = "roles/resourcemanager.projectCreator" },
-    { scope = "organisation", role = "roles/browser" },
+    { scope = "organization", role = "roles/resourcemanager.organizationAdmin" },
     { scope = "billing", role = "roles/billing.user" },
+    { scope = "project:${local.google_default_project}", role = "roles/resourcemanager.projectOwner" },
   ]
 
+  # Core IAM bindings (per-environment + platform)
   google_core_bindings = {
-    for x in flatten([for e in local.infrastructure_environments : [for p in local.google_env_role_pairs : { member = "sa-${e.name}-tfc", scope = p.own ? "folder:${e.name}" : "project:${local.google_default_project}", role = p.role }]]) : "${x.member}|${x.scope}|${x.role}" => x
+    for x in flatten([for e in local.infrastructure_environments : [for p in local.google_env_role_pairs : { member = "sa-${e.name}-tfc", scope = "project:${local.google_default_project}", role = p.role }]]) : "${x.member}|${x.scope}|${x.role}" => x
   }
 
   google_platform_bindings = {
-    for x in [for p in local.google_platform_role_pairs : { member = "sa-${var.environment}-tfc", scope = p.scope, role = p.role }] : "${x.member}|${x.scope}|${x.role}" => x
+    for x in [for p in local.google_platform_role_pairs : { member = "serviceAccount:${module.google-service-account["sa-mgt-tfc"].google_service_account.email}", scope = p.scope, role = p.role }] : "${x.member}|${x.scope}|${x.role}" => x
   }
 
   google_iam_members = {
-    for k, x in merge(local.google_core_bindings, local.google_platform_bindings) : k => {
-      scope = x.scope == "organisation" ? "organizations/${data.google_organization.ef.org_id}" : (
-        x.scope == "billing" ? "billingAccounts/${data.google_billing_account.ef.billing_account}" : (
-          startswith(x.scope, "folder:") ? module.google-folder.google_folder["ef-${trimprefix(x.scope, "folder:")}"].name : "projects/${module.google-project[trimprefix(x.scope, "project:")].google_project.project_id}"
-        )
-      )
-      role   = x.role
-      member = "serviceAccount:${module.google-service-account[x.member].google_service_account.email}"
+    for k, v in merge(local.google_core_bindings, local.google_platform_bindings) : k => {
+      scope = v.scope
+      role  = v.role
+      member = v.member
     }
   }
 
+  # Billing budgets
   google_billing_budgets = {
     for b in local.config.billing.budgets : "ef-budget-${b.name}" => {
       name               = "ef-budget-${b.name}"
@@ -96,6 +107,7 @@ locals {
     }
   }
 
+  # DNS zones (from domain.yaml or domains.yaml)
   google_dns_managed_zones = {
     for d in local.config.domain : replace(d.name, ".", "-") => {
       name       = replace(d.name, ".", "-")
@@ -105,12 +117,14 @@ locals {
     }
   }
 
+  # TFC projects per environment
   tfe_projects = {
     for e in local.infrastructure_environments : "ef-${e.name}" => {
       name = "ef-${e.name}"
     }
   }
 
+  # TFC workspaces per infrastructure project
   tfe_workspaces = {
     for p in local.infrastructure_projects : p.name => {
       name                      = p.name
@@ -118,7 +132,7 @@ locals {
       working_directory         = try(p.working_directory, "infrastructure")
       auto_apply                = try(p.auto_apply, false)
       environment               = p.env
-      repo                      = p.repo
+      repo                      = try(p.repo, "ef-${p.env}-${p.name}")
       github_owner              = local.config.organisation.gh.owner
       github_app_installation   = local.config.organisation.tfe.github_app_installation
       wif_provider              = "//iam.googleapis.com/projects/${module.google-project[local.google_default_project].google_project.number}/locations/global/workloadIdentityPools/ef-${p.env}-tfc/providers/tfc-${p.env}"
@@ -126,6 +140,7 @@ locals {
     }
   }
 
+  # TFC registry modules for library projects
   tfe_registry_modules = {
     for p in [for x in local.environment_projects : x if x.type == "module"] : p.repo => {
       name                    = trimprefix(p.repo, "ef-lib-")
@@ -135,6 +150,7 @@ locals {
     }
   }
 
+  # GitHub repositories for all projects
   github_repository_names = toset([for x in local.environment_projects : x.repo])
 
   github_repositories = {

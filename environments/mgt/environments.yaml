@@ -1,11 +1,10 @@
 # yaml-language-server: $schema=../../.schemas/environment/environments.yaml
 environments:
-  - name: root
-    type: folder
+  - name: hub
+    type: infrastructure
 
   - name: mgt
     type: infrastructure
-    parent: root
     projects:
       - name: devops
         type: infrastructure
@@ -18,25 +17,11 @@ environments:
           - dns.googleapis.com
           - compute.googleapis.com
 
-  - name: hub
-    type: infrastructure
-    parent: root
-
-  - name: app
-    type: folder
-    parent: root
-
   - name: dev
     type: infrastructure
-    parent: app
 
   - name: pre
     type: infrastructure
-    parent: app
 
   - name: prd
     type: infrastructure
-    parent: app
-
-  - name: lib
-    type: library

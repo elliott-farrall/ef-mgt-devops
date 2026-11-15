@@ -1,23 +1,4 @@
-# -- BEGIN_MODULE_DESCRIPTIONS --
-# google-folder       : Google Cloud GKE folders
-# google-project      : Google Cloud GKE projects
-# google-workload-identity-pool  : Workload identity pools for TFC
-# google-service-account   : Service accounts for TFC integration
-# google-workload-identity-provider : Workload identity providers linking TFC to GCP
-# google-iam-member     : IAM policy bindings for service accounts
-# google-billing-budget : Budget alerts per billing account or scope
-# google-dns-managed-zone : DNS zones for owned domains
-# tfe-project           : TFE projects
-# tfe-workspace         : TFE workspaces linked to repos
-# tfe-registry-module   : Private registry modules from repos
-# github-repository     : Repositories with branch protection
-# -- END_MODULE_DESCRIPTIONS --
-module "google-folder" {
-  source = "./modules/google-folder"
-
-  tree = local.google_folders
-}
-
+# Google Project Module — creates projects + enables APIs via google_project_service
 module "google-project" {
   source   = "./modules/google-project"
   for_each = local.google_projects
@@ -27,30 +8,27 @@ module "google-project" {
   billing_account_id = each.value.billing_account_id
   labels             = each.value.labels
   services           = each.value.services
-
-  depends_on = [module.google-folder]
 }
 
+# Workload Identity Pools — one per environment
 module "google-workload-identity-pool" {
   source   = "./modules/google-workload-identity-pool"
   for_each = local.google_workload_identity_pools
 
   name    = each.value.name
   project = each.value.project
-
-  depends_on = [module.google-project]
 }
 
+# Service Accounts — one per infrastructure environment  
 module "google-service-account" {
   source   = "./modules/google-service-account"
   for_each = local.google_service_accounts
 
   name    = each.value.name
   project = each.value.project
-
-  depends_on = [module.google-project]
 }
 
+# WIF Providers — bind SAs to pools, create providers for federation
 module "google-workload-identity-provider" {
   source   = "./modules/google-workload-identity-provider"
   for_each = local.google_workload_identity_providers
@@ -63,10 +41,9 @@ module "google-workload-identity-provider" {
   service_account_email = each.value.service_account_email
   environment           = each.value.environment
   attribute_condition   = each.value.attribute_condition
-
-  depends_on = [module.google-service-account, module.google-workload-identity-pool]
 }
 
+# IAM Members — grant roles to workload repos
 module "google-iam-member" {
   source   = "./modules/google-iam-member"
   for_each = local.google_iam_members
@@ -74,10 +51,9 @@ module "google-iam-member" {
   scope  = each.value.scope
   role   = each.value.role
   member = each.value.member
-
-  depends_on = [module.google-folder, module.google-project, module.google-service-account]
 }
 
+# Billing Budgets — control spend per environment
 module "google-billing-budget" {
   source   = "./modules/google-billing-budget"
   for_each = local.google_billing_budgets
@@ -87,10 +63,9 @@ module "google-billing-budget" {
   amount             = each.value.amount
   thresholds         = each.value.thresholds
   scope              = each.value.scope
-
-  depends_on = [module.google-project]
 }
 
+# DNS Managed Zones — zone management for domains
 module "google-dns-managed-zone" {
   source   = "./modules/google-dns-managed-zone"
   for_each = local.google_dns_managed_zones
@@ -99,10 +74,9 @@ module "google-dns-managed-zone" {
   domain     = each.value.domain
   project_id = each.value.project_id
   records    = each.value.records
-
-  depends_on = [module.google-project]
 }
 
+# TFC Projects
 module "tfe-project" {
   source   = "./modules/tfe-project"
   for_each = local.tfe_projects
@@ -110,6 +84,7 @@ module "tfe-project" {
   name = each.value.name
 }
 
+# TFC Workspaces — workspace per infra project with WIF
 module "tfe-workspace" {
   source   = "./modules/tfe-workspace"
   for_each = local.tfe_workspaces
@@ -124,10 +99,9 @@ module "tfe-workspace" {
   github_app_installation   = each.value.github_app_installation
   wif_provider              = each.value.wif_provider
   gcp_service_account_email = each.value.gcp_service_account_email
-
-  depends_on = [module.tfe-project, module.github-repository]
 }
 
+# TFC Registry Modules — private registry for library modules
 module "tfe-registry-module" {
   source   = "./modules/tfe-registry-module"
   for_each = local.tfe_registry_modules
@@ -136,10 +110,9 @@ module "tfe-registry-module" {
   organization            = each.value.organization
   repository              = each.value.repository
   github_app_installation = each.value.github_app_installation
-
-  depends_on = [module.github-repository]
 }
 
+# GitHub Repositories — create all project repos
 module "github-repository" {
   source   = "./modules/github-repository"
   for_each = local.github_repositories
