@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: help yaml-schema yaml-config yaml-style terraform-fmt terraform-validate terraform git-branch bash-shell docs-readme docs-changelog git-commit all
+.PHONY: help yaml-schema yaml-config yaml-style terraform-fmt terraform-validate terraform git-branch bash-shell git-commit terraform-docs docs-changelog all
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[1m%-20s\033[0m %s\n", $$1, $$2}'
@@ -35,7 +35,10 @@ terraform-init: ## Initialize Terraform configuration
 terraform-validate: ## Validate Terraform configuration
 	terraform validate -chdir=infrastructure
 
-terraform: terraform-fmt terraform-validate ## Run all Terraform checks
+terraform-docs: ## Generate README.md for root module and all submodules
+	@terraform-docs infrastructure 2>/dev/null || true
+
+terraform: terraform-fmt terraform-validate terraform-docs ## Run all Terraform checks
 
 # ── Git ─────────────────────────────────────────────────────────────────
 git-branch: ## Enforce branch name convention
@@ -55,11 +58,8 @@ bash-shell: ## Lint and syntax-check shell scripts
 	@for s in scripts/*.sh; do bash -n "$$s"; done
 
 # ── Docs ────────────────────────────────────────────────────────────────
-docs-readme: ## Generate README.md for root module and all submodules
-	@terraform-docs infrastructure 2>/dev/null || true
-
 docs-changelog: ## Auto-generate CHANGELOG.md from git history (conventional commits)
 	@git-cliff --output CHANGELOG.md
 
 # ── All ─────────────────────────────────────────────────────────────────
-all: yaml-schema yaml-config yaml-style terraform-fmt bash-shell git-branch git-commit docs-readme ## Run all checks (excluding auto-generated CHANGELOG.md)
+all: yaml-schema yaml-config yaml-style terraform-fmt bash-shell git-branch git-commit terraform-docs ## Run all checks (excluding auto-generated CHANGELOG.md)

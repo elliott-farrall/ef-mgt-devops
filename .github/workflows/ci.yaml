@@ -7,68 +7,36 @@ permissions:
   contents: read
 
 jobs:
-  # ── YAML ────────────────────────────────────────────────────────────────
-  yaml-schema:
+  yaml:
+    name: YAML
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install checkers
+      - name: Install check-jsonschema
         run: pipx install check-jsonschema
       - run: make yaml-schema
-
-  yaml-config:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install checkers
-        run: pipx install check-jsonschema
       - run: make yaml-config
-
-  yaml-style:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install checkers
-        run: pipx install check-jsonschema
       - run: make yaml-style
 
-  # ── Terraform ───────────────────────────────────────────────────────────
-  terraform-fmt:
+  terraform:
+    name: Terraform
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
+      - name: Install terraform-docs
+        run: go install github.com/terraform-docs/terraform-docs@v0.24.0
       - run: make terraform-fmt
-
-  terraform-validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
       - run: make terraform-validate
+      - run: make terraform-docs
 
-  # ── Git ─────────────────────────────────────────────────────────────────
-  git-branch:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: make git-branch BRANCH_NAME=${{ github.head_ref }}
-
-  git-commit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: npm install -g @commitlint/cli @commitlint/config-conventional
-      - run: make git-commit GITHUB_BASE_REF=${{ github.base_ref }}
-
-  # ── Shell Scripts ───────────────────────────────────────────────────────
-  bash:
+  shell:
+    name: Shell scripts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,21 +44,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - run: make bash-shell
 
-  # ── Documentation ───────────────────────────────────────────────────────
-  docs-readme:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install terraform-docs
-        run: go install github.com/terraform-docs/terraform-docs@v0.17.0
-      - run: make docs-readme
-
-  docs-changelog:
+  git:
+    name: Git conventions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install git-cliff
-        run: curl -sSL https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-x86_64-linux.tar.gz | tar xz -C /usr/local/bin/
-      - run: make docs-changelog
+      - run: make git-branch BRANCH_NAME=${{ github.head_ref }}
+      - run: npm install -g @commitlint/cli @commitlint/config-conventional
+      - run: make git-commit GITHUB_BASE_REF=${{ github.base_ref }}
