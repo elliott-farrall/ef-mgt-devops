@@ -19,7 +19,7 @@ make all
 - Branches: `<type>/<kebab-name>` (feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert)
 - Commits: [Conventional Commits](https://www.conventionalcommits.org/)
 - PR title: same as commit message convention
-- The `release-please` GitHub App reads PR titles/bodies and generates `CHANGELOG.md` + version tags automatically on every merge to `main`. No manual steps required.
+- The release GitHub App reads PR titles/bodies and generates `CHANGELOG.md` + version tags automatically on every merge to `main`. No manual steps required.
 
 ### How releases work
 
@@ -33,7 +33,7 @@ Commits are grouped semantically. Only commits with a prefix listed below contri
 | `hotfix:`    | patch         | Hotfixes           |
 | `perf:`      | patch/minor   | Performance        |
 
-Releases use standard conventional commit prefixes: `feat`, `fix`, `perf`, `BREAKING CHANGE` for semantic versions; everything else goes into "Other Changes" at no cost. You never need to touch the changelog or version numbers yourself — the app handles both on every push to `main`.
+Releases use standard conventional commit prefixes: `feat`, `fix`, `perf`, `BREAKING CHANGE` for semantic versions; everything else goes into "Other Changes" at no cost. You never need to touch the changelog or version numbers yourself — the release action handles both on every push to `main`.
 
 
 ## Pull Requests
