@@ -1,3 +1,12 @@
+resource "google_folder" "this" {
+  display_name = "ef-${var.name}"
+  parent       = "organizations/${var.organization_id}"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "google_service_account" "this" {
   account_id   = "sa-${var.name}-tfc"
   display_name = "sa-${var.name}-tfc"

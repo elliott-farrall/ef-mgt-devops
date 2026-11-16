@@ -9,7 +9,7 @@ proposing anything structural.
 
 - **Everything is infrastructure as code.** After bootstrap, consoles are read-only; every change arrives as a PR. Manual changes are drift and must be adopted or reverted within one working day.
 - **Bootstrap is scripts + imports.** Seed scripts create chicken-and-egg resources (`terraform import` then adopts them). There is no permanent bootstrap codebase — scripts are short-lived seeds, the code is steady state.
-- **One name, three mirrors.** Names — not folders — carry the structure: project ID, workspace name, and repository name mirror each other with predictable names. Structure is enforced by IAM and org policies, not convention.
+- **One name, three mirrors.** Names — project ID, workspace name, repository name — mirror each other with predictable names; one folder per environment mirrors them at the top. Structure is enforced by folders, IAM, and org policies, not convention.
 - **Environments are data.** The same code serves every environment. The single `environment` input selects YAML inputs, naming, labels, identity, and apply policy. New behaviour is derivation in `locals.tf`, never a new variable.
 - **Validation is Terraform-native.** `validation`, `precondition`, and `check` blocks fail bad input at plan time. Shell scripts only orchestrate — if a rule can be checked in HCL, it must be.
 - **Modules start local.** `infrastructure/modules/` until code genuinely must cross repositories. Premature extraction is the failure mode this guards against.
@@ -83,9 +83,11 @@ GCP hosts the workloads and federation plumbing. Identity admission derives from
 
 #### Folders
 
-None. The GCP hierarchy is flat: every project is created directly under
-the organisation root, and environment separation is carried by naming,
-workspaces, and IAM — not by folders.
+One folder per environment, directly under the organisation root, named
+`ef-<env>`. Every project is created inside its environment's folder,
+which gives each environment identity a bounded creation scope: its
+`projectCreator` and `editor` roles hang off its own folder, so an
+environment can never mint projects outside it.
 
 #### Projects
 

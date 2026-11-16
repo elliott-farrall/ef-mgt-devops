@@ -14,8 +14,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install check-jsonschema
         run: pipx install check-jsonschema
+      - name: Install yamllint
+        run: pipx install yamllint
       - run: make yaml-schema
       - run: make yaml-config
+      - run: make yaml-lint
       - run: make yaml-style
 
   terraform:

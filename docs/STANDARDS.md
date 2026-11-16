@@ -8,11 +8,13 @@ here in the same PR that makes it.
 ## Environments
 
 - Five flat infrastructure environments: `mgt`, `hub`, `dev`, `pre`, `prd`.
-  Each is top-level directly under the organisation root — no folder
-  hierarchy, no environment types, no parent pointers.
-- Each environment owns, derived from its name: TFC project `ef-<env>`,
-  service account `sa-<env>-tfc`, WIF pool `ef-<env>-tfc`, WIF provider
-  `tfc-<env>`, and the workspaces of its projects.
+  Each is top-level directly under the organisation root — no environment
+  types, no parent pointers.
+- Each environment owns, derived from its name: GCP folder `ef-<env>`
+  directly under the organisation root, TFC project `ef-<env>`, service
+  account `sa-<env>-tfc`, WIF pool `ef-<env>-tfc`, WIF provider
+  `tfc-<env>`, and the workspaces of its projects. Every GCP project
+  lives in its environment's folder.
 - A project lives in exactly one environment. Cross-environment reuse flows
   through hub services and registry modules — never through shared
   projects.
@@ -26,9 +28,9 @@ here in the same PR that makes it.
 
 ## GCP
 
-- The hierarchy is flat: every GCP project is created directly under the
-  organisation root. Environment separation is carried by naming,
-  workspaces, and IAM — not by folders.
+- The hierarchy is one folder per environment under the organisation root;
+  every project is created inside its environment's folder. Environment
+  separation is carried by folders, naming, workspaces, and IAM.
 - One identity kind: `sa-<env>-tfc`, one per environment, minted from
   config. No separate administration identity — `sa-mgt-tfc` runs the
   platform and the management plane.
@@ -99,6 +101,12 @@ here in the same PR that makes it.
   exchange). All four are derived; none is declared in YAML. These are the
   HCP Terraform dynamic-credentials contract — never replaced with
   non-standard variable names.
+- GitHub credentials reach every run through the organisation-wide
+  variable set `platform-github` (`GITHUB_TOKEN`, sensitive, created by
+  bootstrap). The management workspace additionally holds `TFE_TOKEN`
+  (needed only to manage TFC resources) and, until its first apply
+  completes, the temporary bootstrap `GOOGLE_CREDENTIALS` — deleted by
+  bootstrap close-out. Unmanaged sensitive variables never live in state.
 - Run policy per project entry: `auto_apply: true` for dev-style lanes,
   `false` (manual confirm) everywhere else. The policy is data, not code.
 

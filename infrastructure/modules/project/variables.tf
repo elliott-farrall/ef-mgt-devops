@@ -13,6 +13,11 @@ variable "project_id" {
   type        = string
 }
 
+variable "folder_id" {
+  description = "Numeric ID of the environment folder hosting the project."
+  type        = string
+}
+
 variable "billing_account_id" {
   description = "GCP billing account to attach."
   type        = string

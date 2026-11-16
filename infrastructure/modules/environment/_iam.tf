@@ -1,11 +1,27 @@
 locals {
-  project_roles      = { for r in var.roles : r.role => r if startswith(r.scope, "project:") }
-  organization_roles = { for r in var.roles : r.role => r if r.scope == "organization" }
-  billing_roles      = { for r in var.roles : r.role => r if r.scope == "billing" }
+  folder_scopes  = { for role in var.folder_roles : role => google_folder.this.name }
+  landing_scopes = { for role in var.landing_roles : role => var.landing_project_id }
+  platform_pairs = { for pair in var.platform_roles : pair.role => pair }
+}
+
+resource "google_folder_iam_member" "this" {
+  for_each = local.folder_scopes
+
+  folder = each.value
+  role   = each.key
+  member = "serviceAccount:${google_service_account.this.email}"
 }
 
 resource "google_project_iam_member" "this" {
-  for_each = local.project_roles
+  for_each = local.landing_scopes
+
+  project = each.value
+  role    = each.key
+  member  = "serviceAccount:${google_service_account.this.email}"
+}
+
+resource "google_project_iam_member" "platform" {
+  for_each = { for pair in local.platform_pairs : pair.role => pair if startswith(pair.scope, "project:") }
 
   project = trimprefix(each.value.scope, "project:")
   role    = each.value.role
@@ -13,7 +29,7 @@ resource "google_project_iam_member" "this" {
 }
 
 resource "google_organization_iam_member" "this" {
-  for_each = local.organization_roles
+  for_each = { for pair in local.platform_pairs : pair.role => pair if pair.scope == "organization" }
 
   org_id = var.organization_id
   role   = each.value.role
@@ -21,7 +37,7 @@ resource "google_organization_iam_member" "this" {
 }
 
 resource "google_billing_account_iam_member" "this" {
-  for_each = local.billing_roles
+  for_each = { for pair in local.platform_pairs : pair.role => pair if pair.scope == "billing" }
 
   billing_account_id = var.billing_account_id
   role               = each.value.role

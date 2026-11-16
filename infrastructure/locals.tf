@@ -25,6 +25,7 @@ locals {
       name                      = x.name
       environment               = x.env
       project_id                = module.environment[x.env].tfe_project.this.id
+      folder_id                 = module.environment[x.env].google_folder.this.folder_id
       billing_account_id        = data.google_billing_account.ef.id
       labels                    = { environment = x.env, managed_by = "terraform", repository = x.repo }
       services                  = try(x.services, [])

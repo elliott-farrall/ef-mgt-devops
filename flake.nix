@@ -50,6 +50,7 @@
             git
             shellcheck
             check-jsonschema
+            yamllint
             python3Packages.json-schema-for-humans
             python3Packages.pyyaml
             yq
@@ -68,6 +69,7 @@
             git
             shellcheck
             check-jsonschema
+            yamllint
             python3Packages.json-schema-for-humans
             python3Packages.pyyaml
             yq

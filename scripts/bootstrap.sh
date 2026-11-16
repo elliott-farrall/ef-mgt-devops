@@ -94,12 +94,25 @@ if [[ -z "${GCP_ORG_ID}" ]]; then
 fi
 r "Resolved: ${GCP_ORG_ID}"
 
-t "1.3. Creating project ${GCP_DEFAULT_PROJECT}"
+t "1.3. Creating environment folder ef-mgt"
+FOLDER_NAME="$(gcloud resource-manager folders list \
+  --organization="${GCP_ORG_ID#organizations/}" \
+  --filter="displayName=ef-mgt" --format='value(name)' 2>/dev/null | head -n1)"
+if [[ -z "${FOLDER_NAME}" ]]; then
+  FOLDER_NAME="$(gcloud resource-manager folders create \
+    --display-name="ef-mgt" \
+    --organization="${GCP_ORG_ID#organizations/}" --format='value(name)')"
+  r "Created folder ef-mgt"
+fi
+FOLDER_ID="${FOLDER_NAME#folders/}"
+r "Folder ef-mgt: ${FOLDER_NAME}"
+
+t "1.4. Creating project ${GCP_DEFAULT_PROJECT}"
 if gcloud projects describe "${GCP_DEFAULT_PROJECT}" >/dev/null 2>&1; then
   r "Project already exists"
 else
   gcloud projects create "${GCP_DEFAULT_PROJECT}" \
-    --organization="${GCP_ORG_ID#organizations/}" \
+    --folder="${FOLDER_ID}" \
     --billing-account="${GCP_BILLING_ACCOUNT}" \
     --set-as-default
   r "Created project"
@@ -108,13 +121,13 @@ GCP_PROJ_NUM="$(gcloud projects describe "${GCP_DEFAULT_PROJECT}" --format='valu
 [[ -n "${GCP_PROJ_NUM}" ]] || die "project number not found for ${GCP_DEFAULT_PROJECT}"
 r "Project number: ${GCP_PROJ_NUM}"
 
-t "1.4. Enabling required APIs on ${GCP_DEFAULT_PROJECT}"
+t "1.5. Enabling required APIs on ${GCP_DEFAULT_PROJECT}"
 for svc in "${DEVOPS_SERVICES[@]}"; do
   gcloud services enable "${svc}" --project="${GCP_DEFAULT_PROJECT}"
   r "Enabled API: ${svc}"
 done
 
-t "1.5. Creating service account ${SA_NAME}"
+t "1.6. Creating service account ${SA_NAME}"
 if gcloud iam service-accounts list --project="${GCP_DEFAULT_PROJECT}" --format="value(email)" \
    | grep -q "^${SA_NAME}@"; then
   r "${SA_NAME} already exists"
@@ -125,7 +138,7 @@ else
   r "Created ${SA_NAME}"
 fi
 
-t "1.6. Creating the temporary bootstrap identity ${BOOTSTRAP_SA}"
+t "1.7. Creating the temporary bootstrap identity ${BOOTSTRAP_SA}"
 if gcloud iam service-accounts list --project="${GCP_DEFAULT_PROJECT}" --format="value(email)" \
    | grep -q "^${BOOTSTRAP_SA}@"; then
   r "${BOOTSTRAP_SA} already exists"
@@ -218,7 +231,6 @@ seed_var() {
   fi
 }
 seed_var "GOOGLE_CREDENTIALS" "$(cat "${BOOTSTRAP_KEY}")" "env" true
-seed_var "GITHUB_TOKEN" "${GITHUB_TOKEN}" "env" true
 seed_var "TFE_TOKEN" "${TF_TOKEN_APP_TERRAFORM_IO}" "env" true
 r "Credential variables seeded — the first apply authenticates with the bootstrap key; Terraform adds the WIF variables for every run after it"
 
@@ -239,6 +251,7 @@ r "Import addresses derived"
 
 t "3.2. Rendering imports.tf from template"
 envsubst < "${INFRA_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/imports.tf"
+printf '\nimport {\n  to   = module.environment["mgt"].google_folder.this\n  id   = "%s"\n}\n' "${FOLDER_ID}" >> "${INFRA_DIR}/imports.tf"
 r "Rendered imports.tf — $(wc -l < "${INFRA_DIR}/imports.tf") lines"
 
 # ══════════════════════════════════════════════════════════════════

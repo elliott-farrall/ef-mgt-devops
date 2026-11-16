@@ -23,8 +23,9 @@ No modules.
 
 | Name | Type |
 |------|------|
-| [github_branch_protection.this](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/branch_protection) | resource |
 | [github_repository.this](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository) | resource |
+| [github_repository_ruleset.enforcement](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_ruleset) | resource |
+| [github_repository_ruleset.review](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_ruleset) | resource |
 | [github_repository_vulnerability_alerts.this](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_vulnerability_alerts) | resource |
 | [google_project.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project) | resource |
 | [google_project_service.apis](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_service) | resource |
@@ -44,6 +45,7 @@ No modules.
 | <a name="input_billing_account_id"></a> [billing\_account\_id](#input\_billing\_account\_id) | GCP billing account to attach. | `string` | n/a | yes |
 | <a name="input_description"></a> [description](#input\_description) | Repository description; defaults to the repository name. | `string` | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment slot injected as the terraform environment variable. | `string` | n/a | yes |
+| <a name="input_folder_id"></a> [folder\_id](#input\_folder\_id) | Numeric ID of the environment folder hosting the project. | `string` | n/a | yes |
 | <a name="input_gcp_service_account_email"></a> [gcp\_service\_account\_email](#input\_gcp\_service\_account\_email) | Service account the run impersonates once its workload identity token is exchanged. | `string` | n/a | yes |
 | <a name="input_github_app_installation"></a> [github\_app\_installation](#input\_github\_app\_installation) | Name of the TFC GitHub App installation; resolved by data.tfe\_github\_app\_installation within this module. | `string` | n/a | yes |
 | <a name="input_github_owner"></a> [github\_owner](#input\_github\_owner) | GitHub account owning the repository. | `string` | n/a | yes |

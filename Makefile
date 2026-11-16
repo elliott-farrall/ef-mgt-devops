@@ -19,6 +19,9 @@ yaml-config: ## Validate config files against their schemas
 	  done \
 	done
 
+yaml-lint: ## Lint YAML with yamllint defaults (block style enforced by flow-sequence/braces rules)
+	yamllint .schemas/environment environments
+
 yaml-style: ## Check YAML is block-style with plain scalars
 	@files=$$(ls environments/*/*.yaml 2>/dev/null || true); \
 	[ -z "$$files" ] && exit 0; \
@@ -67,4 +70,4 @@ docs-changelog: ## Auto-generate CHANGELOG.md from git history (conventional com
 	@git-cliff --output CHANGELOG.md
 
 # ── All ─────────────────────────────────────────────────────────────────
-all: yaml-schema yaml-config yaml-style terraform-fmt bash-shell git-branch git-commit terraform-docs ## Run all checks (excluding auto-generated CHANGELOG.md)
+all: yaml-schema yaml-config yaml-lint yaml-style terraform-fmt bash-shell git-branch git-commit terraform-docs ## Run all checks (excluding auto-generated CHANGELOG.md)

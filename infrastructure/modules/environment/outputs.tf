@@ -17,3 +17,8 @@ output "google_iam_workload_identity_pool_provider" {
   description = "The workload identity pool provider resource."
   value       = google_iam_workload_identity_pool_provider.this
 }
+
+output "google_folder" {
+  description = "The environment folder resource."
+  value       = google_folder.this
+}

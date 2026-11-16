@@ -8,7 +8,9 @@ module "environment" {
   billing_account_id = each.value.billing_account_id
   landing_project_id = each.value.landing_project_id
   issuer             = each.value.issuer
-  roles              = each.value.roles
+  folder_roles       = each.value.folder_roles
+  landing_roles      = each.value.landing_roles
+  platform_roles     = each.value.platform_roles
 }
 
 # Projects — repository, workspace, GCP project per environment project
@@ -19,6 +21,7 @@ module "project" {
   name                      = each.value.name
   environment               = each.value.environment
   project_id                = each.value.project_id
+  folder_id                 = each.value.folder_id
   billing_account_id        = each.value.billing_account_id
   labels                    = each.value.labels
   services                  = each.value.services
