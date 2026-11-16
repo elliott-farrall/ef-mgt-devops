@@ -30,17 +30,17 @@ for t in gcloud terraform jq git tfccli envsubst yq; do
 done
 
 # ══════════════════════════════════════════════════════════════════
-# Config — load org/billing/project configs
+# Config — load org/project configs
 # ══════════════════════════════════════════════════════════════════
 
 h "Config"
 
 GCP_DOMAIN=$(yq '.organisation.gcp.domain' "${ENV_DIR}/organisation.yaml")
-GCP_BILLING_ACCOUNT=$(yq '.billing.billing_account_id' "${ENV_DIR}/billing.yaml")
+GCP_BILLING_ACCOUNT=$(yq '.organisation.gcp.billing_account_id' "${ENV_DIR}/organisation.yaml")
 
 # Load all project configs from env dir (envs + libs YAML files)
 PROJECT_CONFIGS=$(mktemp)
-for f in $(find "${ENV_DIR}" -name "*.yaml" ! -path "*organisation.yaml" ! -path "*billing.yaml" | sort); do
+for f in $(find "${ENV_DIR}" -name "*.yaml" ! -path "*organisation.yaml" | sort); do
   echo "" >> "${PROJECT_CONFIGS}"
   yq '.' "${f}" >> "${PROJECT_CONFIGS}"
 done
@@ -59,7 +59,7 @@ TFC_HOSTNAME=$(yq '.organisation.tfe.hostname' "${ENV_DIR}/organisation.yaml")
 GH_OWNER=$(yq '.organisation.gh.owner' "${ENV_DIR}/organisation.yaml")
 
 [[ -n "${GCP_DOMAIN}" ]] || die "gcp domain not found in ${ENV_DIR}/organisation.yaml"
-[[ -n "${GCP_BILLING_ACCOUNT}" ]] || die "GCP billing account id not found in ${ENV_DIR}/billing.yaml"
+[[ -n "${GCP_BILLING_ACCOUNT}" ]] || die "GCP billing account id not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${DEVOPS_SERVICES}" ]] || die "devops services missing from mgt/environments.yaml"
 [[ -n "${TFC_ORG}" ]] || die "TFC organisation not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"

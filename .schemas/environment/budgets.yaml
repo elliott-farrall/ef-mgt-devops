@@ -1,0 +1,40 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Budget inputs (budgets.yaml)
+description: Budget alerts on the billing account named in organisation.yaml; GCP budgets notify, they never cap.
+type: object
+additionalProperties: false
+required:
+  - budgets
+properties:
+  budgets:
+    type: array
+    description: Budget alerts; GCP budgets notify, they never cap.
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - amount
+        - thresholds
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z][a-z0-9-]*$'
+          description: Budget display name; Terraform prepends ef-budget-.
+        amount:
+          type: number
+          description: Monthly amount in GBP.
+          minimum: 0
+        thresholds:
+          type: array
+          description: Fractions of amount triggering alerts, ascending.
+          minItems: 1
+          items:
+            type: number
+            minimum: 0
+            maximum: 1
+        scope:
+          type: string
+          description: Restrict the budget to one project (projects/<id>) or leave unset for account-wide.
+          pattern: '^projects/[a-z0-9-]+$'

@@ -48,8 +48,8 @@ Config carries suffix-only names. Terraform generates full names as `ef-<env>-<s
 | Service account | derived | `sa-dev-tfc` | Landing project |
 | WIF pool | derived | `ef-dev-tfc` | Landing project |
 | TFC project | derived | `ef-dev` | TFC organisation |
-| Billing budget display | `billing.budgets[].name: total` | `ef-budget-total` | GCP billing account |
-| DNS zone name | `domain.yaml[].name: elliott-farrall.phd` | `elliott-farrall-phd` | Landing project |
+| Billing budget display | `budgets[].name: total` | `ef-budget-total` | GCP billing account |
+| DNS zone name | `zones.yaml[].name: elliott-farrall.phd` | `elliott-farrall-phd` | Landing project |
 | Cross-env repo share | `projects[].repo: shared-repo` | `ef-shared-repo` (created once) | Owner namespace |
 | Module | `modules[].name: registry` | `ef-lib-registry` (repo) / `registry` (registry module) | Owner namespace / TFC private registry |
 
@@ -65,7 +65,17 @@ No shared projects exist.
 
 ## Platforms
 
-Each platform does exactly one job. Resources are created by Terraform modules driven from environment configuration.
+Code is organised by function, not by platform. Five repo-local modules,
+each packaging the resources of one deliverable and driven by `for_each`
+from environment configuration:
+
+| Module | Keyed by | Packages |
+|--------|----------|----------|
+| `environment` | environment | TFC project, service account, WIF pool + provider, SA bindings |
+| `project` | project | GitHub repository + protection, GCP project + APIs, TFC workspace + variables |
+| `module` | repository | GitHub repository + protection, private TFC registry module |
+| `zone` | zone | DNS managed zone + record sets |
+| `budget` | budget | Billing budget alert |
 
 ### Google Cloud
 
@@ -256,8 +266,8 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 ├── environments/            # YAML inputs, split by concern
 │   └── mgt/                 # Management environment config
 │       ├── organisation.yaml # Org facts: domain, region, GH owner, TFC hostname
-│       ├── billing.yaml      # Billing account + budgets
-│       ├── domain.yaml       # Domain zones + DNS records
+│       ├── budgets.yaml      # Budget alerts
+│       ├── zones.yaml        # DNS zones + record sets
 │       ├── environments.yaml # Environment list + projects
 │       └── modules.yaml      # Registry module repositories
 ├── infrastructure/          # Terraform working directory
@@ -266,18 +276,12 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │   ├── providers.tf         # Provider configurations
 │   ├── data.tf              # Data sources (shared lookups)
 │   ├── checks.tf            # Validation checks (cross-registry integrity)
-│   └── modules/             # Repo-local Terraform modules
-│       ├── google-project          # GCP projects
-│       ├── google-service-account  # IAM service accounts
-│       ├── google-billing-budget   # Budget alerts
-│       ├── google-dns-managed-zone # DNS zones + record sets
-│       ├── google-iam-member       # IAM bindings (project/org/billing)
-│       ├── google-workload-identity-pool     # WIF pools
-│       ├── google-workload-identity-provider # WIF providers + SA binding
-│       ├── tfe-project             # TFC projects
-│       ├── tfe-workspace           # TFC workspaces + settings + variables
-│       ├── tfe-registry-module     # Private registry modules
-│       └── github-repository       # Repos + branch protection
+│   └── modules/             # Repo-local Terraform modules, by function
+│       ├── environment      # TFC project + identity + WIF + bindings
+│       ├── project          # Repo + workspace + GCP project
+│       ├── module           # Repo + private registry module
+│       ├── zone             # DNS zone + record sets
+│       └── budget           # Billing budget alert
 ├── README.md              # Entry point
 └── .gitignore
 ```
@@ -299,4 +303,4 @@ Console changes are drift. Any manual change must be adopted or reverted within 
 
 ### Import addresses
 
-During bootstrap, seed-created resources are imported into state via module addresses matching the calling sites in `main.tf`. See [bootstrap.md](bootstrap.md) for the complete import table. Addresses use module paths like `module.google-project["ef-mgt-devops"].google_project.this`, keyed by generated names, not hardcoded IDs.
+During bootstrap, seed-created resources are imported into state via module addresses matching the calling sites in `main.tf`. Addresses use module paths like `module.project["ef-mgt-devops"].google_project.this`, keyed by generated names, not hardcoded IDs.

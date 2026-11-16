@@ -2,8 +2,8 @@
 check "budget_scopes_exist" {
   assert {
     condition = alltrue([
-      for b in values(local.google_billing_budgets) :
-      b.scope == "" || !startswith(b.scope, "projects/") || contains(keys(local.google_projects), trimprefix(b.scope, "projects/"))
+      for b in values(local.budgets) :
+      b.scope == "" || !startswith(b.scope, "projects/") || contains(keys(local.projects), trimprefix(b.scope, "projects/"))
     ])
     error_message = "Every budget projects scope must name a declared project."
   }

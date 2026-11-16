@@ -29,6 +29,10 @@ properties:
             type: string
             pattern: '^[a-z]+-[a-z0-9]+$'
             description: Default region for the google provider.
+          billing_account_id:
+            type: string
+            pattern: '^[0-9A-Z]{6}-[0-9A-Z]{6}-[0-9A-Z]{12}$'
+            description: GCP billing account ID attached to every project and hosting the budgets.
       tfe:
         type: object
         additionalProperties: false

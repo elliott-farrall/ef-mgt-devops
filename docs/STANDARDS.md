@@ -12,7 +12,7 @@ Binding for this repository and every future `ef-*` repository.
   (e.g. `ef-dev-identity`, `ef-pre-identity` and `ef-prd-identity` all
   building `ef-app-identity`). Libraries generate `ef-lib-<name>`.
 - Platform identifiers are the provider names: `google`, `tfe`, `github`
-  (`modules/google-project`). Not the product abbreviations
+  (`modules/project`). Not the product abbreviations
   — `gcp`, `tfc`, `gh` are retired. Product names survive only inside data
   values (`sa-<env>-tfc`, `tfc-<env>`, `ef-<env>-tfc`).
 - Service accounts: `sa-<env>-tfc`, **derived** — one per environment. Each
@@ -68,8 +68,8 @@ Binding for this repository and every future `ef-*` repository.
   work-in-progress notes belong in the runbook, never in the tree.
 - Config files are named by setup concern, not by platform:
   `organisation.yaml` (who we operate as — org domain, region, TFC and
-  GitHub handles), `billing.yaml` (billing account and budget alerts),
-  `domain.yaml` (domains and platform records), `environments.yaml`
+  GitHub handles), `budgets.yaml` (budget alerts),
+  `zones.yaml` (DNS zones and platform records), `environments.yaml`
   (a flat list, one entry per environment, each hosting `projects`; the one
   project marked `default: true` is the platform home), and `modules.yaml`
   (a flat list of Terraform module repositories outside any environment).
@@ -97,20 +97,20 @@ Binding for this repository and every future `ef-*` repository.
 - Optional inputs with platform defaults are omitted from the YAML; the
   defaults live in `locals.tf`: `environments[].projects[].working_directory` = `infrastructure`,
   `environments[].projects[].auto_apply` = `false`,
-  `billing` currency = GBP in the module.
+  `budget` currency = GBP in the module.
 - Registry entries inherit platform defaults declared in `locals.tf` and may
   override them with optional blocks (`settings:`, `protection:`); modules
   receive the merged, keyed maps — never raw YAML entries.
 - All derivation in `locals.tf`; resources and modules consume locals only,
   and modules receive their config slice, not the whole merged map.
-- Modules are named `<provider>-<resource>` — the provider's own name and
-  the main resource deployed (`google-project`,
-  `google-service-account`, `google-workload-identity-pool`,
-  `google-workload-identity-provider`, `google-iam-member`, `google-billing-budget`,
-  `google-dns-managed-zone`, `tfe-project`, `tfe-workspace`,
-  `tfe-registry-module`, `github-repository`): each provisions one instance of a resource family.
-  Multiplicity comes from `for_each` at the call site, never from looping
-  inside the module.
+- Modules are named after their function, not their platform:
+  `environment` (TFC project, service account, WIF pool and provider, IAM
+  bindings), `project` (GitHub repository, TFC workspace, GCP project),
+  `module` (GitHub repository, private registry module), `zone` (DNS
+  managed zone and record sets), `budget` (billing budget alert). Each
+  packages one deliverable across every platform it touches. Multiplicity
+  comes from `for_each` at the call site, never from looping inside the
+  module.
 - Module outputs are mechanical: one output per resource the module
   creates, exporting the whole resource object — named after the resource
   type (`google_project`, `tfe_workspace`, plus `tfe_variable_<name>` where
@@ -118,8 +118,9 @@ Binding for this repository and every future `ef-*` repository.
   attributes; the consumer picks what it needs.
 - Module call grammar: `source`, then `for_each`; blank line; inputs;
   blank line; `depends_on`. The `for_each` local is named after the
-  module, pluralised: `google-project` ← `local.google_projects`,
-  `google-iam-member` ← `local.google_iam_members`.
+  module, pluralised: `project` ← `local.projects`,
+  `environment` ← `local.environments`, `module` ← `local.modules`,
+  `zone` ← `local.zones`, `budget` ← `local.budgets`.
 - Every module call binds to exactly one local: `for_each` iterates a
   `local.*` collection, and each argument is a pass-through of
   `each.value`, a key, or a bare data/local reference. No comprehensions,
@@ -138,14 +139,14 @@ Binding for this repository and every future `ef-*` repository.
 - Data sources always live in a `data.tf` — root or module — never in
   `main.tf`. A module's lookup belongs in that module's `data.tf`; the
   root `data.tf` holds only lookups shared by several modules
-  (`google_organization`, `google_billing_account`). Cross-module wiring
+  (`google_organization`, `google_project`). Cross-module wiring
   is done only in the root `main.tf`.
 - Cross-module ordering is stated with explicit `depends_on` even where
-  value references already imply it: projects → pools and
-  service accounts → providers → bindings, projects → budgets and zones,
-  github-repositories → workspaces and registry modules.
-  The wiring graph in `main.tf` should be readable without tracing
-  expressions.
+  value references already imply it: environments → projects (workspaces
+  bind to TFC projects and impersonate environment identities), projects →
+  zones and budgets. Within modules, workspaces and registry modules
+  depend on their own repository. The wiring graph in `main.tf` should be
+  readable without tracing expressions.
 - `check` blocks live in `checks.tf` — root or module — never in
   `main.tf`. A check belongs in the module that owns the invariant; the
   root `checks.tf` keeps cross-registry referential integrity
@@ -153,10 +154,8 @@ Binding for this repository and every future `ef-*` repository.
   budget scope→project).
 - `main.tf` is composition only — no hand-written resources, with no
   exceptions: pools
-  (`google-workload-identity-pool`, one per environment), providers
-  (`google-workload-identity-provider`, one per federated identity,
-  minting tokens into exactly one service account), and every further
-  binding (`google-iam-member`) all sit behind modules.
+  pools and providers live inside the `environment` module, and every
+  binding behind a module call.
 - Validation is Terraform-native: `validation`, `precondition`, and `check`
   blocks must fail bad input at plan time.
 - Modules stay repo-local until code must cross repositories; then extract to

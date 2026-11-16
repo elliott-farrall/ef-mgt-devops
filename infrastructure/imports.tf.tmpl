@@ -1,29 +1,29 @@
 import {
-  to   = module.google-project["${GCP_DEFAULT_PROJECT}"].google_project.this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].google_project.this
   id   = "${GCP_PROJ_NUM}"
 }
 
 import {
-  to   = module.google-service-account["sa-${TFC_ENV_NAME}-tfc"].google_service_account.this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].github_repository.this
+  id   = "${GCP_DEFAULT_PROJECT}"
+}
+
+import {
+  to   = module.environment["${TFC_ENV_NAME}"].google_service_account.this
   id   = "${GCP_SA_EMAIL}"
 }
 
 import {
-  to   = module.tfe-project["${TFC_ENV_NAME}"].tfe_project.this
+  to   = module.environment["${TFC_ENV_NAME}"].tfe_project.this
   id   = "prj-${TFC_PROJ_ID}"
 }
 
 import {
-  to   = module.tfe-workspace["${TFC_WS_NAME}"].tfe_workspace.this
+  to   = module.project["${TFC_WS_NAME}"].tfe_workspace.this
   id   = "${TFC_WSID}"
 }
 
 import {
-  to   = module.tfe-workspace["${TFC_WS_NAME}"].tfe_workspace_settings.this
+  to   = module.project["${TFC_WS_NAME}"].tfe_workspace_settings.this
   id   = "${TFC_WSID}"
-}
-
-import {
-  to   = module.github-repository["${GCP_DEFAULT_PROJECT}"].github_repository.this
-  id   = "${GCP_DEFAULT_PROJECT}"
 }
