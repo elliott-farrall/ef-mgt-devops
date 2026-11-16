@@ -60,14 +60,21 @@ here in the same PR that makes it.
   deletions, conversation resolution and linear history required, stale
   reviews dismissed, zero required approvals, strict status checks on
   `["ci / branch-name (pull_request)", "ci / terraform (pull_request)",
-  "ci / yaml (pull_request)", "ci / shell (pull_request)"]`. Per-repo
+  "ci / yaml (pull_request)", "ci / shell (pull_request)",
+  "Terraform Cloud / <workspace> (Predict)"]` — the last requires a
+  successful speculative TFC plan before merge. Per-repo
   overrides arrive as `settings:`/`protection:` on the entry.
 - PR branches: `<type>/<kebab-name>`, type one of `feature`, `fix`,
   `hotfix`, `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`,
   `revert`. Enforced by the `branch-name` CI check, required on `main`.
 - CI runs format checks, schema validation, shellcheck, and Terraform
-  validate (no backend) — plan-only, no cloud credentials. A merge to
-  `main` starts the TFC run; GitHub Actions never applies.
+  validate (no backend) — plan-only, no cloud credentials. TFC runs a
+  speculative plan on every PR; a successful plan is a required status
+  check. A merge to `main` starts the TFC run; GitHub Actions never
+  applies. Merging stays manual — no auto-merge.
+- Zero required approving reviews: a solo maintainer's own approval does
+  not block them; review quality is enforced by required checks and
+  conversation resolution instead.
 - The TFC GitHub App installation is the one sanctioned console action:
   done once, its installation name then makes every workspace link pure
   Terraform.

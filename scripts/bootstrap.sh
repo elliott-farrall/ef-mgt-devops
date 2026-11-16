@@ -157,7 +157,17 @@ if [[ -z "${TFC_ORG_ID}" || "${TFC_ORG_ID}" == "null" ]]; then
 fi
 r "Authenticated, organisation ${TFC_ORG} accessible"
 
-t "2.2. Creating TFC project ef-mgt"
+t "2.2. Verifying GitHub App installation ${GH_OWNER}"
+GITHUB_INSTALLATION_ID="$(curl -s -H "Authorization: Bearer ${TF_TOKEN_APP_TERRAFORM_IO}" \
+  "https://${TFC_HOSTNAME}/api/v2/github-app/installations" \
+  | jq -r ".data[] | select(.attributes.name==\"${GH_OWNER}\") | .id" | head -n1)"
+if [[ -z "${GITHUB_INSTALLATION_ID}" ]]; then
+  r "No GitHub App installation named '${GH_OWNER}' connected to the TFC organisation"
+  die "Abort: install the Terraform Cloud GitHub App on the GitHub organisation '${GH_OWNER}', then rerun"
+fi
+r "GitHub App installation '${GH_OWNER}' connected"
+
+t "2.3. Creating TFC project ef-mgt"
 TFC_PROJECT_ID="$(tfccli projects list ${TFC_OPTS} | jq -r 'select(.name=="ef-mgt") | .id' | head -n1)"
 if [[ -z "${TFC_PROJECT_ID}" || "${TFC_PROJECT_ID}" == "null" ]]; then
   TFC_PROJECT_ID="$(tfccli projects create --name ef-mgt ${TFC_OPTS} | jq -r '.id')"
@@ -167,7 +177,7 @@ else
 fi
 r "Project ID: ${TFC_PROJECT_ID}"
 
-t "2.3. Creating workspace ef-mgt-devops"
+t "2.4. Creating workspace ef-mgt-devops"
 TFC_WORKSPACE_ID="$(tfccli workspaces list ${TFC_OPTS} --project-id "${TFC_PROJECT_ID}" \
          | jq -r "select(.name==\"ef-mgt-devops\") | .id" | head -n1)"
 if [[ -n "${TFC_WORKSPACE_ID}" ]]; then
