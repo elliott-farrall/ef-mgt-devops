@@ -53,12 +53,22 @@ creates `sa-mgt-tfc`.
 
 - An HCP Terraform account with the organisation named in
   `environments/mgt/organisation.yaml` (`organisation.tfe.organisation`).
-- A team token with org admin rights, exported as:
+- A **user** API token with org admin rights — team and organisation
+  tokens cannot create or update workspaces connected through the GitHub
+  App. Export it as:
 
 ```sh
-export TF_TOKEN_APP_TERRAFORM_IO=<team-token>
+export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
 ```
 
+- The user who owns that token must authorise the Terraform Cloud GitHub
+  App once in the browser (User Settings → Authorized GitHub Apps) — the
+  first apply links the workspace to the repository through that
+  authorisation.
+- A fine-grained GitHub PAT with repository administration on
+  `elliott-farrall`, exported as `GITHUB_TOKEN`. Every TFC run needs it for
+  the GitHub provider; bootstrap seeds it into the workspace as a
+  sensitive variable.
 - The org must be able to run remote workspaces (Team & Business tiers or
   above).
 
@@ -92,7 +102,8 @@ apply consume every value in them:
 
 ## Running
 
-From the repository root, with `TF_TOKEN_APP_TERRAFORM_IO` exported:
+From the repository root, with `TF_TOKEN_APP_TERRAFORM_IO` and
+`GITHUB_TOKEN` exported:
 
 ```sh
 nix develop .#bootstrap -c ./scripts/bootstrap.sh
@@ -106,14 +117,21 @@ exists:
    `sa-mgt-tfc`.
 2. **Terraform Cloud** — verify token and org access, verify the GitHub App
    installation, create TFC project `ef-mgt` and workspace
-   `ef-mgt-devops`.
+   `ef-mgt-devops`, then seed the credential variables the first run needs
+   (`GOOGLE_CREDENTIALS` from a temporary bootstrap key, plus
+   `GITHUB_TOKEN` and `TFE_TOKEN`).
 3. **Imports** — derive the import addresses and render
    `infrastructure/imports.tf` from `imports.tf.tmpl`, addressing every
    bootstrap-created resource at its eventual Terraform module address.
 4. **Deploy** — `terraform init` against the remote backend, then a single
    `apply` that imports the bootstrap resources into state and creates
    everything else (identities, pools, providers, bindings, budgets,
-   zones).
+   zones). The first run authenticates to Google with the bootstrap key;
+   the workspace variables it creates switch every later run to workload
+   identity federation.
+5. **Close out** — delete the `GOOGLE_CREDENTIALS` variable and the
+   temporary bootstrap service account and key. Never rerun phase 4 after
+   close-out without rerunning the whole script.
 
 ## After the first run
 

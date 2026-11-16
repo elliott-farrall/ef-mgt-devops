@@ -23,7 +23,7 @@ yaml-style: ## Check YAML is block-style with plain scalars
 	@files=$$(ls environments/*/*.yaml 2>/dev/null || true); \
 	[ -z "$$files" ] && exit 0; \
 	if grep -rnE '(: *[([{"])|(^[[:space:]]*- *\{)' $$files; then \
-	  echo "YAML config must be block style with plain scalars (see docs/standards.md)"; exit 1; fi
+	  echo "YAML config must be block style with plain scalars (see docs/STANDARDS.md)"; exit 1; fi
 
 # ── Terraform ───────────────────────────────────────────────────────────
 terraform-fmt: ## Format-check Terraform files
@@ -32,11 +32,16 @@ terraform-fmt: ## Format-check Terraform files
 terraform-init: ## Initialize Terraform configuration
 	terraform init -backend=false -chdir=infrastructure
 
-terraform-validate: ## Validate Terraform configuration
+terraform-validate: terraform-init ## Validate Terraform configuration
 	terraform validate -chdir=infrastructure
 
-terraform-docs: ## Generate README.md for root module and all submodules
-	@terraform-docs infrastructure 2>/dev/null || true
+terraform-docs: ## Verify module READMEs are current
+	@ROOT=$$(git rev-parse --show-toplevel); \
+	for dir in infrastructure infrastructure/modules/*/; do \
+	  (cd "$$ROOT/$$dir" && terraform-docs markdown table . --output-file README.md) || exit 1; \
+	done; \
+	cd "$$ROOT" && git diff --exit-code -- infrastructure/README.md 'infrastructure/modules/*/README.md' || \
+	  { echo "::error::terraform-docs READMEs are stale — run make terraform-docs"; exit 1; }
 
 terraform: terraform-fmt terraform-validate terraform-docs ## Run all Terraform checks
 

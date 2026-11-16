@@ -3,9 +3,10 @@ set -euo pipefail
 
 # ── Bootstrap: EF platform bring-up ────────────────────────────────
 # 1) Setup Google Cloud — create seed resources TF cannot make itself
-# 2) Setup Terraform Cloud — create seed TFC resources  
+# 2) Setup Terraform Cloud — create seed TFC resources + credential variables
 # 3) Render imports from template — pass IDs collected in steps 1&2
 # 4) Deploy — single terraform apply to import + deploy everything
+# 5) Close out — revoke the temporary bootstrap credentials
 # ──────────────────────────────────────────────────────────────────
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,8 +26,8 @@ r()     { printf '│   └── %s\n' "$*"; }  # result (aligned under action)
 
 h "Dependencies"
 
-for t in gcloud terraform jq git tfccli envsubst yq; do
-  command -v "${t}" >/dev/null || die "${t} not found on PATH"
+for tool in gcloud terraform jq git tfccli envsubst yq; do
+  command -v "${tool}" >/dev/null || die "${tool} not found on PATH"
 done
 
 # ══════════════════════════════════════════════════════════════════
@@ -35,43 +36,39 @@ done
 
 h "Config"
 
-GCP_DOMAIN=$(yq '.organisation.gcp.domain' "${ENV_DIR}/organisation.yaml")
-GCP_BILLING_NAME=$(yq '.organisation.gcp.billing' "${ENV_DIR}/organisation.yaml")
+GCP_DOMAIN=$(yq -r '.organisation.gcp.domain' "${ENV_DIR}/organisation.yaml")
+GCP_BILLING_NAME=$(yq -r '.organisation.gcp.billing' "${ENV_DIR}/organisation.yaml")
 
-# Load all project configs from env dir (envs + libs YAML files)
-PROJECT_CONFIGS=$(mktemp)
-for f in $(find "${ENV_DIR}" -name "*.yaml" ! -path "*organisation.yaml" | sort); do
-  echo "" >> "${PROJECT_CONFIGS}"
-  yq '.' "${f}" >> "${PROJECT_CONFIGS}"
-done
-
-# Derive default devops project info from mgt environment YAML
+# Derive default devops project services from the mgt environment YAML
 MGT_ENV_YAML="${ENV_DIR}/environments.yaml"
 if ! grep -q '^  - name: mgt$' "${MGT_ENV_YAML}" || \
    ! grep -A50 '^  - name: mgt$' "${MGT_ENV_YAML}" | grep -q 'name: devops'; then
   die "mgt/devops project configuration missing from ${MGT_ENV_YAML}"
 fi
+mapfile -t DEVOPS_SERVICES < <(yq -r '.environments[] | select(.name=="mgt") | .projects[] | select(.name=="devops") | .services[]' "${MGT_ENV_YAML}")
+[[ ${#DEVOPS_SERVICES[@]} -gt 0 ]] || die "devops services missing from mgt/environments.yaml"
 
-DEVOPS_SERVICES=$(grep -A200 '^  - name: mgt$' "${MGT_ENV_YAML}" | grep -A50 'projects:' | grep 'services:' | tail -1 | tr -d ' :')
-
-TFC_ORG=$(yq '.organisation.tfe.organisation' "${ENV_DIR}/organisation.yaml")
-TFC_HOSTNAME=$(yq '.organisation.tfe.hostname' "${ENV_DIR}/organisation.yaml")
-GH_OWNER=$(yq '.organisation.gh.owner' "${ENV_DIR}/organisation.yaml")
+TFC_ORG=$(yq -r '.organisation.tfe.organisation' "${ENV_DIR}/organisation.yaml")
+TFC_HOSTNAME=$(yq -r '.organisation.tfe.hostname' "${ENV_DIR}/organisation.yaml")
+GH_OWNER=$(yq -r '.organisation.gh.owner' "${ENV_DIR}/organisation.yaml")
 
 [[ -n "${GCP_DOMAIN}" ]] || die "gcp domain not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${GCP_BILLING_NAME}" ]] || die "billing account name not found in ${ENV_DIR}/organisation.yaml"
-GCP_BILLING_ACCOUNT="$(gcloud billing accounts list --filter="displayName=${GCP_BILLING_NAME}" --format='value(name)' 2>/dev/null | head -n1)"
-[[ -n "${GCP_BILLING_ACCOUNT}" ]] || die "billing account ${GCP_BILLING_NAME} not found or not accessible"
-GCP_BILLING_ACCOUNT="${GCP_BILLING_ACCOUNT#billingAccounts/}"
-r "Resolved billing account: ${GCP_BILLING_NAME} (${GCP_BILLING_ACCOUNT})"
-[[ -n "${DEVOPS_SERVICES}" ]] || die "devops services missing from mgt/environments.yaml"
 [[ -n "${TFC_ORG}" ]] || die "TFC organisation not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${GH_OWNER}" ]] || die "GitHub owner not found in ${ENV_DIR}/organisation.yaml"
 
+# Credentials supplied by the caller — never stored in this repository
+[[ -n "${TF_TOKEN_APP_TERRAFORM_IO:-}" ]] || die "set TF_TOKEN_APP_TERRAFORM_IO (a user API token whose owner has authorised the TFC GitHub App)"
+[[ -n "${GITHUB_TOKEN:-}" ]] || die "set GITHUB_TOKEN (a fine-grained PAT with repo administration on ${GH_OWNER})"
+
 # Derived identifiers — built once from config, referenced everywhere
+GCP_DEFAULT_PROJECT="ef-mgt-devops"
 SA_NAME="sa-mgt-tfc"
-SA_EMAIL="${SA_NAME}@ef-mgt-devops.iam.gserviceaccount.com"
+SA_EMAIL="${SA_NAME}@${GCP_DEFAULT_PROJECT}.iam.gserviceaccount.com"
+BOOTSTRAP_SA="sa-adm-bootstrap"
+BOOTSTRAP_SA_EMAIL="${BOOTSTRAP_SA}@${GCP_DEFAULT_PROJECT}.iam.gserviceaccount.com"
+BOOTSTRAP_KEY="/tmp/${BOOTSTRAP_SA}.json"
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 1: Setup Google Cloud
@@ -95,45 +92,66 @@ if [[ -z "${GCP_ORG_ID}" ]]; then
   r "Organisation '${GCP_DOMAIN}' not accessible"
   die "Abort: account '${CURRENT_GCP_ACCT}' lacks access to '${GCP_DOMAIN}'"
 fi
-GCP_ORG="folders/${GCP_ORG_ID#organizations/}"
-r "Resolved: ${GCP_ORG_ID} (${GCP_ORG})"
+r "Resolved: ${GCP_ORG_ID}"
 
-t "1.3. Creating project ef-mgt-devops"
-if gcloud projects describe "ef-mgt-devops" >/dev/null 2>&1; then
+t "1.3. Creating project ${GCP_DEFAULT_PROJECT}"
+if gcloud projects describe "${GCP_DEFAULT_PROJECT}" >/dev/null 2>&1; then
   r "Project already exists"
 else
-  gcloud projects create "ef-mgt-devops" \
-    --folder="${GCP_ORG_ID#/folders/}" \
+  gcloud projects create "${GCP_DEFAULT_PROJECT}" \
+    --organization="${GCP_ORG_ID#organizations/}" \
     --billing-account="${GCP_BILLING_ACCOUNT}" \
     --set-as-default
   r "Created project"
 fi
-GCP_PROJ_NUM="$(gcloud projects describe "ef-mgt-devops" --format='value(projectNumber)' 2>/dev/null | head -n1)"
-[[ -n "${GCP_PROJ_NUM}" ]] || die "project number not found for ef-mgt-devops"
+GCP_PROJ_NUM="$(gcloud projects describe "${GCP_DEFAULT_PROJECT}" --format='value(projectNumber)' 2>/dev/null | head -n1)"
+[[ -n "${GCP_PROJ_NUM}" ]] || die "project number not found for ${GCP_DEFAULT_PROJECT}"
 r "Project number: ${GCP_PROJ_NUM}"
 
-t "1.4. Enabling required APIs on ef-mgt-devops"
-if [[ -z "${DEVOPS_SERVICES}" ]]; then
-  r "No services configured (handled by Terraform)"
-else
-  IFS=$'\n' SERVICES_ARR=(${DEVOPS_SERVICES//[$'\n']/ })
-  unset IFS
-  for svc in "${SERVICES_ARR[@]}"; do
-    gcloud services enable "${svc}" --project="ef-mgt-devops"
-    r "Enabled API: ${svc}"
-  done
-fi
-r "APIs ready"
+t "1.4. Enabling required APIs on ${GCP_DEFAULT_PROJECT}"
+for svc in "${DEVOPS_SERVICES[@]}"; do
+  gcloud services enable "${svc}" --project="${GCP_DEFAULT_PROJECT}"
+  r "Enabled API: ${svc}"
+done
 
-t "1.5. Creating service account sa-mgt-tfc"
-if gcloud iam service-accounts list --project="ef-mgt-devops" --format="value(email)" \
-   | grep -q "${SA_NAME}@"; then
-  r "sa-mgt-tfc already exists"
+t "1.5. Creating service account ${SA_NAME}"
+if gcloud iam service-accounts list --project="${GCP_DEFAULT_PROJECT}" --format="value(email)" \
+   | grep -q "^${SA_NAME}@"; then
+  r "${SA_NAME} already exists"
 else
   gcloud iam service-accounts create "${SA_NAME}" \
     --display-name="Management plane" \
-    --project="ef-mgt-devops"
-  r "Created sa-mgt-tfc"
+    --project="${GCP_DEFAULT_PROJECT}"
+  r "Created ${SA_NAME}"
+fi
+
+t "1.6. Creating the temporary bootstrap identity ${BOOTSTRAP_SA}"
+if gcloud iam service-accounts list --project="${GCP_DEFAULT_PROJECT}" --format="value(email)" \
+   | grep -q "^${BOOTSTRAP_SA}@"; then
+  r "${BOOTSTRAP_SA} already exists"
+else
+  gcloud iam service-accounts create "${BOOTSTRAP_SA}" \
+    --display-name="Bootstrap only" \
+    --project="${GCP_DEFAULT_PROJECT}"
+  r "Created ${BOOTSTRAP_SA}"
+fi
+gcloud organizations add-iam-policy-binding "${GCP_ORG_ID#organizations/}" \
+  --member="serviceAccount:${BOOTSTRAP_SA_EMAIL}" \
+  --role="roles/resourcemanager.organizationAdmin" --condition=None >/dev/null
+gcloud billing accounts add-iam-policy-binding "${GCP_BILLING_ACCOUNT}" \
+  --member="serviceAccount:${BOOTSTRAP_SA_EMAIL}" \
+  --role="roles/billing.admin" >/dev/null
+gcloud projects add-iam-policy-binding "${GCP_DEFAULT_PROJECT}" \
+  --member="serviceAccount:${BOOTSTRAP_SA_EMAIL}" \
+  --role="roles/owner" >/dev/null
+r "Granted organisation admin, billing admin, project owner"
+if gcloud iam service-accounts keys list --iam-account="${BOOTSTRAP_SA_EMAIL}" \
+   --format="value(name)" --project="${GCP_DEFAULT_PROJECT}" 2>/dev/null | grep -q "/keys/"; then
+  r "Key already exists"
+else
+  gcloud iam service-accounts keys create "${BOOTSTRAP_KEY}" \
+    --iam-account="${BOOTSTRAP_SA_EMAIL}" >/dev/null
+  r "Created key ${BOOTSTRAP_KEY}"
 fi
 
 # ══════════════════════════════════════════════════════════════════
@@ -143,13 +161,10 @@ fi
 h "Phase 2: Terraform Cloud"
 
 TFC_OPTS="--address https://${TFC_HOSTNAME} --org ${TFC_ORG} --output-format json"
+TFC_API="https://${TFC_HOSTNAME}/api/v2"
+TFC_AUTH=( -H "Authorization: Bearer ${TF_TOKEN_APP_TERRAFORM_IO}" -H "Content-Type: application/vnd.api+json" )
 
 t "2.1. Verify Terraform Cloud token"
-if [[ -z "${TF_TOKEN_APP_TERRAFORM_IO:-}" ]]; then
-  r "Token not set — set TF_TOKEN_APP_TERRAFORM_IO environment variable"
-  die "Abort: set TF_TOKEN_APP_TERRAFORM_IO first"
-fi
-# Single call: validates access and captures org ID in one pass
 TFC_ORG_ID="$(tfccli organizations get --name "${TFC_ORG}" ${TFC_OPTS} | jq -r '.data.id' 2>/dev/null)"
 if [[ -z "${TFC_ORG_ID}" || "${TFC_ORG_ID}" == "null" ]]; then
   r "Organisation '${TFC_ORG}' inaccessible"
@@ -158,8 +173,7 @@ fi
 r "Authenticated, organisation ${TFC_ORG} accessible"
 
 t "2.2. Verifying GitHub App installation ${GH_OWNER}"
-GITHUB_INSTALLATION_ID="$(curl -s -H "Authorization: Bearer ${TF_TOKEN_APP_TERRAFORM_IO}" \
-  "https://${TFC_HOSTNAME}/api/v2/github-app/installations" \
+GITHUB_INSTALLATION_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/github-app/installations" \
   | jq -r ".data[] | select(.attributes.name==\"${GH_OWNER}\") | .id" | head -n1)"
 if [[ -z "${GITHUB_INSTALLATION_ID}" ]]; then
   r "No GitHub App installation named '${GH_OWNER}' connected to the TFC organisation"
@@ -175,18 +189,38 @@ if [[ -z "${TFC_PROJECT_ID}" || "${TFC_PROJECT_ID}" == "null" ]]; then
 else
   r "TFC project ef-mgt already exists (${TFC_PROJECT_ID})"
 fi
-r "Project ID: ${TFC_PROJECT_ID}"
 
-t "2.4. Creating workspace ef-mgt-devops"
+t "2.4. Creating workspace ${GCP_DEFAULT_PROJECT}"
 TFC_WORKSPACE_ID="$(tfccli workspaces list ${TFC_OPTS} --project-id "${TFC_PROJECT_ID}" \
-         | jq -r "select(.name==\"ef-mgt-devops\") | .id" | head -n1)"
+         | jq -r "select(.name==\"${GCP_DEFAULT_PROJECT}\") | .id" | head -n1)"
 if [[ -n "${TFC_WORKSPACE_ID}" ]]; then
   r "Workspace already exists (${TFC_WORKSPACE_ID})"
 else
-  TFC_WORKSPACE_ID="$(tfccli workspaces create --name "ef-mgt-devops" --project-id "${TFC_PROJECT_ID}" ${TFC_OPTS} \
+  TFC_WORKSPACE_ID="$(tfccli workspaces create --name "${GCP_DEFAULT_PROJECT}" --project-id "${TFC_PROJECT_ID}" ${TFC_OPTS} \
            | jq -r '.id')"
   r "Created workspace (${TFC_WORKSPACE_ID})"
 fi
+
+t "2.5. Seeding workspace variables for the first apply"
+seed_var() {
+  local key="$1" value="$2" category="$3" sensitive="$4"
+  local body existing
+  existing="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/vars" \
+    | jq -r ".data[] | select(.attributes.key==\"${key}\" and .attributes.category==\"${category}\") | .id" | head -n1)"
+  body=$(jq -n --arg key "${key}" --arg value "${value}" --arg category "${category}" --argjson sensitive "${sensitive}" \
+    '{data: {type: "vars", attributes: {key: $key, value: $value, category: $category, hcl: false, sensitive: $sensitive}}}')
+  if [[ -n "${existing}" ]]; then
+    curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/vars/${existing}" -d "${body}" >/dev/null
+    r "Updated ${key}"
+  else
+    curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/vars" -d "${body}" >/dev/null
+    r "Created ${key}"
+  fi
+}
+seed_var "GOOGLE_CREDENTIALS" "$(cat "${BOOTSTRAP_KEY}")" "env" true
+seed_var "GITHUB_TOKEN" "${GITHUB_TOKEN}" "env" true
+seed_var "TFE_TOKEN" "${TF_TOKEN_APP_TERRAFORM_IO}" "env" true
+r "Credential variables seeded — the first apply authenticates with the bootstrap key; Terraform adds the WIF variables for every run after it"
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 3: Render imports from template
@@ -195,11 +229,11 @@ fi
 h "Phase 3: Render imports"
 
 t "3.1. Deriving import addresses"
-export GCP_DEFAULT_PROJECT="ef-mgt-devops"
-export GCP_SA_EMAIL="${SA_NAME}@ef-mgt-devops.iam.gserviceaccount.com"
+export GCP_DEFAULT_PROJECT
+export GCP_SA_EMAIL="${SA_EMAIL}"
 export TFC_ENV_NAME="mgt"
 export TFC_PROJ_ID="${TFC_PROJECT_ID#prj-}"
-export TFC_WS_NAME="ef-mgt-devops"
+export TFC_WS_NAME="${GCP_DEFAULT_PROJECT}"
 export TFC_WSID="${TFC_WORKSPACE_ID}"
 r "Import addresses derived"
 
@@ -213,15 +247,37 @@ r "Rendered imports.tf — $(wc -l < "${INFRA_DIR}/imports.tf") lines"
 
 h "Phase 4: Deploy"
 
-t "4.1. Initialising Terraform against workspace ef-mgt-devops"
+t "4.1. Initialising Terraform against workspace ${GCP_DEFAULT_PROJECT}"
 export TF_ADDRESS="https://${TFC_HOSTNAME}"
 export TF_CREDENTIALS="env"
 export TF_HTTP_USERNAME="token"
 export TF_HTTP_PASSWORD="${TF_TOKEN_APP_TERRAFORM_IO}"
-export TF_WORKSPACE="ef-mgt-devops"
+export TF_WORKSPACE="${GCP_DEFAULT_PROJECT}"
 terraform -chdir="${INFRA_DIR}" init -backend-config="organization=${TFC_ORG}"
 r "Initialised"
 
 t "Running Terraform apply to import existing + deploy non-existing resources"
 terraform -chdir="${INFRA_DIR}" apply -auto-approve
 r "Deploy complete"
+
+# ══════════════════════════════════════════════════════════════════
+# Phase 5: Close out — revoke the temporary bootstrap credentials
+# ══════════════════════════════════════════════════════════════════
+
+h "Phase 5: Close out"
+
+t "5.1. Removing the temporary bootstrap credentials from the workspace"
+GOOGLE_CREDS_VAR_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/vars" \
+  | jq -r '.data[] | select(.attributes.key=="GOOGLE_CREDENTIALS" and .attributes.category=="env") | .id' | head -n1)"
+if [[ -n "${GOOGLE_CREDS_VAR_ID}" ]]; then
+  curl -s -X DELETE "${TFC_AUTH[@]}" "${TFC_API}/vars/${GOOGLE_CREDS_VAR_ID}" >/dev/null
+  r "Deleted GOOGLE_CREDENTIALS workspace variable"
+fi
+
+t "5.2. Deleting the bootstrap identity"
+shred -u "${BOOTSTRAP_KEY}" 2>/dev/null || rm -f "${BOOTSTRAP_KEY}"
+gcloud iam service-accounts delete "${BOOTSTRAP_SA_EMAIL}" \
+  --project="${GCP_DEFAULT_PROJECT}" --quiet >/dev/null
+r "Deleted ${BOOTSTRAP_SA} and its key"
+
+r "Bootstrap complete — the platform now runs from main via TFC"

@@ -14,7 +14,7 @@ locals {
       issuer             = "https://${local.config.organisation.tfe.hostname}"
       roles = concat(
         [for role in ["roles/resourcemanager.projectCreator", "roles/editor", "roles/iam.serviceAccountUser", "roles/dns.admin"] : { scope = "project:${local.google_default_project}", role = role }],
-        e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.user" }, { scope = "project:${local.google_default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : [],
+        e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.costsManager" }, { scope = "project:${local.google_default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : [],
       )
     }
   }

@@ -104,9 +104,10 @@ here in the same PR that makes it.
 
 ## Terraform code
 
-- Exactly one top-level variable: `environment`, no default, validated
-  against the environment slots and the existence of
-  `environments/<name>/`.
+- One top-level variable: `environment`, validated against the
+  environment slots and the existence of `environments/<name>/`. A default
+  is set situationally — the landing workspace needs one for its first run,
+  before its `environment` variable exists; other stacks may omit it.
 - Block types split into separate files: `locals.tf`, `data.tf`,
   `checks.tf`, `providers.tf`, `versions.tf`, and so on — one purpose per
   filename. The one exception is resources and module blocks: they live in
