@@ -29,7 +29,9 @@ module "project" {
   github_app_installation   = each.value.github_app_installation
   wif_provider              = each.value.wif_provider
   gcp_service_account_email = each.value.gcp_service_account_email
-  repository                = each.value.repository
+  repo                      = each.value.repo
+  description               = each.value.description
+  settings                  = each.value.settings
   protection                = each.value.protection
 }
 
@@ -43,7 +45,9 @@ module "module" {
   organization            = each.value.organization
   repository_id           = each.value.repository_id
   github_app_installation = each.value.github_app_installation
-  repository              = each.value.repository
+  repo                    = each.value.repo
+  description             = each.value.description
+  settings                = each.value.settings
   protection              = each.value.protection
 }
 

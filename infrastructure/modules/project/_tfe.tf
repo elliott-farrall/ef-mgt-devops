@@ -5,7 +5,7 @@ resource "tfe_workspace" "this" {
   auto_apply        = var.auto_apply
 
   vcs_repo {
-    identifier                 = "${var.github_owner}/${var.repository.name}"
+    identifier                 = "${var.github_owner}/${var.repo}"
     branch                     = "main"
     github_app_installation_id = data.tfe_github_app_installation.this.id
   }

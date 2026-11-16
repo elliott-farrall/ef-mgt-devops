@@ -102,12 +102,17 @@ Binding for this repository and every future `ef-*` repository.
   for exactly this reason). `.schemas/` is exempt: JSON Schema regex
   patterns and prose descriptions legitimately carry quotes.
 - Optional inputs with platform defaults are omitted from the YAML; the
-  defaults live in `locals.tf`: `environments[].projects[].working_directory` = `infrastructure`,
-  `environments[].projects[].auto_apply` = `false`,
-  `budget` currency = GBP in the module.
-- Registry entries inherit platform defaults declared in `locals.tf` and may
-  override them with optional blocks (`settings:`, `protection:`); modules
-  receive the merged, keyed maps — never raw YAML entries.
+  defaults live with the resources that consume them — inside the owning
+  module: `working_directory` = `infrastructure` and `auto_apply` = `false`
+  in the `project` module, `budget` currency = GBP in the `budget` module,
+  repository and branch-protection defaults in the `project` and `module`
+  modules. Registry entries pass optional overrides (`settings:`,
+  `protection:`, `description:`) straight through; the module merges them.
+- `locals.tf` holds, in order: `config` (the merged YAML), one top-level
+  local per module — named after the module, plural, and used directly as
+  that module call's `for_each` — and nothing else. Extra top-level locals
+  are the rare exception, allowed only when a check or a data source needs
+  them (today: `google_default_project`). Everything else is inlined.
 - All derivation in `locals.tf`; resources and modules consume locals only,
   and modules receive their config slice, not the whole merged map.
 - Modules are named after their function, not their platform:
