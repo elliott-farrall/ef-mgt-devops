@@ -25,7 +25,7 @@ locals {
     for e in local.infrastructure_environments : e.name => {
       name                = e.name
       organization_id     = data.google_organization.ef.id
-      billing_account_id  = local.config.organisation.gcp.billing_account_id
+      billing_account_id  = data.google_billing_account.ef.id
       landing_project_id  = local.google_default_project
       pool_project_number = data.google_project.landing.number
       issuer              = "https://${local.config.organisation.tfe.hostname}"
@@ -45,7 +45,7 @@ locals {
       name                      = p.name
       environment               = p.env
       project_id                = module.environment[p.env].tfe_project.this.id
-      billing_account_id        = local.config.organisation.gcp.billing_account_id
+      billing_account_id        = data.google_billing_account.ef.id
       labels                    = { environment = p.env, managed_by = "terraform", repository = p.repo }
       services                  = try(p.services, [])
       working_directory         = try(p.working_directory, "infrastructure")
@@ -86,7 +86,7 @@ locals {
   budgets = {
     for b in local.config.budgets : "ef-budget-${b.name}" => {
       name               = "ef-budget-${b.name}"
-      billing_account_id = local.config.organisation.gcp.billing_account_id
+      billing_account_id = data.google_billing_account.ef.id
       amount             = b.amount
       thresholds         = b.thresholds
       scope              = try(b.scope, null) == null ? "" : b.scope

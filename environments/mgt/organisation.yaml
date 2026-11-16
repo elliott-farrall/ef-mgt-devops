@@ -3,7 +3,8 @@ organisation:
   gcp:
     domain: elliott-farrall.phd
     region: europe-west2
-    billing_account_id: 012345-ABCDEF-012345678901
+    billing:
+      name: billing
 
   tfe:
     organisation: elliott-farrall

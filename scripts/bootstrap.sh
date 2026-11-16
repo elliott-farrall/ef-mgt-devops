@@ -36,7 +36,7 @@ done
 h "Config"
 
 GCP_DOMAIN=$(yq '.organisation.gcp.domain' "${ENV_DIR}/organisation.yaml")
-GCP_BILLING_ACCOUNT=$(yq '.organisation.gcp.billing_account_id' "${ENV_DIR}/organisation.yaml")
+GCP_BILLING_NAME=$(yq '.organisation.gcp.billing.name' "${ENV_DIR}/organisation.yaml")
 
 # Load all project configs from env dir (envs + libs YAML files)
 PROJECT_CONFIGS=$(mktemp)
@@ -59,7 +59,11 @@ TFC_HOSTNAME=$(yq '.organisation.tfe.hostname' "${ENV_DIR}/organisation.yaml")
 GH_OWNER=$(yq '.organisation.gh.owner' "${ENV_DIR}/organisation.yaml")
 
 [[ -n "${GCP_DOMAIN}" ]] || die "gcp domain not found in ${ENV_DIR}/organisation.yaml"
-[[ -n "${GCP_BILLING_ACCOUNT}" ]] || die "GCP billing account id not found in ${ENV_DIR}/organisation.yaml"
+[[ -n "${GCP_BILLING_NAME}" ]] || die "billing account name not found in ${ENV_DIR}/organisation.yaml"
+GCP_BILLING_ACCOUNT="$(gcloud billing accounts list --filter="displayName=ef-${GCP_BILLING_NAME}" --format='value(name)' 2>/dev/null | head -n1)"
+[[ -n "${GCP_BILLING_ACCOUNT}" ]] || die "billing account 'ef-${GCP_BILLING_NAME}' not found or not accessible"
+GCP_BILLING_ACCOUNT="${GCP_BILLING_ACCOUNT#billingAccounts/}"
+r "Resolved billing account: ef-${GCP_BILLING_NAME} (${GCP_BILLING_ACCOUNT})"
 [[ -n "${DEVOPS_SERVICES}" ]] || die "devops services missing from mgt/environments.yaml"
 [[ -n "${TFC_ORG}" ]] || die "TFC organisation not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"
