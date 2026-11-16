@@ -1,6 +1,8 @@
+---
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Budget inputs (budgets.yaml)
-description: Budget alerts on the billing account named in organisation.yaml; GCP budgets notify, they never cap.
+description: Budget alerts on the billing account named in organisation.yaml; GCP budgets
+  notify, they never cap.
 type: object
 additionalProperties: false
 required:
@@ -36,5 +38,7 @@ properties:
             maximum: 1
         scope:
           type: string
-          description: Restrict the budget to one project (projects/<id>) or leave unset for account-wide.
+          description: Restrict the budget to one project (projects/<id>) or leave unset
+            for
+            account-wide.
           pattern: '^projects/[a-z0-9-]+$'

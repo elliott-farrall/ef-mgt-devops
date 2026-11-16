@@ -231,8 +231,7 @@ seed_var() {
   fi
 }
 seed_var "GOOGLE_CREDENTIALS" "$(cat "${BOOTSTRAP_KEY}")" "env" true
-seed_var "TFE_TOKEN" "${TF_TOKEN_APP_TERRAFORM_IO}" "env" true
-r "Credential variables seeded — the first apply authenticates with the bootstrap key; Terraform adds the WIF variables for every run after it"
+r "Bootstrap key seeded — the first apply authenticates with it; Terraform adds the WIF variables for every run after it"
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 3: Render imports from template

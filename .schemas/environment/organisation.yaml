@@ -1,3 +1,4 @@
+---
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Organisation inputs (organisation.yaml)
 description: Cross-platform organisation facts — who we operate as and where.
@@ -24,7 +25,9 @@ properties:
           domain:
             type: string
             pattern: '^[a-z0-9.-]+\.[a-z]{2,}$'
-            description: Domain the GCP organisation is registered under; resolved to its numeric ID by data.google_organization.
+            description: Domain the GCP organisation is registered under; resolved to its
+              numeric ID by
+              data.google_organization.
           region:
             type: string
             pattern: '^[a-z]+-[a-z0-9]+$'
@@ -32,7 +35,9 @@ properties:
           billing:
             type: string
             minLength: 1
-            description: Full display name of the GCP billing account; resolved to its ID by data.google_billing_account.
+            description: Full display name of the GCP billing account; resolved to its ID
+              by
+              data.google_billing_account.
       tfe:
         type: object
         additionalProperties: false
@@ -48,11 +53,14 @@ properties:
           github_app_installation:
             type: string
             minLength: 1
-            description: Name of the prerequisite TFC GitHub App installation; resolved to its ID by data.tfe_github_app_installation.
+            description: Name of the prerequisite TFC GitHub App installation; resolved to
+              its ID by
+              data.tfe_github_app_installation.
           hostname:
             type: string
             pattern: '^[a-z0-9.-]+$'
-            description: TFC API hostname; also the OIDC federation issuer (https://<hostname>).
+            description: TFC API hostname; also the OIDC federation issuer
+              (https://<hostname>).
       gh:
         type: object
         additionalProperties: false

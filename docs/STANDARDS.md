@@ -101,12 +101,15 @@ here in the same PR that makes it.
   exchange). All four are derived; none is declared in YAML. These are the
   HCP Terraform dynamic-credentials contract — never replaced with
   non-standard variable names.
-- GitHub credentials reach every run through the organisation-wide
-  variable set `platform-github` (`GITHUB_TOKEN`, sensitive, created by
-  bootstrap). The management workspace additionally holds `TFE_TOKEN`
-  (needed only to manage TFC resources) and, until its first apply
-  completes, the temporary bootstrap `GOOGLE_CREDENTIALS` — deleted by
-  bootstrap close-out. Unmanaged sensitive variables never live in state.
+- Credentials reach every run through the organisation-wide variable set
+  `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN` — sensitive, created and
+  rotated by bootstrap, never in state). The landing workspace
+  additionally holds, until its first apply completes, the temporary
+  bootstrap `GOOGLE_CREDENTIALS` — deleted by bootstrap close-out.
+  Tokens are user-bound by platform constraint, not by choice: team and
+  organisation tokens cannot create GitHub-App-backed workspaces.
+  yamllint runs with default rules; the only disabled rule is
+  line-length, forced by unbreakable DNS record values.
 - Run policy per project entry: `auto_apply: true` for dev-style lanes,
   `false` (manual confirm) everywhere else. The policy is data, not code.
 

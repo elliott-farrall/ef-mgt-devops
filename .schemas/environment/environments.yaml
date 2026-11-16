@@ -1,6 +1,10 @@
+---
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Environment inputs (environments.yaml)
-description: Deployment planes — a flat list of infrastructure environments, each top-level under the organisation root. No parent hierarchy and no type field; every environment mints a TFC project, service account, WIF pool, and workspaces for its projects. Module repositories live in modules.yaml, never here.
+description: Deployment planes — a flat list of infrastructure environments, each top-level
+  under the organisation root. No parent hierarchy and no type field; every
+  environment mints a TFC project, service account, WIF pool, and workspaces for
+  its projects. Module repositories live in modules.yaml, never here.
 type: object
 additionalProperties: false
 required:
@@ -24,7 +28,9 @@ definitions:
         description: Environment name; generates ef-<name> on first apply.
       projects:
         type: array
-        description: Deliverables of this environment; each mints a repository, a TFC workspace, and a GCP project directly under the organisation root.
+        description: Deliverables of this environment; each mints a repository, a TFC
+          workspace,
+          and a GCP project directly under the organisation root.
         items:
           $ref: "#/definitions/project"
   project:
@@ -36,18 +42,26 @@ definitions:
       name:
         type: string
         pattern: "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
-        description: Project suffix; the full name ef-<environment>-<name> is generated, and the workspace and GCP project carry it.
+        description: Project suffix; the full name ef-<environment>-<name> is generated,
+          and the
+          workspace and GCP project carry it.
       default:
         type: boolean
         default: false
-        description: Exactly one project across all environments is the platform home — it hosts every identity pool, service account, and DNS zone.
+        description: Exactly one project across all environments is the platform home — it
+          hosts
+          every identity pool, service account, and DNS zone.
       repo:
         type: string
         pattern: "^ef-[a-z0-9-]+$"
-        description: GitHub repository; defaults to the generated full name, set explicitly when one repository serves several environments.
+        description: GitHub repository; defaults to the generated full name, set explicitly
+          when
+          one repository serves several environments.
       description:
         type: string
-        description: Repository description; one shared repository is described by the entry that carries it.
+        description: Repository description; one shared repository is described by the
+          entry that
+          carries it.
       working_directory:
         type: string
         default: "infrastructure"
@@ -55,7 +69,8 @@ definitions:
       auto_apply:
         type: boolean
         default: false
-        description: Run policy — true for dev-style lanes, false where apply needs confirmation.
+        description: Run policy — true for dev-style lanes, false where apply needs
+          confirmation.
       settings:
         type: object
         description: Overrides for github_repository platform defaults.
@@ -116,6 +131,8 @@ definitions:
               type: string
       services:
         type: array
-        description: GCP APIs to enable for this project. Bootstrap enables them once; Terraform manages them via google_project_service resources thereafter.
+        description: GCP APIs to enable for this project. Bootstrap enables them once;
+          Terraform
+          manages them via google_project_service resources thereafter.
         items:
           type: string

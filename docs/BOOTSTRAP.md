@@ -117,9 +117,10 @@ exists:
    `sa-mgt-tfc`.
 2. **Terraform Cloud** — verify token and org access, verify the GitHub App
    installation, create TFC project `ef-mgt` and workspace
-   `ef-mgt-devops`, then seed the credential variables the first run needs
-   (`GOOGLE_CREDENTIALS` from a temporary bootstrap key, plus
-   `GITHUB_TOKEN` and `TFE_TOKEN`).
+   `ef-mgt-devops`, then seed the credential layer: the organisation-wide
+   variable set `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN` — shared
+   with every workspace) and the temporary `GOOGLE_CREDENTIALS` bootstrap
+   key on the landing workspace.
 3. **Imports** — derive the import addresses and render
    `infrastructure/imports.tf` from `imports.tf.tmpl`, addressing every
    bootstrap-created resource at its eventual Terraform module address.

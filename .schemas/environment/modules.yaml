@@ -1,6 +1,9 @@
+---
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Module inputs (modules.yaml)
-description: Terraform module repositories created without infrastructure — no environment, workspace, service account, or GCP project. Each entry mints a repository, ef-lib-<name>, published to the TFC private registry.
+description: Terraform module repositories created without infrastructure — no environment,
+  workspace, service account, or GCP project. Each entry mints a repository,
+  ef-lib-<name>, published to the TFC private registry.
 type: object
 additionalProperties: false
 required:
@@ -21,7 +24,9 @@ definitions:
       name:
         type: string
         pattern: '^[a-z][a-z0-9-]*$'
-        description: Module name; generates repository ef-lib-<name> and registry module <name> on first apply.
+        description: Module name; generates repository ef-lib-<name> and registry module
+          <name> on
+          first apply.
       description:
         type: string
         description: Repository description; defaults to the repository name.
