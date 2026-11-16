@@ -56,14 +56,21 @@ here in the same PR that makes it.
 - Source of truth and CI validation; holds no cloud apply credentials. A
   compromised repository cannot touch infrastructure.
 - Repositories are private with squash-merge only, branch deletion on
-  merge, and vulnerability alerts enabled, and `main` protected: enforce admins, no force pushes, no
-  deletions, conversation resolution and linear history required, stale
-  reviews dismissed, zero required approvals, strict status checks on
-  `["ci / branch-name (pull_request)", "ci / terraform (pull_request)",
-  "ci / yaml (pull_request)", "ci / shell (pull_request)",
-  "Terraform Cloud / <workspace> (Predict)"]` — the last requires a
-  successful speculative TFC plan before merge. Per-repo
-  overrides arrive as `settings:`/`protection:` on the entry.
+  merge, and vulnerability alerts enabled. `main` is governed by two
+  repository rulesets, not classic branch protection:
+  - **Enforcement** — no bypass for anyone, admin included: linear history,
+    no force-pushes, no deletions, and strict status checks on
+    `["ci / branch-name (pull_request)", "ci / terraform (pull_request)",
+    "ci / yaml (pull_request)", "ci / shell (pull_request)"]` plus, for
+    workspaces, `"Terraform Cloud / <workspace> (Predict)"` — a successful
+    speculative TFC plan is required before merge.
+  - **Review** — one required approving review and resolved conversation
+    threads, dismissed on new pushes, squash merge only. The repository
+    admin role bypasses this ruleset with `bypass_mode: pull_request`: the
+    maintainer's own pull requests need no approval, but nobody — admins
+    included — can push directly to `main`. Agents and collaborators
+    always work through PRs and receive the maintainer's review.
+  Per-repo overrides arrive as `settings:`/`protection:` on the entry.
 - PR branches: `<type>/<kebab-name>`, type one of `feature`, `fix`,
   `hotfix`, `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`,
   `revert`. Enforced by the `branch-name` CI check, required on `main`.
@@ -72,9 +79,6 @@ here in the same PR that makes it.
   speculative plan on every PR; a successful plan is a required status
   check. A merge to `main` starts the TFC run; GitHub Actions never
   applies. Merging stays manual — no auto-merge.
-- Zero required approving reviews: a solo maintainer's own approval does
-  not block them; review quality is enforced by required checks and
-  conversation resolution instead.
 - The TFC GitHub App installation is the one sanctioned console action:
   done once, its installation name then makes every workspace link pure
   Terraform.

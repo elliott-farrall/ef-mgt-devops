@@ -17,24 +17,63 @@ resource "github_repository" "this" {
   }
 }
 
-resource "github_branch_protection" "this" {
-  repository_id = github_repository.this.node_id
-  pattern       = local.protection.pattern
+resource "github_repository_ruleset" "enforcement" {
+  name        = "main-enforcement"
+  repository  = github_repository.this.name
+  target      = "branch"
+  enforcement = "active"
 
-  enforce_admins                  = local.protection.enforce_admins
-  allows_force_pushes             = local.protection.allows_force_pushes
-  allows_deletions                = local.protection.allows_deletions
-  require_conversation_resolution = local.protection.require_conversation_resolution
-  required_linear_history         = local.protection.required_linear_history
-
-  required_pull_request_reviews {
-    required_approving_review_count = local.protection.required_approving_review_count
-    dismiss_stale_reviews           = local.protection.dismiss_stale_reviews
+  conditions {
+    ref_name {
+      include = ["refs/heads/main"]
+      exclude = []
+    }
   }
 
-  required_status_checks {
-    strict   = local.protection.strict_status_checks
-    contexts = local.protection.status_checks
+  rules {
+    required_linear_history = true
+    non_fast_forward        = true
+    deletion                = true
+
+    required_status_checks {
+      strict_required_status_checks_policy = true
+
+      dynamic "required_check" {
+        for_each = local.protection.status_checks
+        content {
+          context = required_check.value
+        }
+      }
+    }
+  }
+}
+
+resource "github_repository_ruleset" "review" {
+  name        = "main-review"
+  repository  = github_repository.this.name
+  target      = "branch"
+  enforcement = "active"
+
+  conditions {
+    ref_name {
+      include = ["refs/heads/main"]
+      exclude = []
+    }
+  }
+
+  bypass_actors {
+    actor_type  = "RepositoryRole"
+    actor_id    = 5
+    bypass_mode = "pull_request"
+  }
+
+  rules {
+    pull_request {
+      required_approving_review_count   = local.protection.required_approving_review_count
+      required_review_thread_resolution = local.protection.require_conversation_resolution
+      dismiss_stale_reviews_on_push     = local.protection.dismiss_stale_reviews
+      allowed_merge_methods             = ["SQUASH"]
+    }
   }
 }
 

@@ -229,14 +229,12 @@ Cross-environment repo sharing: multiple environment slots can share a single re
 
 Standardised across every repository with optional per-repo overrides.
 
-| Rule | Value | Overrideable |
-|------|-------|--------------|
-| Required approving reviews | 1 | Yes |
-| Dismiss stale reviews on new commits | true | Yes |
-| Require conversation resolution before merge | true | Yes |
-| Strict status checks require upstream testing | true | Yes |
-| Allowed merge methods | Squash only | No |
-| Delete head branches on merge | true | Yes |
+Two repository rulesets govern `main` (see STANDARDS.md):
+
+| Ruleset | Contents | Bypass |
+|---------|----------|--------|
+| Enforcement | 4 CI checks + TFC Predictive plan required, strict, linear history, no force-push, no deletion | None — admins included |
+| Review | 1 approving review, resolved conversations, stale reviews dismissed on push, squash only | Repository admin, `pull_request` mode only — bypassing never permits direct pushes |
 
 Required status checks: `["ci/checks"]` (configured per-repo via CI pipelines).
 
