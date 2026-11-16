@@ -7,8 +7,3 @@ data "google_organization" "ef" {
 data "google_billing_account" "ef" {
   display_name = local.config.organisation.gcp.billing
 }
-
-# -- data.google_project.landing: numeric ID of the platform home --
-data "google_project" "landing" {
-  project_id = local.google_default_project
-}

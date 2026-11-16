@@ -3,13 +3,12 @@ module "environment" {
   source   = "./modules/environment"
   for_each = local.environments
 
-  name                = each.value.name
-  organization_id     = each.value.organization_id
-  billing_account_id  = each.value.billing_account_id
-  landing_project_id  = each.value.landing_project_id
-  pool_project_number = each.value.pool_project_number
-  issuer              = each.value.issuer
-  roles               = each.value.roles
+  name               = each.value.name
+  organization_id    = each.value.organization_id
+  billing_account_id = each.value.billing_account_id
+  landing_project_id = each.value.landing_project_id
+  issuer             = each.value.issuer
+  roles              = each.value.roles
 }
 
 # Projects — repository, workspace, GCP project per environment project

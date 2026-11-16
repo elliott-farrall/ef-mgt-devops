@@ -39,7 +39,6 @@ No modules.
 | <a name="input_landing_project_id"></a> [landing\_project\_id](#input\_landing\_project\_id) | Project hosting the identity, pool, provider, and its bindings. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Environment name; every derived resource carries it. | `string` | n/a | yes |
 | <a name="input_organization_id"></a> [organization\_id](#input\_organization\_id) | GCP organisation ID hosting the platform. | `string` | n/a | yes |
-| <a name="input_pool_project_number"></a> [pool\_project\_number](#input\_pool\_project\_number) | Numeric ID of the landing project; builds the pool principalSet member. | `string` | n/a | yes |
 | <a name="input_roles"></a> [roles](#input\_roles) | Role bindings for the environment identity, scoped by target kind: organization, billing, or project:<id>. | <pre>list(object({<br/>    scope = string<br/>    role  = string<br/>  }))</pre> | n/a | yes |
 
 ## Outputs

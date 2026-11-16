@@ -7,12 +7,11 @@ locals {
   # One entry per environment: TFC project, identity, pool, provider, bindings
   environments = {
     for e in local.config.environments : e.name => {
-      name                = e.name
-      organization_id     = data.google_organization.ef.id
-      billing_account_id  = data.google_billing_account.ef.id
-      landing_project_id  = local.google_default_project
-      pool_project_number = data.google_project.landing.number
-      issuer              = "https://${local.config.organisation.tfe.hostname}"
+      name               = e.name
+      organization_id    = data.google_organization.ef.id
+      billing_account_id = data.google_billing_account.ef.id
+      landing_project_id = local.google_default_project
+      issuer             = "https://${local.config.organisation.tfe.hostname}"
       roles = concat(
         [for role in ["roles/resourcemanager.projectCreator", "roles/editor", "roles/iam.serviceAccountUser", "roles/dns.admin"] : { scope = "project:${local.google_default_project}", role = role }],
         e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.user" }, { scope = "project:${local.google_default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : [],
@@ -33,7 +32,7 @@ locals {
       auto_apply                = try(x.auto_apply, false)
       github_owner              = local.config.organisation.gh.owner
       github_app_installation   = local.config.organisation.tfe.github_app_installation
-      wif_provider              = "//iam.googleapis.com/projects/${data.google_project.landing.number}/locations/global/workloadIdentityPools/ef-${x.env}-tfc/providers/tfc-${x.env}"
+      wif_provider              = "//iam.googleapis.com/${module.environment[x.env].google_iam_workload_identity_pool_provider.this.name}"
       gcp_service_account_email = module.environment[x.env].google_service_account.this.email
       repo                      = x.repo
       description               = try(x.description, null)

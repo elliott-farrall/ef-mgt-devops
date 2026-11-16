@@ -151,7 +151,7 @@ Binding for this repository and every future `ef-*` repository.
 - Data sources always live in a `data.tf` — root or module — never in
   `main.tf`. A module's lookup belongs in that module's `data.tf`; the
   root `data.tf` holds only lookups shared by several modules
-  (`google_organization`, `google_project`). Cross-module wiring
+  (`google_organization`, `google_billing_account`). Cross-module wiring
   is done only in the root `main.tf`.
 - Cross-module ordering is stated with explicit `depends_on` even where
   value references already imply it: environments → projects (workspaces

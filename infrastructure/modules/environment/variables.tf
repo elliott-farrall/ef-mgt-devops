@@ -18,11 +18,6 @@ variable "landing_project_id" {
   type        = string
 }
 
-variable "pool_project_number" {
-  description = "Numeric ID of the landing project; builds the pool principalSet member."
-  type        = string
-}
-
 variable "issuer" {
   description = "OIDC issuer URI of the Terraform Cloud API endpoint."
   type        = string

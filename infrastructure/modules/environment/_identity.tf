@@ -27,6 +27,6 @@ resource "google_iam_workload_identity_pool_provider" "this" {
 resource "google_service_account_iam_member" "this" {
   service_account_id = google_service_account.this.id
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/projects/${var.pool_project_number}/locations/global/workloadIdentityPools/ef-${var.name}-tfc/attribute.environment/${var.name}"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.this.name}/attribute.environment/${var.name}"
 }
 
