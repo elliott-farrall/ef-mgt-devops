@@ -194,7 +194,16 @@ fi
 
 h "Phase 3: Render imports"
 
-t "3.1. Rendering imports.tf from template"
+t "3.1. Deriving import addresses"
+export GCP_DEFAULT_PROJECT="ef-mgt-devops"
+export GCP_SA_EMAIL="${SA_NAME}@ef-mgt-devops.iam.gserviceaccount.com"
+export TFC_ENV_NAME="mgt"
+export TFC_PROJ_ID="${TFC_PROJECT_ID#prj-}"
+export TFC_WS_NAME="ef-mgt-devops"
+export TFC_WSID="${TFC_WORKSPACE_ID}"
+r "Import addresses derived"
+
+t "3.2. Rendering imports.tf from template"
 envsubst < "${INFRA_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/imports.tf"
 r "Rendered imports.tf — $(wc -l < "${INFRA_DIR}/imports.tf") lines"
 
