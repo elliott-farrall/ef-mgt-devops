@@ -1,6 +1,6 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Environment inputs (environments.yaml)
-description: Deployment planes — a flat list of infrastructure environments. No parent hierarchy; each environment is top-level under the organization.
+description: Deployment planes — a flat list of infrastructure environments, each top-level under the organisation root. No parent hierarchy and no type field; every environment mints a TFC project, service account, WIF pool, and workspaces for its projects. Library repositories live in libraries.yaml, never here.
 type: object
 additionalProperties: false
 required:
@@ -17,22 +17,105 @@ definitions:
     additionalProperties: false
     required:
       - name
-      - type
     properties:
       name:
         type: string
         pattern: '^[a-z][a-z0-9-]*$'
         description: Environment name; generates ef-<name> on first apply.
-      type:
-        enum:
-          - infrastructure
-        description: All types are infrastructure (folders removed).
-      parent:
-        type: string
-        nullable: true
-        description: Parent environment; omit for top-level environments (now all are top-level).
       projects:
         type: array
-        description: Deliverables of this environment; each project mints resources according to its type.
+        description: Deliverables of this environment; each mints a repository, a TFC workspace, and a GCP project directly under the organisation root.
         items:
           $ref: "#/definitions/project"
+  project:
+    type: object
+    additionalProperties: false
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        pattern: "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+        description: Project suffix; the full name ef-<environment>-<name> is generated, and the workspace and GCP project carry it.
+      default:
+        type: boolean
+        default: false
+        description: Exactly one project across all environments is the platform home — it hosts every identity pool, service account, and DNS zone.
+      repo:
+        type: string
+        pattern: "^ef-[a-z0-9-]+$"
+        description: GitHub repository; defaults to the generated full name, set explicitly when one repository serves several environments.
+      description:
+        type: string
+        description: Repository description; one shared repository is described by the entry that carries it.
+      working_directory:
+        type: string
+        default: "infrastructure"
+        description: Terraform root inside the repository; omit for the standard layout.
+      auto_apply:
+        type: boolean
+        default: false
+        description: Run policy — true for dev-style lanes, false where apply needs confirmation.
+      settings:
+        type: object
+        description: Overrides for github_repository platform defaults.
+        additionalProperties: false
+        properties:
+          visibility:
+            type: string
+            enum:
+              - private
+              - public
+          has_issues:
+            type: boolean
+          has_projects:
+            type: boolean
+          has_wiki:
+            type: boolean
+          allow_merge_commit:
+            type: boolean
+          allow_squash_merge:
+            type: boolean
+          allow_rebase_merge:
+            type: boolean
+          allow_auto_merge:
+            type: boolean
+          delete_branch_on_merge:
+            type: boolean
+      protection:
+        type: object
+        description: Overrides for the main-branch protection platform defaults.
+        additionalProperties: false
+        properties:
+          pattern:
+            type: string
+            description: Branch pattern the rule guards (default main).
+          enforce_admins:
+            type: boolean
+          allows_force_pushes:
+            type: boolean
+          allows_deletions:
+            type: boolean
+          require_conversation_resolution:
+            type: boolean
+          required_linear_history:
+            type: boolean
+          required_approving_review_count:
+            type: integer
+            minimum: 0
+            maximum: 6
+          dismiss_stale_reviews:
+            type: boolean
+          strict_status_checks:
+            type: boolean
+            description: Require branches to be up to date before merging.
+          status_checks:
+            type: array
+            description: Exact required CI check names.
+            items:
+              type: string
+      services:
+        type: array
+        description: GCP APIs to enable for this project. Bootstrap enables them once; Terraform manages them via google_project_service resources thereafter.
+        items:
+          type: string

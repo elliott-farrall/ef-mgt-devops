@@ -2,15 +2,14 @@
 
 This is the design document for the EF platform: decisions and rationale,
 maintained in the repository they describe and versioned by its git history.
-Binding rules live in [standards.md](standards.md); the bring-up procedure
-in [bootstrap.md](bootstrap.md). Read this file before proposing anything
-structural.
+Binding rules live in [STANDARDS.md](STANDARDS.md). Read this file before
+proposing anything structural.
 
 ## Principles
 
 - **Everything is infrastructure as code.** After bootstrap, consoles are read-only; every change arrives as a PR. Manual changes are drift and must be adopted or reverted within one working day.
 - **Bootstrap is scripts + imports.** Seed scripts create chicken-and-egg resources (`terraform import` then adopts them). There is no permanent bootstrap codebase — scripts are short-lived seeds, the code is steady state.
-- **One hierarchy, three mirrors.** GCP folders, TFC projects, and GitHub namespaces mirror each other with predictable names. Structure is enforced by IAM and org policies, not convention.
+- **One name, three mirrors.** Names — not folders — carry the structure: project ID, workspace name, and repository name mirror each other with predictable names. Structure is enforced by IAM and org policies, not convention.
 - **Environments are data.** The same code serves every environment. The single `environment` input selects YAML inputs, naming, labels, identity, and apply policy. New behaviour is derivation in `locals.tf`, never a new variable.
 - **Validation is Terraform-native.** `validation`, `precondition`, and `check` blocks fail bad input at plan time. Shell scripts only orchestrate — if a rule can be checked in HCL, it must be.
 - **Modules start local.** `infrastructure/modules/` until code genuinely must cross repositories. Premature extraction is the failure mode this guards against.
@@ -20,17 +19,25 @@ structural.
 
 ## Environments
 
-Five slots partition the platform. Infrastructure-type environments own a GCP folder, TFC project, service account, WIF pool, and workspaces. Library environments host registry modules only. Software environments get repositories but no identity plumbing.
+Five flat infrastructure environments, each directly under the organisation
+root — no folder tree, no type field. Each environment owns a TFC project,
+service account, WIF pool, and the workspaces of its projects. Repositories
+without infrastructure (registry modules, utilities) live in
+`libraries.yaml`, outside any environment: a library entry mints a
+repository only, plus a private TFC registry module when its type is
+`module`.
 
-| Slot | Type | Role | Run policy | Why it exists |
-|------|------|------|------------|---------------|
-| `mgt` | infrastructure | Platform management | manual confirm | Operates org, folders, DNS, TFC; production-grade because everything else depends on it |
-| `hub` | infrastructure | Shared services | manual confirm | Consumed by every environment, so it sits outside the ladder |
-| `dev` | infrastructure | Experiments | auto-apply | Fast iteration where breakage is cheap |
-| `pre` | infrastructure | Staging | manual confirm | Soaks after dev before anything real moves |
-| `prd` | infrastructure | Production | manual confirm | Safety gates on all applies |
+| Slot | Role | Run policy | Why it exists |
+|------|------|------------|---------------|
+| `mgt` | Platform management | manual confirm | Operates org, DNS, TFC; production-grade because everything else depends on it |
+| `hub` | Shared services | manual confirm | Consumed by every environment, so it sits outside the ladder |
+| `dev` | Experiments | auto-apply | Fast iteration where breakage is cheap |
+| `pre` | Staging | manual confirm | Soaks after dev before anything real moves |
+| `prd` | Production | manual confirm | Safety gates on all applies |
 
-Isolation is structural: a project lives in exactly one environment folder, each environment has its own service account and state, and cross-environment reuse flows through hub services and library modules.
+Isolation is structural: a project lives in exactly one environment, each
+environment has its own service account and state, and cross-environment
+reuse flows through hub services and library modules.
 
 ### Naming convention
 
@@ -45,13 +52,15 @@ Config carries suffix-only names. Terraform generates full names as `ef-<env>-<s
 | Billing budget display | `billing.budgets[].name: total` | `ef-budget-total` | GCP billing account |
 | DNS zone name | `domain.yaml[].name: elliott-farrall.phd` | `elliott-farrall-phd` | Landing project |
 | Cross-env repo share | `projects[].repo: shared-repo` | `ef-shared-repo` (created once) | Owner namespace |
+| Library | `libraries[].name: registry` | `ef-lib-registry` (repo) / `registry` (registry module) | Owner namespace / TFC private registry |
 
 ### Cross-environment access
 
 Reuse flows through two mechanisms:
 
 1. **Hub services** consumed by all lanes. Hub projects sit outside the development ladder.
-2. **Library modules** published to the private TFC registry, consumed by any lane via `tfe_registry_module`.
+2. **Library modules** published to the private TFC registry, declared in
+   `libraries.yaml` and consumed by any lane via `tfe_registry_module`.
 
 No shared projects exist.
 
@@ -61,37 +70,29 @@ Each platform does exactly one job. Resources are created by Terraform modules d
 
 ### Google Cloud
 
-GCP hosts the workload hierarchy and federation plumbing. Identity is folder-scoped: admission derives from the folder itself. All GCP resources are created on the first Terraform apply after bootstrap imports existing state.
+GCP hosts the workloads and federation plumbing. Identity admission derives from the workspace name prefix against its environment's pool. All GCP resources are created on the first Terraform apply after bootstrap imports existing state.
 
 #### Folders
 
-Seven hierarchical containers grouping projects. Bootstrap scripts create them; Terraform adopts them into state.
-
-| Folder | Parent | Notes |
-|--------|--------|-------|
-| `ef-root` | Organisation root | Container for management-plane environments |
-| `ef-mgt` | `ef-root` | Management plane — operates org, folders, DNS, TFC |
-| `ef-hub` | `ef-root` | Shared services — consumed by every lane |
-| `ef-app` | `ef-root` | Application tier — child environments deploy inside this folder |
-| `ef-dev` | `ef-app` | Experiment space — fast iteration |
-| `ef-pre` | `ef-app` | Staging environment |
-| `ef-prd` | `ef-app` | Production environment |
-
-All folders have `prevent_destroy` enabled.
+None. The GCP hierarchy is flat: every project is created directly under
+the organisation root, and environment separation is carried by naming,
+workspaces, and IAM — not by folders.
 
 #### Projects
 
-One GCP project deployed. The management plane runs inside its own project; lane environments exist as folders and workspaces but no compute yet.
+One GCP project deployed. The management plane runs inside its own project; the other environments exist as workspaces but no compute yet.
 
-| Project ID | Folder | Billing | Description | Default |
-|------------|--------|---------|-------------|---------|
-| `ef-mgt-devops` | `ef-mgt` | `ef-billing` | DevOps Management | Yes |
+| Project ID | Billing | Description | Default |
+|------------|---------|-------------|---------|
+| `ef-mgt-devops` | `ef-billing` | DevOps Management | Yes |
 
-Hub, dev, pre, and prd folders exist as organisational containers but hold no projects today. Projects appear when infrastructure-type entries gain `projects[]` definitions.
+Hub, dev, pre, and prd exist as environments and TFC projects but hold no
+GCP projects today. Projects appear when their entries gain `projects[]`
+definitions.
 
 #### Workload identity federation
 
-One OIDC-based auth chain per infrastructure-type environment. Five SAs, five pools, five providers — all hosted in `ef-mgt-devops`.
+One OIDC-based auth chain per environment. Five SAs, five pools, five providers — all hosted in `ef-mgt-devops`.
 
 ```
 TFC run → OIDC token → ef-<env>-tfc pool (GCP)
@@ -113,18 +114,18 @@ Pool principalSet → roles/iam.workloadIdentityUser → sa-<env>-tfc
 | `ef-pre-tfc` | `tfc-pre` | `sa-pre-tfc@[PROJECT].iam.gserviceaccount.com` | Staging workspace identity |
 | `ef-prd-tfc` | `tfc-prd` | `sa-prd-tfc@[PROJECT].iam.gserviceaccount.com` | Production workspace identity |
 
-The manager receives extra IAM bindings beyond the standard set: folder admin over `ef-root`, project creator on `ef-mgt-devops`, organisation browser, and billing user.
+The manager receives extra IAM bindings beyond the standard set: organisation admin, project owner on `ef-mgt-devops`, billing user.
 
 #### IAM bindings
 
-Twenty-four IAM member resources distributed across four scope types:
+IAM member resources across four scope types:
 
-| Scope type | Target | Bindings | Count |
-|------------|--------|----------|-------|
-| Folder/project editor | Each infra folder + its project | mgt, hub, dev, pre, prd | 10 |
-| Service account impersonation | `ef-mgt-devops` (landing) | All five infra SAs | 5 |
-| DNS admin | `ef-mgt-devops` (landing) | All five infra SAs | 5 |
-| Platform roles | `ef-root`, `ef-mgt-devops`, organisation root, billing account | mgt-sa only | 4 |
+| Scope | Target | Bindings | Count |
+|-------|--------|----------|-------|
+| Project creator + editor | Own environment's future projects | All five SAs | 10 |
+| Service account impersonation | `ef-mgt-devops` (landing) | All five SAs | 5 |
+| DNS admin | `ef-mgt-devops` (landing) | All five SAs | 5 |
+| Platform roles | `ef-mgt-devops`, organisation root, billing account | mgt-sa only | 3 |
 
 All bindings resolve targets by name using provider data sources. No hardcoded IDs.
 
@@ -167,7 +168,7 @@ TFC is the single deployment engine. All applies run under workspace identities 
 
 #### TFC Projects
 
-Five logical groupings containing workspaces. One per infrastructure-type environment.
+Five logical groupings containing workspaces. One per environment.
 
 | Project Name | Environment | Purpose |
 |--------------|-------------|---------|
@@ -179,7 +180,7 @@ Five logical groupings containing workspaces. One per infrastructure-type enviro
 
 #### TFC Workspaces
 
-One workspace deployed today. Additional workspaces appear automatically when infrastructure environments gain `projects[]` definitions.
+One workspace deployed today. Additional workspaces appear automatically when environments gain `projects[]` definitions.
 
 | Workspace Name | TFC Project | Repository | Execution Mode | Auto-apply | Linked Variables |
 |---------------|-------------|------------|----------------|------------|------------------|
@@ -195,7 +196,9 @@ Workspace variables embed identity plumbing. Three variables per workspace — d
 
 #### Registry Modules
 
-Zero registry modules currently deployed. They are created when infrastructure environments define `lib` entries — publisher-provided module names, version-tagged, pinned by consumers.
+Zero registry modules currently deployed. They are created when
+`libraries.yaml` entries of type `module` are added — publisher-provided
+module names, version-tagged, pinned by consumers.
 
 ### GitHub
 
@@ -246,21 +249,18 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 ```
 ├── .github/workflows/       # CI: branch-name, schema, fmt/validate
 ├── .schemas/environment/    # JSON Schema per environment config file
-├── bootstrap/               # Bash orchestration (seed, import, cleanup)
-│   ├── 01-google.sh         # Create folders, enable APIs, link billing
-│   ├── 02-tfe.sh            # Create projects, variables, workspaces
-│   ├── 03-import.sh         # Adopt seed-created resources into state
-│   └── 04-cleanup.sh        # Delete inventory, bootstrap SA
-├── docs/                    # Three-file convention
-│   ├── design.md            # Decisions and rationale (this file)
-│   ├── standards.md         # Binding rules (naming, layout, review)
-│   └── bootstrap.md         # Bring-up procedure + import table
+├── scripts/
+│   └── bootstrap.sh         # Bash orchestration (seed, import, deploy)
+├── docs/                    # Two-file convention
+│   ├── DESIGN.md            # Decisions and rationale (this file)
+│   └── STANDARDS.md         # Binding rules (naming, layout, review)
 ├── environments/            # YAML inputs, split by concern
 │   └── mgt/                 # Management environment config
 │       ├── organisation.yaml # Org facts: domain, region, GH owner, TFC hostname
 │       ├── billing.yaml      # Billing account + budgets
 │       ├── domain.yaml       # Domain zones + DNS records
-│       └── environments.yaml # Environment list + projects + lib modules
+│       ├── environments.yaml # Environment list + projects
+│       └── libraries.yaml    # Library repositories (modules + utilities)
 ├── infrastructure/          # Terraform working directory
 │   ├── locals.tf            # All derivation from config
 │   ├── main.tf              # Module calls + depends_on
@@ -268,12 +268,11 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │   ├── data.tf              # Data sources (shared lookups)
 │   ├── checks.tf            # Validation checks (cross-registry integrity)
 │   └── modules/             # Repo-local Terraform modules
-│       ├── google-folder           # Folder hierarchy
 │       ├── google-project          # GCP projects
 │       ├── google-service-account  # IAM service accounts
 │       ├── google-billing-budget   # Budget alerts
 │       ├── google-dns-managed-zone # DNS zones + record sets
-│       ├── google-iam-member       # IAM bindings (folder/project/org/billing)
+│       ├── google-iam-member       # IAM bindings (project/org/billing)
 │       ├── google-workload-identity-pool     # WIF pools
 │       ├── google-workload-identity-provider # WIF providers + SA binding
 │       ├── tfe-project             # TFC projects
@@ -284,7 +283,7 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 └── .gitignore
 ```
 
-All files follow conventions defined in [standards.md](standards.md): no comments in code or YAML (only shebangs and `yaml-language-server` modelines), block-style YAML only, plain scalars where possible, module outputs mechanical (one per resource, resource-type named).
+All files follow conventions defined in [STANDARDS.md](STANDARDS.md): no comments in code or YAML (only shebangs and `yaml-language-server` modelines), block-style YAML only, plain scalars where possible, module outputs mechanical (one per resource, resource-type named).
 
 ### Deployment Workflow
 

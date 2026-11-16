@@ -1,31 +1,5 @@
 # yaml-language-server: $schema=../../.schemas/environment/libraries.yaml
-projects:
+libraries:
   - name: registry
+    description: Private Terraform module registry.
     type: module
-    default: true
-environments:
-  - name: hub
-    type: infrastructure
-
-  - name: mgt
-    type: infrastructure
-    projects:
-      - name: devops
-        type: infrastructure
-        description: DevOps Management.
-        default: true
-        services:
-          - iam.googleapis.com
-          - serviceusage.googleapis.com
-          - cloudbilling.googleapis.com
-          - dns.googleapis.com
-          - compute.googleapis.com
-
-  - name: dev
-    type: infrastructure
-
-  - name: pre
-    type: infrastructure
-
-  - name: prd
-    type: infrastructure

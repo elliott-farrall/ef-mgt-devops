@@ -1,13 +1,10 @@
 # yaml-language-server: $schema=../../.schemas/environment/environments.yaml
 environments:
   - name: hub
-    type: infrastructure
 
   - name: mgt
-    type: infrastructure
     projects:
       - name: devops
-        type: infrastructure
         description: DevOps Management.
         default: true
         services:
@@ -18,10 +15,7 @@ environments:
           - compute.googleapis.com
 
   - name: dev
-    type: infrastructure
 
   - name: pre
-    type: infrastructure
 
   - name: prd
-    type: infrastructure

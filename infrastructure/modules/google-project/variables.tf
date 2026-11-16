@@ -4,7 +4,7 @@ variable "name" {
 }
 
 variable "folder_id" {
-  description = "Numeric parent folder ID from module.google-folder."
+  description = "Numeric parent folder ID, or null to place the project directly under the organisation root."
   type        = string
 }
 

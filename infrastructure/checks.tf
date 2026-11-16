@@ -22,23 +22,15 @@ check "environment_parents_exist" {
 # -- check project_names_unique: project names are workspace/repo/GCP id --
 check "project_names_unique" {
   assert {
-    condition     = length([for p in local.environment_projects : p.name]) == length(toset([for p in local.environment_projects : p.name]))
-    error_message = "Project names double as workspace, repository, and GCP project ids; they must be unique across all environments."
-  }
-}
-
-# -- check project_type_matches_environment: infra→infra env, module→library env --
-check "project_type_matches_environment" {
-  assert {
-    condition     = alltrue([for p in local.environment_projects : p.type == "infrastructure" ? contains([for e in local.config.environments : e.name if e.type == "infrastructure"], p.env) : p.type == "module" ? contains([for e in local.config.environments : e.name if e.type == "library"], p.env) : !contains([for e in local.config.environments : e.name if e.type == "library"], p.env)])
-    error_message = "Infrastructure projects require infrastructure environments; module projects require library environments; software projects require a folder or infrastructure environment."
+    condition     = length([for p in local.environment_projects : p.name]) == length(toset([for p in local.environment_projects : p.name])) && length([for p in local.all_projects : p.repo]) == length(toset([for p in local.all_projects : p.repo]))
+    error_message = "Project names double as workspace and GCP project ids and must be unique across environments; repository names double as GitHub repo ids and must be unique across projects and libraries."
   }
 }
 
 # -- check default_project_is_unique: exactly one default hosts pools and DNS --
 check "default_project_is_unique" {
   assert {
-    condition     = length([for p in local.infrastructure_projects : p.name if try(p.default, false) != false]) == 1
+    condition     = length([for p in local.environment_projects : p.name if try(p.default, false) != false]) == 1
     error_message = "Exactly one project must be marked default: true; it hosts every identity pool, service account, and DNS zone."
   }
 }
