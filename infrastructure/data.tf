@@ -5,7 +5,7 @@ data "google_organization" "ef" {
 
 # -- data.google_billing_account: locates the billing account named in config --
 data "google_billing_account" "ef" {
-  display_name = "ef-${local.config.organisation.gcp.billing.name}"
+  display_name = local.config.organisation.gcp.billing
 }
 
 # -- data.google_project.landing: numeric ID of the platform home --

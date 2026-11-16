@@ -30,15 +30,9 @@ properties:
             pattern: '^[a-z]+-[a-z0-9]+$'
             description: Default region for the google provider.
           billing:
-            type: object
-            additionalProperties: false
-            required:
-              - name
-            properties:
-              name:
-                type: string
-                pattern: '^[a-z][a-z0-9-]*$'
-                description: Billing account display suffix; Terraform prepends ef- (name billing selects the account displayed ef-billing) and resolves its ID by data.google_billing_account.
+            type: string
+            minLength: 1
+            description: Full display name of the GCP billing account; resolved to its ID by data.google_billing_account.
       tfe:
         type: object
         additionalProperties: false
