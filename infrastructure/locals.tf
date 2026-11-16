@@ -8,11 +8,11 @@ locals {
   # Environment projects: repository + workspace + GCP project each
   environment_projects = [for x in flatten([for e in local.config.environments : [for q in try(e.projects, []) : merge(q, { name = "ef-${e.name}-${q.name}", repo = try(q.repo, "ef-${e.name}-${q.name}"), env = e.name })]]) : x]
 
-  # Library projects: repository only; module type also publishes to the TFC private registry
-  library_projects = [for l in try(local.config.libraries, []) : merge(l, { name = "ef-lib-${l.name}", repo = try(l.repo, "ef-lib-${l.name}") })]
+  # Module projects: repository + private TFC registry module each
+  module_projects = [for m in try(local.config.modules, []) : merge(m, { name = "ef-lib-${m.name}", repo = try(m.repo, "ef-lib-${m.name}") })]
 
   # All repositories belong to one of the two lists above
-  all_projects = concat(local.environment_projects, local.library_projects)
+  all_projects = concat(local.environment_projects, local.module_projects)
 
   # Default infrastructure project (the platform home)
   google_default_project = [for p in local.environment_projects : p.name if try(p.default, false) != false][0]
@@ -133,17 +133,17 @@ locals {
     }
   }
 
-  # TFC registry modules for library projects of type module
+  # TFC registry modules
   tfe_registry_modules = {
-    for l in local.library_projects : l.repo => {
-      name                    = trimprefix(l.repo, "ef-lib-")
+    for m in local.module_projects : m.repo => {
+      name                    = trimprefix(m.repo, "ef-lib-")
       organization            = local.config.organisation.tfe.organisation
-      repository              = "${local.config.organisation.gh.owner}/${l.repo}"
+      repository              = "${local.config.organisation.gh.owner}/${m.repo}"
       github_app_installation = local.config.organisation.tfe.github_app_installation
-    } if l.type == "module"
+    }
   }
 
-  # GitHub repositories for every project and library
+  # GitHub repositories for every project and module
   github_repository_names = toset([for x in local.all_projects : x.repo])
 
   github_repositories = {

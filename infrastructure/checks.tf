@@ -9,21 +9,13 @@ check "budget_scopes_exist" {
   }
 }
 
-# -- check environment_parents_exist: parents must be named environments --
-check "environment_parents_exist" {
-  assert {
-    condition     = alltrue([for e in [for x in local.config.environments : x if x.type != "library"] : try(e.parent, null) == null || contains([for x in [for y in local.config.environments : y if y.type != "library"] : x.name], e.parent)])
-    error_message = "Every environment parent must name another environment."
-  }
-}
-
 
 
 # -- check project_names_unique: project names are workspace/repo/GCP id --
 check "project_names_unique" {
   assert {
     condition     = length([for p in local.environment_projects : p.name]) == length(toset([for p in local.environment_projects : p.name])) && length([for p in local.all_projects : p.repo]) == length(toset([for p in local.all_projects : p.repo]))
-    error_message = "Project names double as workspace and GCP project ids and must be unique across environments; repository names double as GitHub repo ids and must be unique across projects and libraries."
+    error_message = "Project names double as workspace and GCP project ids and must be unique across environments; repository names double as GitHub repo ids and must be unique across projects and modules."
   }
 }
 

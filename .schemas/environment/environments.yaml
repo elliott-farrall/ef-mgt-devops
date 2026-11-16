@@ -1,6 +1,6 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Environment inputs (environments.yaml)
-description: Deployment planes — a flat list of infrastructure environments, each top-level under the organisation root. No parent hierarchy and no type field; every environment mints a TFC project, service account, WIF pool, and workspaces for its projects. Library repositories live in libraries.yaml, never here.
+description: Deployment planes — a flat list of infrastructure environments, each top-level under the organisation root. No parent hierarchy and no type field; every environment mints a TFC project, service account, WIF pool, and workspaces for its projects. Module repositories live in modules.yaml, never here.
 type: object
 additionalProperties: false
 required:

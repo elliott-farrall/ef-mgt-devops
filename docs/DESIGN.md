@@ -23,9 +23,8 @@ Five flat infrastructure environments, each directly under the organisation
 root — no folder tree, no type field. Each environment owns a TFC project,
 service account, WIF pool, and the workspaces of its projects. Repositories
 without infrastructure (registry modules, utilities) live in
-`libraries.yaml`, outside any environment: a library entry mints a
-repository only, plus a private TFC registry module when its type is
-`module`.
+`modules.yaml`, outside any environment: a module entry mints a
+repository, `ef-lib-<name>`, published to the TFC private registry.
 
 | Slot | Role | Run policy | Why it exists |
 |------|------|------------|---------------|
@@ -37,7 +36,7 @@ repository only, plus a private TFC registry module when its type is
 
 Isolation is structural: a project lives in exactly one environment, each
 environment has its own service account and state, and cross-environment
-reuse flows through hub services and library modules.
+reuse flows through hub services and registry modules.
 
 ### Naming convention
 
@@ -52,7 +51,7 @@ Config carries suffix-only names. Terraform generates full names as `ef-<env>-<s
 | Billing budget display | `billing.budgets[].name: total` | `ef-budget-total` | GCP billing account |
 | DNS zone name | `domain.yaml[].name: elliott-farrall.phd` | `elliott-farrall-phd` | Landing project |
 | Cross-env repo share | `projects[].repo: shared-repo` | `ef-shared-repo` (created once) | Owner namespace |
-| Library | `libraries[].name: registry` | `ef-lib-registry` (repo) / `registry` (registry module) | Owner namespace / TFC private registry |
+| Module | `modules[].name: registry` | `ef-lib-registry` (repo) / `registry` (registry module) | Owner namespace / TFC private registry |
 
 ### Cross-environment access
 
@@ -60,7 +59,7 @@ Reuse flows through two mechanisms:
 
 1. **Hub services** consumed by all lanes. Hub projects sit outside the development ladder.
 2. **Library modules** published to the private TFC registry, declared in
-   `libraries.yaml` and consumed by any lane via `tfe_registry_module`.
+   `modules.yaml` and consumed by any lane via `tfe_registry_module`.
 
 No shared projects exist.
 
@@ -197,8 +196,8 @@ Workspace variables embed identity plumbing. Three variables per workspace — d
 #### Registry Modules
 
 Zero registry modules currently deployed. They are created when
-`libraries.yaml` entries of type `module` are added — publisher-provided
-module names, version-tagged, pinned by consumers.
+`modules.yaml` entries are added — publisher-provided module names,
+version-tagged, pinned by consumers.
 
 ### GitHub
 
@@ -260,7 +259,7 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │       ├── billing.yaml      # Billing account + budgets
 │       ├── domain.yaml       # Domain zones + DNS records
 │       ├── environments.yaml # Environment list + projects
-│       └── libraries.yaml    # Library repositories (modules + utilities)
+│       └── modules.yaml      # Registry module repositories
 ├── infrastructure/          # Terraform working directory
 │   ├── locals.tf            # All derivation from config
 │   ├── main.tf              # Module calls + depends_on

@@ -1,5 +1,0 @@
-# yaml-language-server: $schema=../../.schemas/environment/libraries.yaml
-libraries:
-  - name: registry
-    description: Private Terraform module registry.
-    type: module

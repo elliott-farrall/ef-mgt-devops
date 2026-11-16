@@ -101,7 +101,7 @@ module "tfe-workspace" {
   gcp_service_account_email = each.value.gcp_service_account_email
 }
 
-# TFC Registry Modules — private registry for library modules
+# TFC Registry Modules — private registry from modules.yaml entries
 module "tfe-registry-module" {
   source   = "./modules/tfe-registry-module"
   for_each = local.tfe_registry_modules

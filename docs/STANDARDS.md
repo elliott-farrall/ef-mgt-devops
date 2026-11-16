@@ -71,8 +71,9 @@ Binding for this repository and every future `ef-*` repository.
   GitHub handles), `billing.yaml` (billing account and budget alerts),
   `domain.yaml` (domains and platform records), `environments.yaml`
   (a flat list, one entry per environment, each hosting `projects`; the one
-  project marked `default: true` is the platform home), and `libraries.yaml`
-  (a flat list of repositories outside any environment). Each file has one
+  project marked `default: true` is the platform home), and `modules.yaml`
+  (a flat list of Terraform module repositories outside any environment).
+  Each file has one
   top-level key matching the filename; `locals.tf` merges the files and
   exposes the namespaces.
 - **A project is one entry**: declaring
@@ -82,10 +83,10 @@ Binding for this repository and every future `ef-*` repository.
   one project marks the platform home. `settings:`/`protection:` override
   repository policy once per repo. Example: `mgt` + suffix `devops` yields
   repo, workspace and GCP project `ef-mgt-devops`.
-- **A library is one entry**: declaring `libraries[]` mints the repository
-  `ef-lib-<name>` and nothing else. `type: module` additionally publishes a
-  private TFC registry module (module name `<name>`, published from the
-  repository by git tag); `type: software` creates the repository only.
+- **A module is one entry**: declaring `modules[]` mints the repository
+  `ef-lib-<name>` and a private TFC registry module (module name `<name>`,
+  published from the repository by git tag). It creates no workspace, no
+  service account, and no GCP project.
 - YAML files use **block style only** — no flow/JSON syntax (`{...}` mappings
   or `[...]` inline sequences). One entry per line keeps diffs reviewable.
 - Values are **plain scalars — no quote marks** in `environments/` and
