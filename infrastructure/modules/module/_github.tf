@@ -38,3 +38,7 @@ resource "github_branch_protection" "this" {
   }
 }
 
+
+resource "github_repository_vulnerability_alerts" "this" {
+  repository = github_repository.this.name
+}

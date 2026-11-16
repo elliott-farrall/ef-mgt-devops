@@ -56,7 +56,7 @@ here in the same PR that makes it.
 - Source of truth and CI validation; holds no cloud apply credentials. A
   compromised repository cannot touch infrastructure.
 - Repositories are private with squash-merge only, branch deletion on
-  merge, and `main` protected: enforce admins, no force pushes, no
+  merge, and vulnerability alerts enabled, and `main` protected: enforce admins, no force pushes, no
   deletions, conversation resolution and linear history required, stale
   reviews dismissed, zero required approvals, strict status checks on
   `["ci / branch-name (pull_request)", "ci / terraform (pull_request)",
@@ -81,10 +81,13 @@ here in the same PR that makes it.
   entry, named `ef-<env>-<suffix>` — its environment prefix is generated,
   so admission can never drift from the naming.
 - Workspaces carry three injected variables: `environment` (terraform
-  category — the deployment slot), `WIF_PROVIDER` (env category — the full
-  provider resource path), and `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` (env
-  category — the SA impersonated after token exchange). All three are
-  derived; none is declared in YAML.
+  category — the deployment slot), `TFC_GCP_PROVIDER_AUTH = true`
+  (enables HCP Terraform dynamic credentials for the Google provider),
+  `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER` (the full provider resource path),
+  and `TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL` (the SA impersonated after token
+  exchange). All four are derived; none is declared in YAML. These are the
+  HCP Terraform dynamic-credentials contract — never replaced with
+  non-standard variable names.
 - Run policy per project entry: `auto_apply: true` for dev-style lanes,
   `false` (manual confirm) everywhere else. The policy is data, not code.
 
@@ -171,7 +174,7 @@ here in the same PR that makes it.
   hardcoded IDs, and no `terraform_remote_state` coupling: the management
   plane publishes no outputs. The federation chain is convention-locked:
   workspace in environment `<env>` authenticates through provider
-  `tfc-<env>` and receives `WIF_PROVIDER` as a run environment variable.
+  `tfc-<env>` and receives `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER` as a run environment variable.
 - Recursive modules are banned — their cache layout breaks `terraform init`
   reruns.
 

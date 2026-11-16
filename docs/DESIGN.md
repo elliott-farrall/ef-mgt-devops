@@ -111,8 +111,9 @@ TFC run → OIDC token → ef-<env>-tfc pool (GCP)
 Pool principalSet → roles/iam.workloadIdentityUser → sa-<env>-tfc
                                                     │
                                                     └→ WORKSPACE env vars:
-                                                        - WIF_PROVIDER
-                                                        - GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
+                                                        - TFC_GCP_PROVIDER_AUTH
+                                                        - TFC_GCP_WORKLOAD_IDENTITY_PROVIDER
+                                                        - TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL
 ```
 
 | Pool Name | Provider Name | SA Email Pattern | Purpose |
@@ -193,15 +194,16 @@ One workspace deployed today. Additional workspaces appear automatically when en
 
 | Workspace Name | TFC Project | Repository | Execution Mode | Auto-apply | Linked Variables |
 |---------------|-------------|------------|----------------|------------|------------------|
-| `ef-mgt-devops` | `ef-mgt` | `ef-mgt-devops` | Remote | No (manual confirm) | `environment=mgt`, `WIF_PROVIDER`, `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` |
+| `ef-mgt-devops` | `ef-mgt` | `ef-mgt-devops` | Remote | No (manual confirm) | `environment=mgt`, `TFC_GCP_PROVIDER_AUTH=true`, `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER`, `TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL` |
 
 Workspace variables embed identity plumbing. Three variables per workspace — declared category, assigned purpose, runtime value populated at apply.
 
 | Variable | Category | Purpose | Runtime Value |
 |----------|----------|---------|---------------|
 | `environment` | terraform | Declares deployment slot | `mgt` |
-| `WIF_PROVIDER` | env | GCP pool address for OIDC exchange | `projects/<landing>/locations/global/workloadIdentityPools/ef-mgt-tfc` |
-| `GOOGLE_IMPERSONATE_SERVICE_ACCOUNT` | env | SA to impersonate after token exchange | `sa-mgt-tfc@[PROJECT].iam.gserviceaccount.com` |
+| `TFC_GCP_PROVIDER_AUTH` | env | Enables HCP Terraform dynamic credentials for the Google provider | `true` |
+| `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER` | env | Full WIF provider path for OIDC exchange | `projects/<landing>/locations/global/workloadIdentityPools/ef-mgt-tfc/providers/tfc-mgt` |
+| `TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL` | env | SA to impersonate after token exchange | `sa-mgt-tfc@[PROJECT].iam.gserviceaccount.com` |
 
 #### Registry Modules
 

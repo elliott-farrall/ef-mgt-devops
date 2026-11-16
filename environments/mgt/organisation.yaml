@@ -8,7 +8,7 @@ organisation:
   tfe:
     organisation: elliott-farrall
     hostname: app.terraform.io
-    github_app_installation: Terraform Cloud
+    github_app_installation: elliott-farrall
 
   gh:
     owner: elliott-farrall
