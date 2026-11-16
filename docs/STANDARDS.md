@@ -44,9 +44,16 @@ Binding for this repository and every future `ef-*` repository.
 
 - `infrastructure/` — all Terraform (the TFC working directory); purpose files
   (`providers.tf`, `variables.tf`, `locals.tf`, `main.tf`, `data.tf`,
-  `checks.tf`); repo-local modules under `modules/`, each `main.tf`,
-  `variables.tf`, `outputs.tf` (+ `data.tf`/`checks.tf` when owned). The root
-  declares no outputs: the platform publishes none.
+  `checks.tf`); repo-local modules under `modules/`, each `variables.tf`,
+  `outputs.tf` (+ `data.tf`/`checks.tf` when owned). The root declares no
+  outputs: the platform publishes none.
+- Block types split into separate files: `locals.tf`, `data.tf`,
+  `checks.tf`, and so on — one purpose per filename. The one exception is
+  resources and module blocks: they live in `main.tf` or may be split into
+  category files `_<category>.tf` (e.g. `_github.tf`, `_google.tf`,
+  `_tfe.tf`, `_identity.tf`, `_iam.tf`) — used in the multi-resource
+  modules to keep resources organised; single-resource modules keep plain
+  `main.tf`.
 - `environments/<name>/` — YAML inputs, one directory per environment slot,
   split by concern, merged alphabetically in `locals.tf`.
 - `scripts/` — bash for orchestration only (seed, adopt, deploy); never
