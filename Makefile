@@ -19,8 +19,8 @@ yaml-config: ## Validate config files against their schemas
 	  done \
 	done
 
-yaml-lint: ## Lint YAML with yamllint defaults (block style enforced by flow-sequence/braces rules)
-	yamllint .schemas/environment environments
+yaml-lint: ## Lint YAML with yamllint defaults (block style enforced by flow-sequence/braces rules); line-length disabled — DNS record values are unbreakable
+	yamllint -d "{extends: default, rules: {line-length: disable}}" .schemas/environment environments
 
 yaml-style: ## Check YAML is block-style with plain scalars
 	@files=$$(ls environments/*/*.yaml 2>/dev/null || true); \
