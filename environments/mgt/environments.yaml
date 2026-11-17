@@ -4,18 +4,9 @@ environments:
   - name: hub
 
   - name: mgt
-    projects:
-      - name: devops
-        description: DevOps Management.
-        default: true
-        services:
-          - iam.googleapis.com
-          - serviceusage.googleapis.com
-          - cloudbilling.googleapis.com
-          - dns.googleapis.com
-          - compute.googleapis.com
 
   - name: dev
+    auto_apply: true
 
   - name: pre
 

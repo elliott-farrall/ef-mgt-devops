@@ -12,12 +12,24 @@ module "environment" {
   platform_roles     = each.value.platform_roles
 }
 
+module "repository" {
+  source   = "./modules/repository"
+  for_each = local.repositories
+
+  repo          = each.value.repo
+  description   = each.value.description
+  settings      = each.value.settings
+  protection    = each.value.protection
+  status_checks = each.value.status_checks
+}
+
 module "project" {
   source   = "./modules/project"
-  for_each = local.projects
+  for_each = local.deployments
 
   name                      = each.value.name
   environment               = each.value.environment
+  repo                      = each.value.repo
   project_id                = each.value.project_id
   folder_id                 = each.value.folder_id
   billing_account_id        = each.value.billing_account_id
@@ -29,10 +41,8 @@ module "project" {
   github_app_installation   = each.value.github_app_installation
   wif_provider              = each.value.wif_provider
   gcp_service_account_email = each.value.gcp_service_account_email
-  repo                      = each.value.repo
-  description               = each.value.description
-  settings                  = each.value.settings
-  protection                = each.value.protection
+
+  depends_on = [module.environment, module.repository]
 }
 
 module "module" {
@@ -44,10 +54,8 @@ module "module" {
   organization            = each.value.organization
   repository_id           = each.value.repository_id
   github_app_installation = each.value.github_app_installation
-  repo                    = each.value.repo
-  description             = each.value.description
-  settings                = each.value.settings
-  protection              = each.value.protection
+
+  depends_on = [module.repository]
 }
 
 module "record" {
@@ -61,6 +69,8 @@ module "record" {
   ttl      = each.value.ttl
   proxied  = each.value.proxied
   priority = each.value.priority
+
+  depends_on = [module.project]
 }
 
 module "budget" {

@@ -1,0 +1,101 @@
+---
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Project inputs (projects.yaml)
+description: Projects — one repository per project, deployments into environments per project. The repository name is ef-<type>-<name>; each deployment mints a workspace ef-<environment>-<name> and a GCP project of the same name in that environment's folder.
+type: object
+additionalProperties: false
+required:
+  - projects
+properties:
+  projects:
+    type: array
+    minItems: 1
+    items:
+      $ref: "#/definitions/project"
+definitions:
+  project:
+    type: object
+    additionalProperties: false
+    required:
+      - name
+      - type
+    properties:
+      name:
+        type: string
+        pattern: "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+        description: Project suffix; completes every generated name.
+      type:
+        type: string
+        pattern: "^[a-z][a-z0-9-]*$"
+        description: Repository prefix token; the repository is ef-<type>-<name>. Free-form, though naming it after an environment lets environments default to [type].
+      environments:
+        type: array
+        description: Environments the project deploys into; defaults to [type] — valid only when type names a real environment.
+        minItems: 1
+        items:
+          type: string
+          pattern: '^[a-z][a-z0-9-]*$'
+      description:
+        type: string
+        description: Repository description.
+      repo:
+        type: string
+        description: Repository name override; defaults to ef-<type>-<name>.
+      default:
+        type: boolean
+        description: Exactly one project is the platform home; its landing deployment hosts every identity pool, service account, and DNS zone.
+      services:
+        type: array
+        description: GCP APIs enabled on every deployment's project.
+        items:
+          type: string
+      working_directory:
+        type: string
+        description: Terraform root inside the repository; defaults to infrastructure.
+      auto_apply:
+        type: boolean
+        description: Overrides the environment run policy for every deployment of this project.
+      settings:
+        type: object
+        description: Overrides for github_repository platform defaults.
+        additionalProperties: false
+        properties:
+          visibility:
+            type: string
+            enum:
+              - private
+              - public
+          has_issues:
+            type: boolean
+          has_projects:
+            type: boolean
+          has_wiki:
+            type: boolean
+          allow_merge_commit:
+            type: boolean
+          allow_squash_merge:
+            type: boolean
+          allow_rebase_merge:
+            type: boolean
+          allow_auto_merge:
+            type: boolean
+          delete_branch_on_merge:
+            type: boolean
+      protection:
+        type: object
+        description: Overrides for the main-branch rulesets.
+        additionalProperties: false
+        properties:
+          required_approving_review_count:
+            type: integer
+            minimum: 0
+            maximum: 6
+          dismiss_stale_reviews:
+            type: boolean
+          require_conversation_resolution:
+            type: boolean
+          status_checks:
+            type: array
+            description: Exact required CI check names.
+            items:
+              type: string

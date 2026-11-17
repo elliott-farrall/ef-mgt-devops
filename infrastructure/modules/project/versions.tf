@@ -8,9 +8,5 @@ terraform {
       source  = "hashicorp/tfe"
       version = ">= 0.84"
     }
-    github = {
-      source  = "integrations/github"
-      version = ">= 6.0"
-    }
   }
 }

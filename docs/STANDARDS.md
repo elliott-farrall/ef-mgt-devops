@@ -9,7 +9,9 @@ here in the same PR that makes it.
 
 - Five flat infrastructure environments: `mgt`, `hub`, `dev`, `pre`, `prd`.
   Each is top-level directly under the organisation root — no environment
-  types, no parent pointers.
+  types, no parent pointers. Environments own no projects; they are
+  deployment lanes carrying a run policy (`auto_apply`) that deployments
+  inherit.
 - Each environment owns, derived from its name: GCP folder `ef-<env>`
   directly under the organisation root, TFC project `ef-<env>`, service
   account `sa-<env>-tfc`, WIF pool `ef-<env>-tfc`, WIF provider
@@ -208,7 +210,9 @@ here in the same PR that makes it.
   project id, and the default repository name. A repository shared across
   environments is named explicitly with `repo:`.
 - Module repositories generate `ef-lib-<name>`, published as registry
-  module `<name>`.
+  module `<name>`. Application repositories generate `ef-<type>-<name>`
+  where type is a free prefix (`app`, `tool`, …) — one repository, many
+  deployments.
 - Derived names are derived, never repeated in config: service account
   `sa-<env>-tfc`, pool `ef-<env>-tfc`, provider `tfc-<env>`, TFC project
   `ef-<env>`, budget `ef-budget-<name>`, DNS zone name from the domain with
@@ -245,15 +249,22 @@ here in the same PR that makes it.
   environment).
 - Each file has one top-level key matching the filename; `locals.tf` merges
   the files into `config` and exposes the namespaces.
-- **A project is one entry**: declaring `environments[].projects[]` mints
-  the GitHub repository, the TFC workspace (in the environment's TFC
-  project `ef-<env>`), and the GCP project directly under the organisation
-  root. Example: `mgt` + suffix `devops` yields repo, workspace and GCP
-  project `ef-mgt-devops`.
+- **A project is one entry in `projects.yaml`**: it declares `type` (the
+  free-form repository prefix) and optionally `environments` (default
+  `[type]` — valid only when type names a real environment). The entry
+  mints one repository `ef-<type>-<name>` and one deployment per
+  environment: workspace `ef-<env>-<name>` in the environment's TFC
+  project, GCP project of the same name in the environment's folder. An
+  application is a project whose type differs from its environments —
+  one repository, many deployments. Example: type `mgt` + name `devops`
+  yields repository, workspace and GCP project `ef-mgt-devops`; type
+  `app` + environments `[dev, pre, prd]` yields repository `ef-app-web`
+  with three deployments.
 - **A module is one entry**: declaring `modules[]` mints the repository
-  `ef-lib-<name>` and a private TFC registry module (module name `<name>`,
-  published from the repository by git tag). It creates no workspace, no
-  service account, and no GCP project.
+  `ef-lib-<name>` (through the same `repository` module) and a private TFC
+  registry module (module name `<name>`, published from the repository by
+  git tag). It creates no workspace, no service account, and no GCP
+  project.
 - YAML files use **block style only** — no flow/JSON syntax (`{...}`
   mappings or `[...]` inline sequences). One entry per line keeps diffs
   reviewable.

@@ -1,26 +1,36 @@
-check "budget_scopes_exist" {
+check "deployment_environments_exist" {
   assert {
     condition = alltrue([
-      for b in values(local.budgets) :
-      b.scope == "" || !startswith(b.scope, "projects/") || contains(keys(local.projects), trimprefix(b.scope, "projects/"))
+      for p in local.config.projects :
+      alltrue([for e in try(p.environments, [p.type]) : contains([for x in local.config.environments : x.name], e)])
     ])
-    error_message = "Every budget projects scope must name a declared project."
+    error_message = "Every project deployment environment must name a declared environment; type-only projects require type to name one."
   }
 }
 
-check "project_names_unique" {
+check "names_and_repos_unique" {
   assert {
     condition = alltrue([
-      length([for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { name = "ef-${e.name}-${p.name}" })]]) : x.name]) == length(toset([for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { name = "ef-${e.name}-${p.name}" })]]) : x.name])),
-      length([for r in concat([for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { repo = try(p.repo, "ef-${e.name}-${p.name}") })]]) : x.repo], [for m in try(local.config.modules, []) : try(m.repo, "ef-lib-${m.name}")]) : r]) == length(toset([for r in concat([for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { repo = try(p.repo, "ef-${e.name}-${p.name}") })]]) : x.repo], [for m in try(local.config.modules, []) : try(m.repo, "ef-lib-${m.name}")]) : r])),
+      length([for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : "ef-${e}-${p.name}"]]) : x]) == length(toset([for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : "ef-${e}-${p.name}"]]) : x])),
+      length([for r in keys(local.repositories) : r]) == length(toset([for r in keys(local.repositories) : r])),
     ])
-    error_message = "Project names double as workspace and GCP project ids and must be unique across environments; repository names double as GitHub repo ids and must be unique across projects and modules."
+    error_message = "Deployment names double as workspace and GCP project ids and must be unique; repository names double as GitHub repo ids and must be unique across projects and modules."
   }
 }
 
 check "default_project_is_unique" {
   assert {
-    condition     = length([for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : p]]) : x.name if try(x.default, false) != false]) == 1
-    error_message = "Exactly one project must be marked default: true; it hosts every identity pool, service account, and DNS zone."
+    condition     = length([for p in local.config.projects : p.name if try(p.default, false) != false]) == 1
+    error_message = "Exactly one project must be marked default: true; its landing deployment hosts every identity pool, service account, and DNS zone."
+  }
+}
+
+check "budget_scopes_exist" {
+  assert {
+    condition = alltrue([
+      for b in values(local.budgets) :
+      b.scope == "" || !startswith(b.scope, "projects/") || contains(keys(local.deployments), trimprefix(b.scope, "projects/"))
+    ])
+    error_message = "Every budget projects scope must name a declared deployment."
   }
 }

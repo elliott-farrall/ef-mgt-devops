@@ -270,7 +270,9 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │       ├── organisation.yaml # Org facts: domain, region, GH owner, TFC hostname
 │       ├── budgets.yaml      # Budget alerts
 │       ├── zones.yaml        # DNS zones + record sets
-│       ├── environments.yaml # Environment list + projects
+│       ├── environments.yaml # Deployment lanes
+│       ├── projects.yaml     # Repositories + deployments
+│       ├── records.yaml      # Cloudflare apex zone records
 │       └── modules.yaml      # Registry module repositories
 ├── infrastructure/          # Terraform working directory
 │   ├── locals.tf            # All derivation from config
@@ -279,10 +281,11 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │   ├── data.tf              # Data sources (shared lookups)
 │   ├── checks.tf            # Validation checks (cross-registry integrity)
 │   └── modules/             # Repo-local Terraform modules, by function
-│       ├── environment      # TFC project + identity + WIF + bindings
-│       ├── project          # Repo + workspace + GCP project
-│       ├── module           # Repo + private registry module
-│       ├── zone             # DNS zone + record sets
+│       ├── environment      # Folder + TFC project + identity + WIF + bindings
+│       ├── repository       # GitHub repository + rulesets
+│       ├── project          # Workspace + GCP project
+│       ├── module           # Private registry module
+│       ├── record           # Cloudflare DNS record
 │       └── budget           # Billing budget alert
 ├── README.md              # Entry point
 └── .gitignore

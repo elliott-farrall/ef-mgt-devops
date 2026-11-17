@@ -64,24 +64,7 @@ variable "gcp_service_account_email" {
 }
 
 variable "repo" {
-  description = "GitHub repository name."
+  description = "GitHub repository this workspace builds; created by module.repository."
   type        = string
 }
 
-variable "description" {
-  description = "Repository description; defaults to the repository name."
-  type        = string
-  default     = null
-}
-
-variable "settings" {
-  description = "Overrides for github_repository platform defaults."
-  type        = any
-  default     = {}
-}
-
-variable "protection" {
-  description = "Overrides for the main-branch protection platform defaults."
-  type        = any
-  default     = {}
-}

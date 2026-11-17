@@ -1,8 +1,3 @@
-output "github_repository" {
-  description = "The GitHub repository resource."
-  value       = github_repository.this
-}
-
 output "google_project" {
   description = "The GCP project resource."
   value       = google_project.this

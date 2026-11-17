@@ -10,7 +10,6 @@ resource "tfe_workspace" "this" {
     github_app_installation_id = data.tfe_github_app_installation.this.id
   }
 
-  depends_on = [github_repository.this]
 }
 
 resource "tfe_workspace_settings" "this" {

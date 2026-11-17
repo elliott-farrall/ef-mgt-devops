@@ -1,25 +1,3 @@
-variable "repo" {
-  description = "GitHub repository name."
-  type        = string
-}
-
-variable "description" {
-  description = "Repository description; defaults to the repository name."
-  type        = string
-  default     = null
-}
-
-variable "settings" {
-  description = "Overrides for github_repository platform defaults."
-  type        = any
-  default     = {}
-}
-
-variable "protection" {
-  description = "Overrides for the main-branch protection platform defaults."
-  type        = any
-  default     = {}
-}
 
 variable "name" {
   description = "Module name in the registry; derived from the repository name."

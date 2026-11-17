@@ -4,7 +4,7 @@ locals {
     var.settings,
   )
   protection = merge(
-    { require_conversation_resolution = true, required_approving_review_count = 1, dismiss_stale_reviews = true, status_checks = ["ci / branch-name (pull_request)", "ci / terraform (pull_request)", "ci / yaml (pull_request)", "ci / shell (pull_request)"] },
+    { require_conversation_resolution = true, required_approving_review_count = 1, dismiss_stale_reviews = true, status_checks = var.status_checks },
     var.protection,
   )
 }

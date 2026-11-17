@@ -9,5 +9,4 @@ resource "tfe_registry_module" "this" {
     github_app_installation_id = data.tfe_github_app_installation.this.id
   }
 
-  depends_on = [github_repository.this]
 }

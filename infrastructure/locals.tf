@@ -1,8 +1,10 @@
 locals {
   config = merge([for f in sort(fileset("${path.root}/../environments/${var.environment}", "*.yaml")) : yamldecode(file("${path.root}/../environments/${var.environment}/${f}"))]...)
 
-  google_default_project = [for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { name = "ef-${e.name}-${p.name}" })]]) : x.name if try(x.default, false) != false][0]
+  # The landing deployment; also consumed by data sources and checks
+  google_default_project = [for p in local.config.projects : "ef-${p.type}-${p.name}" if try(p.default, false) != false][0]
 
+  # One entry per environment: folder, TFC project, identity, pool, provider, bindings
   environments = {
     for e in local.config.environments : e.name => {
       name               = e.name
@@ -10,48 +12,73 @@ locals {
       billing_account_id = data.google_billing_account.ef.id
       landing_project_id = local.google_default_project
       issuer             = "https://${local.config.organisation.tfe.hostname}"
-      roles = concat(
-        [for role in ["roles/resourcemanager.projectCreator", "roles/editor", "roles/iam.serviceAccountUser", "roles/dns.admin"] : { scope = "project:${local.google_default_project}", role = role }],
-        e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.costsManager" }, { scope = "project:${local.google_default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : [],
-      )
+      folder_roles       = ["roles/resourcemanager.projectCreator", "roles/editor"]
+      landing_roles      = ["roles/iam.serviceAccountUser", "roles/dns.admin"]
+      platform_roles     = e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.costsManager" }, { scope = "project:${local.google_default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : []
+      auto_apply         = try(e.auto_apply, false)
     }
   }
 
-  projects = {
-    for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { name = "ef-${e.name}-${p.name}", repo = try(p.repo, "ef-${e.name}-${p.name}"), env = e.name })]]) : x.name => {
-      name                      = x.name
-      environment               = x.env
-      project_id                = module.environment[x.env].tfe_project.this.id
-      folder_id                 = module.environment[x.env].google_folder.this.folder_id
+  # One entry per unique repository; projects and registry modules both mint repositories.
+  # Status checks carry one TFC predictive check per deployment workspace building the repository.
+  repository_status_checks = ["ci / branch-name (pull_request)", "ci / terraform (pull_request)", "ci / yaml (pull_request)", "ci / shell (pull_request)"]
+  repositories = {
+    for key, entry in merge(
+      { for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
+        repo        = try(p.repo, "ef-${p.type}-${p.name}")
+        description = try(p.description, null)
+        settings    = try(p.settings, {})
+        protection  = try(p.protection, {})
+      } },
+      { for m in try(local.config.modules, []) : try(m.repo, "ef-lib-${m.name}") => {
+        repo        = try(m.repo, "ef-lib-${m.name}")
+        description = try(m.description, null)
+        settings    = try(m.settings, {})
+        protection  = try(m.protection, {})
+      } },
+      ) : key => {
+      repo        = entry.repo
+      description = entry.description
+      settings    = entry.settings
+      protection  = entry.protection
+      status_checks = concat(local.repository_status_checks, [
+        for x in values(local.deployments) : "Terraform Cloud / ${x.name} (Predict)" if x.repo == entry.repo
+      ])
+    }
+  }
+
+  # One entry per deployment: workspace + GCP project in the deployment environment
+  deployments = {
+    for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : {
+      name                      = "ef-${e}-${p.name}"
+      environment               = e
+      repo                      = try(p.repo, "ef-${p.type}-${p.name}")
+      project_id                = module.environment[e].tfe_project.this.id
+      folder_id                 = module.environment[e].google_folder.this.folder_id
       billing_account_id        = data.google_billing_account.ef.id
-      labels                    = { environment = x.env, managed_by = "terraform", repository = x.repo }
-      services                  = try(x.services, [])
-      working_directory         = try(x.working_directory, "infrastructure")
-      auto_apply                = try(x.auto_apply, false)
+      labels                    = { environment = e, managed_by = "terraform", repository = try(p.repo, "ef-${p.type}-${p.name}") }
+      services                  = try(p.services, [])
+      working_directory         = try(p.working_directory, "infrastructure")
+      auto_apply                = try(p.auto_apply, local.environments[e].auto_apply)
       github_owner              = local.config.organisation.gh.owner
       github_app_installation   = local.config.organisation.tfe.github_app_installation
-      wif_provider              = "//iam.googleapis.com/${module.environment[x.env].google_iam_workload_identity_pool_provider.this.name}"
-      gcp_service_account_email = module.environment[x.env].google_service_account.this.email
-      repo                      = x.repo
-      description               = try(x.description, null)
-      settings                  = try(x.settings, {})
-      protection                = try(x.protection, {})
-    }
+      wif_provider              = "//iam.googleapis.com/${module.environment[e].google_iam_workload_identity_pool_provider.this.name}"
+      gcp_service_account_email = module.environment[e].google_service_account.this.email
+    }]]) : x.name => x
   }
 
+  # One entry per modules.yaml entry: private registry module from its repository
   modules = {
     for m in try(local.config.modules, []) : try(m.repo, "ef-lib-${m.name}") => {
       name                    = m.name
+      module_provider         = "google"
       organization            = local.config.organisation.tfe.organisation
       repository_id           = "${local.config.organisation.gh.owner}/${try(m.repo, "ef-lib-${m.name}")}"
       github_app_installation = local.config.organisation.tfe.github_app_installation
-      repo                    = try(m.repo, "ef-lib-${m.name}")
-      description             = try(m.description, null)
-      settings                = try(m.settings, {})
-      protection              = try(m.protection, {})
     }
   }
 
+  # One entry per record: Cloudflare DNS record in its declared zone
   records = {
     for r in local.config.records : "${replace(r.zone, ".", "-")}-${replace(r.name, ".", "-")}-${r.type}" => {
       zone     = r.zone
@@ -64,6 +91,7 @@ locals {
     }
   }
 
+  # One entry per budget: billing budget alert
   budgets = {
     for b in local.config.budgets : "ef-budget-${b.name}" => {
       name               = "ef-budget-${b.name}"
