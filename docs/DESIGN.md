@@ -153,7 +153,7 @@ Budget alerts trigger notifications but never cap spending — structural guardr
 
 #### DNS
 
-DNS resolution uses GCP Cloud DNS. Managed zone and six record sets hosted in `ef-mgt-devops`. (Cloudflare remains the registrar — billing relationship only.)
+DNS resolution uses GCP Cloud DNS. Managed zone and six record sets hosted in `ef-mgt-devops`. Delegation: the registrar holds the NS records pointing at the zone's assigned name servers, published as the `zone_name_servers` root output. (Cloudflare currently holds registration; moving it to a registrar that allows custom name servers is required for the delegation to happen.)
 
 | Property | Value |
 |----------|-------|
