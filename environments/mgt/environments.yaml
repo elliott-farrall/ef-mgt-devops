@@ -6,7 +6,6 @@ environments:
   - name: mgt
 
   - name: dev
-    auto_apply: true
 
   - name: pre
 

@@ -28,11 +28,11 @@ repository, `ef-lib-<name>`, published to the TFC private registry.
 
 | Slot | Role | Run policy | Why it exists |
 |------|------|------------|---------------|
-| `mgt` | Platform management | manual confirm | Operates org, DNS, TFC; production-grade because everything else depends on it |
-| `hub` | Shared services | manual confirm | Consumed by every environment, so it sits outside the ladder |
-| `dev` | Experiments | auto-apply | Fast iteration where breakage is cheap |
-| `pre` | Staging | manual confirm | Soaks after dev before anything real moves |
-| `prd` | Production | manual confirm | Safety gates on all applies |
+| `mgt` | Platform management | Operates org, DNS, TFC; production-grade because everything else depends on it |
+| `hub` | Shared services | Consumed by every environment, so it sits outside the ladder |
+| `dev` | Experiments | Fast iteration where breakage is cheap |
+| `pre` | Staging | Soaks after dev before anything real moves |
+| `prd` | Production | Guarded by review and predictive-plan gates rather than apply-time confirmation |
 
 Isolation is structural: a project lives in exactly one environment, each
 environment has its own service account and state, and cross-environment
@@ -186,7 +186,7 @@ Five logical groupings containing workspaces. One per environment.
 |--------------|-------------|---------|
 | `ef-mgt` | `mgt` | Platform management — runs `feature/initialise`, manages entire stack |
 | `ef-hub` | `hub` | Shared services — consumed by every lane; manual-confirm gate |
-| `ef-dev` | `dev` | Experiment workspace — auto-apply |
+| `ef-dev` | `dev` | Experiment workspace |
 | `ef-pre` | `pre` | Staging workspace — manual-confirm before prod |
 | `ef-prd` | `prd` | Production workspace — manual-confirm gate |
 
@@ -196,7 +196,7 @@ One workspace deployed today. Additional workspaces appear automatically when pr
 
 | Workspace Name | TFC Project | Repository | Execution Mode | Auto-apply | Linked Variables |
 |---------------|-------------|------------|----------------|------------|------------------|
-| `ef-mgt-devops` | `ef-mgt` | `ef-mgt-devops` | Remote | No (manual confirm) | `environment=mgt`, `TFC_GCP_PROVIDER_AUTH=true`, `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER`, `TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL` |
+| `ef-mgt-devops` | `ef-mgt` | `ef-mgt-devops` | Remote | Yes | `environment=mgt`, `TFC_GCP_PROVIDER_AUTH=true`, `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER`, `TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL` |
 
 Workspace variables embed identity plumbing. Three variables per workspace — declared category, assigned purpose, runtime value populated at apply.
 

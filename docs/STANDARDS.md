@@ -9,9 +9,8 @@ here in the same PR that makes it.
 
 - Five flat infrastructure environments: `mgt`, `hub`, `dev`, `pre`, `prd`.
   Each is top-level directly under the organisation root — no environment
-  types, no parent pointers. Environments own no projects; they are
-  deployment lanes carrying a run policy (`auto_apply`) that deployments
-  inherit.
+  types, no parent pointers. Environments own no projects and no run
+  policy; every workspace auto-applies, hardcoded in the `project` module.
 - Each environment owns, derived from its name: GCP folder `ef-<env>`
   directly under the organisation root, TFC project `ef-<env>`, service
   account `sa-<env>-tfc`, WIF pool `ef-<env>-tfc`, WIF provider
@@ -112,8 +111,10 @@ here in the same PR that makes it.
   organisation tokens cannot create GitHub-App-backed workspaces.
   yamllint runs with default rules; the only disabled rule is
   line-length, forced by unbreakable DNS record values.
-- Run policy per project entry: `auto_apply: true` for dev-style lanes,
-  `false` (manual confirm) everywhere else. The policy is data, not code.
+- Run policy: every workspace auto-applies — hardcoded in the `project`
+  module, not configuration. `pre` and `prd` keep their safety gates
+  through the required reviews and predictive plans on pull requests
+  instead of apply-time confirmation.
 
 ## Terraform code
 
@@ -156,7 +157,7 @@ here in the same PR that makes it.
 - Module inputs are config slices, not the whole merged map. Optional
   platform defaults live inside the owning module, merged with the
   caller-passed overrides: `working_directory` = `infrastructure` and
-  `auto_apply` = `false` in `project`, repository and branch-protection
+  `auto_apply` = `true` in `project`, repository and branch-protection
   defaults in `project` and `module`, `budget` currency = GBP in `budget`.
 - Module outputs are mechanical: one output per resource the module
   creates, exporting the whole resource object — named after the resource

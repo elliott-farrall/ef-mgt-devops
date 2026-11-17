@@ -15,7 +15,6 @@ locals {
       folder_roles       = ["roles/resourcemanager.projectCreator", "roles/editor"]
       landing_roles      = ["roles/iam.serviceAccountUser", "roles/dns.admin"]
       platform_roles     = e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.costsManager" }, { scope = "project:${local.google_default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : []
-      auto_apply         = try(e.auto_apply, false)
     }
   }
 
@@ -59,7 +58,6 @@ locals {
       labels                    = { environment = e, managed_by = "terraform", repository = try(p.repo, "ef-${p.type}-${p.name}") }
       services                  = try(p.services, [])
       working_directory         = try(p.working_directory, "infrastructure")
-      auto_apply                = try(p.auto_apply, local.environments[e].auto_apply)
       github_owner              = local.config.organisation.gh.owner
       github_app_installation   = local.config.organisation.tfe.github_app_installation
       wif_provider              = "//iam.googleapis.com/${module.environment[e].google_iam_workload_identity_pool_provider.this.name}"

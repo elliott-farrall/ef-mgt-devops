@@ -52,9 +52,6 @@ definitions:
       working_directory:
         type: string
         description: Terraform root inside the repository; defaults to infrastructure.
-      auto_apply:
-        type: boolean
-        description: Overrides the environment run policy for every deployment of this project.
       settings:
         type: object
         description: Overrides for github_repository platform defaults.

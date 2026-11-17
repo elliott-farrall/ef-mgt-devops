@@ -36,7 +36,6 @@ module "project" {
   labels                    = each.value.labels
   services                  = each.value.services
   working_directory         = each.value.working_directory
-  auto_apply                = each.value.auto_apply
   github_owner              = each.value.github_owner
   github_app_installation   = each.value.github_app_installation
   wif_provider              = each.value.wif_provider

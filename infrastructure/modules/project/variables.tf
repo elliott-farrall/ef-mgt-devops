@@ -38,11 +38,6 @@ variable "working_directory" {
   type        = string
 }
 
-variable "auto_apply" {
-  description = "Whether to automatically apply changes when a Terraform plan is successful."
-  type        = bool
-}
-
 variable "github_owner" {
   description = "GitHub account owning the repository."
   type        = string

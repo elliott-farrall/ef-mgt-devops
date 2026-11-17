@@ -1,7 +1,7 @@
 ---
 $schema: "http://json-schema.org/draft-07/schema#"
 title: Environment inputs (environments.yaml)
-description: Deployment lanes — a flat list of environments, each directly under the organisation root. Environments own no projects; deliverables live in projects.yaml and modules.yaml.
+description: Deployment lanes — a flat list of environments, each directly under the organisation root. Environments own no projects and no run policy; every workspace auto-applies.
 type: object
 additionalProperties: false
 required:
@@ -20,6 +20,3 @@ properties:
           type: string
           pattern: '^[a-z][a-z0-9-]*$'
           description: Environment name; generates the folder ef-<name>, TFC project ef-<name>, and identity sa-<name>-tfc.
-        auto_apply:
-          type: boolean
-          description: Run policy inherited by every deployment in this environment; defaults to false.
