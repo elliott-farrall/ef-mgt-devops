@@ -89,6 +89,20 @@ here in the same PR that makes it.
   done once, its installation name then makes every workspace link pure
   Terraform.
 
+## Issues and tickets
+
+- GitHub issues stay enabled on every repository — tickets live close to
+  the code they belong to.
+- Linear is the central place to manage work across the zone: its GitHub
+  integration syncs repository issues two ways, and its GitHub App is
+  installed at organisation level with all-repository access, so new
+  repositories are covered automatically. Installing and configuring it is
+  a one-time console action, sanctioned like the TFC GitHub App.
+- Agents integrate through Linear's MCP server rather than per-repository
+  GitHub issue calls.
+- Reference a Linear issue in branch names or pull request titles
+  (`<key>-<name>`) so pull requests link to their tickets automatically.
+
 ## Terraform Cloud
 
 - TFC is the single deployment engine. All applies run under workspace
