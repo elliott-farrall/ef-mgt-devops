@@ -50,7 +50,7 @@ Config carries suffix-only names. Terraform generates full names as `ef-<env>-<s
 | TFC project | derived | `ef-dev` | TFC organisation |
 | Billing budget display | `budgets[].name: total` | `ef-budget-total` | GCP billing account |
 | DNS zone name | `zones.yaml[].name: elliott-farrall.phd` | `elliott-farrall-phd` | Landing project |
-| Cross-env repo share | `projects[].repo: shared-repo` | `ef-shared-repo` (created once) | Owner namespace |
+| Application | `projects[].type: app`, `environments: [dev, pre, prd]` | `ef-app-web` (repo) / `ef-dev-web` … (deployments) | Owner namespace / lanes |
 | Module | `modules[].name: registry` | `ef-lib-registry` (repo) / `registry` (registry module) | Owner namespace / TFC private registry |
 
 ### Cross-environment access
@@ -98,8 +98,8 @@ One GCP project deployed. The management plane runs inside its own project; the 
 | `ef-mgt-devops` | `ef-billing` | DevOps Management | Yes |
 
 Hub, dev, pre, and prd exist as environments and TFC projects but hold no
-GCP projects today. Projects appear when their entries gain `projects[]`
-definitions.
+GCP projects today. Deployments appear when projects declare them in
+`projects.yaml`.
 
 #### Workload identity federation
 
@@ -192,7 +192,7 @@ Five logical groupings containing workspaces. One per environment.
 
 #### TFC Workspaces
 
-One workspace deployed today. Additional workspaces appear automatically when environments gain `projects[]` definitions.
+One workspace deployed today. Additional workspaces appear automatically when projects declare deployments in `projects.yaml`.
 
 | Workspace Name | TFC Project | Repository | Execution Mode | Auto-apply | Linked Variables |
 |---------------|-------------|------------|----------------|------------|------------------|
@@ -219,7 +219,7 @@ GitHub is source of truth and CI validation. It holds no cloud apply credentials
 
 #### Repositories
 
-One repository deployed today. Additional repositories appear automatically when infrastructure environments gain `projects[]` definitions.
+One repository deployed today. Additional repositories appear automatically when `projects.yaml` or `modules.yaml` gain entries.
 
 | Repository | Namespace | Visibility | Branch Protection | Linked Workspace |
 |-----------|-----------|------------|-------------------|------------------|
