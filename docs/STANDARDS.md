@@ -230,6 +230,8 @@ here in the same PR that makes it.
   subzone through the GCP provider, and the delegating NS records in the
   Cloudflare apex through the same Cloudflare provider and token. This is
   the pattern the `research` subdomain used against Azure DNS.
+- Every record entry declares its zone explicitly — no implicit default;
+  the organisation domain is just another value, not a fallback.
 
 ## YAML
 

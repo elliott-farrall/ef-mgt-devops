@@ -300,7 +300,7 @@ while IFS=$'\t' read -r zone name type content priority; do
   printf '\nimport {\n  to   = module.record["%s"].cloudflare_dns_record.this\n  id   = "%s"\n}\n' \
     "${record_key}" "${import_id}" >> "${INFRA_DIR}/imports.tf"
   r "Imported record ${zone} ${name} ${type}"
-done < <(yq -r '.records[] | [(.zone // "'"${GCP_DOMAIN}"'"), .name, .type, .content, (.priority // "" | tostring)] | @tsv' "${ENV_DIR}/records.yaml")
+done < <(yq -r '.records[] | [.zone, .name, .type, .content, (.priority // "" | tostring)] | @tsv' "${ENV_DIR}/records.yaml")
 # ══════════════════════════════════════════════════════════════════
 # Phase 4: Deploy
 # ══════════════════════════════════════════════════════════════════

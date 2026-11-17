@@ -53,8 +53,8 @@ locals {
   }
 
   records = {
-    for r in local.config.records : "${replace(try(r.zone, local.config.organisation.gcp.domain), ".", "-")}-${replace(r.name, ".", "-")}-${r.type}" => {
-      zone     = try(r.zone, local.config.organisation.gcp.domain)
+    for r in local.config.records : "${replace(r.zone, ".", "-")}-${replace(r.name, ".", "-")}-${r.type}" => {
+      zone     = r.zone
       name     = r.name
       type     = r.type
       content  = r.content
