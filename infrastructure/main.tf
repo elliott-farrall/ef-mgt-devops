@@ -1,15 +1,26 @@
+module "group" {
+  source   = "./modules/group"
+  for_each = local.environment_groups
+
+  name            = each.value.name
+  organization_id = each.value.organization_id
+}
+
 module "environment" {
   source   = "./modules/environment"
   for_each = local.environments
 
   name               = each.value.name
   organization_id    = each.value.organization_id
+  folder_parent      = each.value.folder_parent
   billing_account_id = each.value.billing_account_id
   landing_project_id = each.value.landing_project_id
   issuer             = each.value.issuer
   folder_roles       = each.value.folder_roles
   landing_roles      = each.value.landing_roles
   platform_roles     = each.value.platform_roles
+
+  depends_on = [module.group]
 }
 
 module "repository" {

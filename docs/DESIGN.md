@@ -83,8 +83,9 @@ GCP hosts the workloads and federation plumbing. Identity admission derives from
 
 #### Folders
 
-One folder per environment, directly under the organisation root, named
-`ef-<env>`. Every project is created inside its environment's folder,
+One folder per environment, named `ef-<env>`. Lane environments may
+declare a cosmetic `parent` group folder — `app` collects `dev`, `pre`,
+and `prd` — hanging their folders under `ef-<parent>`. Every project is created inside its environment's folder,
 which gives each environment identity a bounded creation scope: its
 `projectCreator` and `editor` roles hang off its own folder, so an
 environment can never mint projects outside it.
@@ -282,6 +283,7 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │   ├── checks.tf            # Validation checks (cross-registry integrity)
 │   └── modules/             # Repo-local Terraform modules, by function
 │       ├── environment      # Folder + TFC project + identity + WIF + bindings
+│       ├── group            # Cosmetic group folder
 │       ├── repository       # GitHub repository + rulesets
 │       ├── project          # Workspace + GCP project
 │       ├── module           # Private registry module

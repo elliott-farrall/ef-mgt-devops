@@ -1,6 +1,6 @@
 resource "google_folder" "this" {
   display_name = "ef-${var.name}"
-  parent       = "organizations/${var.organization_id}"
+  parent       = var.folder_parent
 
   lifecycle {
     prevent_destroy = true

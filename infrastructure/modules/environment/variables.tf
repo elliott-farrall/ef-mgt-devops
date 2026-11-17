@@ -8,6 +8,11 @@ variable "organization_id" {
   type        = string
 }
 
+variable "folder_parent" {
+  description = "Resource name of the folder parent: organizations/<id> or folders/<id>."
+  type        = string
+}
+
 variable "billing_account_id" {
   description = "GCP billing account ID granted to the environment identity."
   type        = string

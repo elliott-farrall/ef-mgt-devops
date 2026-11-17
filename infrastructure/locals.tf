@@ -46,6 +46,13 @@ locals {
     }
   }
 
+  # One entry per referenced group folder: cosmetic containers for environment folders
+  environment_groups = {
+    for g in toset([for e in local.config.environments : e.parent if try(e.parent, null) != null]) : g => {
+      organization_id = data.google_organization.ef.id
+    }
+  }
+
   # One entry per deployment: workspace + GCP project in the deployment environment
   deployments = {
     for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : {
