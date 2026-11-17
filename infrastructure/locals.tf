@@ -41,7 +41,7 @@ locals {
       settings    = entry.settings
       protection  = entry.protection
       status_checks = concat(local.repository_status_checks, [
-        for x in values(local.deployments) : "Terraform Cloud / ${x.name} (Predict)" if x.repo == entry.repo
+        for x in values(local.projects) : "Terraform Cloud / ${x.name} (Predict)" if x.repo == entry.repo
       ])
     }
   }
@@ -54,7 +54,7 @@ locals {
   }
 
   # One entry per deployment: workspace + GCP project in the deployment environment
-  deployments = {
+  projects = {
     for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : {
       name                      = "ef-${e}-${p.name}"
       environment               = e

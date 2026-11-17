@@ -36,7 +36,7 @@ module "repository" {
 
 module "project" {
   source   = "./modules/project"
-  for_each = local.deployments
+  for_each = local.projects
 
   name                      = each.value.name
   environment               = each.value.environment
