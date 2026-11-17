@@ -23,7 +23,8 @@ Five flat infrastructure environments, each directly under the organisation
 root — no folder tree, no type field. Each environment owns a TFC project,
 service account, WIF pool, and the workspaces of its projects. Repositories
 without infrastructure (registry modules, utilities) live in
-`modules.yaml`, outside any environment: a module entry mints a
+`projects.yaml` as a project of type `lib` with no environments: a
+library entry mints a
 repository, `ef-lib-<name>`, published to the TFC private registry.
 
 | Slot | Role | Run policy | Why it exists |
@@ -59,7 +60,7 @@ Reuse flows through two mechanisms:
 
 1. **Hub services** consumed by all lanes. Hub projects sit outside the development ladder.
 2. **Library modules** published to the private TFC registry, declared in
-   `modules.yaml` and consumed by any lane via `tfe_registry_module`.
+   type-`lib` projects and consumed by any lane via `tfe_registry_module`.
 
 No shared projects exist.
 
@@ -211,7 +212,7 @@ Workspace variables embed identity plumbing. Three variables per workspace — d
 #### Registry Modules
 
 Zero registry modules currently deployed. They are created when
-`modules.yaml` entries are added — publisher-provided module names,
+type-`lib` projects are added — publisher-provided module names,
 version-tagged, pinned by consumers.
 
 ### GitHub
@@ -272,9 +273,8 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │       ├── budgets.yaml      # Budget alerts
 │       ├── zones.yaml        # DNS zones + record sets
 │       ├── environments.yaml # Deployment lanes
-│       ├── projects.yaml     # Repositories + deployments
-│       ├── records.yaml      # Cloudflare apex zone records
-│       └── modules.yaml      # Registry module repositories
+│       ├── projects.yaml     # Repositories, deployments, libraries
+│       └── records.yaml      # Cloudflare apex zone records
 ├── infrastructure/          # Terraform working directory
 │   ├── locals.tf            # All derivation from config
 │   ├── main.tf              # Module calls + depends_on

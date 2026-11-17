@@ -11,3 +11,8 @@ projects:
       - cloudbilling.googleapis.com
       - dns.googleapis.com
       - compute.googleapis.com
+
+  - name: registry
+    type: lib
+    description: Private Terraform module registry.
+    environments: []

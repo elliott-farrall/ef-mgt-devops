@@ -264,11 +264,13 @@ here in the same PR that makes it.
   yields repository, workspace and GCP project `ef-mgt-devops`; type
   `app` + environments `[dev, pre, prd]` yields repository `ef-app-web`
   with three deployments.
-- **A module is one entry**: declaring `modules[]` mints the repository
-  `ef-lib-<name>` (through the same `repository` module) and a private TFC
-  registry module (module name `<name>`, published from the repository by
-  git tag). It creates no workspace, no service account, and no GCP
-  project.
+- **A library is a project with `type: lib` and `environments: []`**: it
+  mints the repository `ef-lib-<name>` (through the same `repository`
+  module) and a private TFC registry module (module name `<name>`,
+  published from the repository by git tag). It creates no workspace, no
+  service account, and no GCP project. All libraries publish to the
+  registry — the type carries that meaning; there is no separate
+  registry flag.
 - YAML files use **block style only** — no flow/JSON syntax (`{...}`
   mappings or `[...]` inline sequences). One entry per line keeps diffs
   reviewable.

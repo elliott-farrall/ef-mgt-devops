@@ -28,6 +28,16 @@ check "names_and_repos_unique" {
   }
 }
 
+check "default_project_deploys" {
+  assert {
+    condition = alltrue([
+      for p in local.config.projects :
+      try(p.default, false) != false || length(try(p.environments, [p.type])) > 0
+    ])
+    error_message = "The default project must deploy: mark default: true on a project with environments, never on a library."
+  }
+}
+
 check "default_project_is_unique" {
   assert {
     condition     = length([for p in local.config.projects : p.name if try(p.default, false) != false]) == 1

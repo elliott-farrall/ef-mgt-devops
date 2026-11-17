@@ -30,14 +30,16 @@ definitions:
         description: Repository prefix token; the repository is ef-<type>-<name>. Free-form, though naming it after an environment lets environments default to [type].
       environments:
         type: array
-        description: Environments the project deploys into; defaults to [type] — valid only when type names a real environment.
-        minItems: 1
+        description: Environments the project deploys into; defaults to [type] — valid only when type names a real environment. Libraries set it to an empty array and publish registry modules instead.
         items:
           type: string
           pattern: '^[a-z][a-z0-9-]*$'
       description:
         type: string
         description: Repository description.
+      module_provider:
+        type: string
+        description: Registry module provider segment; lib projects only. Defaults to google.
       repo:
         type: string
         description: Repository name override; defaults to ef-<type>-<name>.

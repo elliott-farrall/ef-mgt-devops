@@ -72,15 +72,15 @@ locals {
     }]]) : x.name => x
   }
 
-  # One entry per modules.yaml entry: private registry module from its repository
+  # One entry per lib project: private registry module from its repository
   modules = {
-    for m in try(local.config.modules, []) : try(m.repo, "ef-lib-${m.name}") => {
-      name                    = m.name
-      module_provider         = "google"
+    for p in local.config.projects : try(p.repo, "ef-lib-${p.name}") => {
+      name                    = p.name
+      module_provider         = try(p.module_provider, "google")
       organization            = local.config.organisation.tfe.organisation
-      repository_id           = "${local.config.organisation.gh.owner}/${try(m.repo, "ef-lib-${m.name}")}"
+      repository_id           = "${local.config.organisation.gh.owner}/${try(p.repo, "ef-lib-${p.name}")}"
       github_app_installation = local.config.organisation.tfe.github_app_installation
-    }
+    } if p.type == "lib"
   }
 
   # One entry per record: Cloudflare DNS record in its declared zone
