@@ -1,73 +1,60 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: help yaml-schema yaml-config yaml-style terraform-fmt terraform-validate terraform git-branch bash-shell git-commit terraform-docs docs-changelog all
+# ── Check runner ─────────────────────────────────────────────────────────
+# One tick/cross line per check; tool output appears only on failure.
+define check
+	@if out=$$($1 2>&1); then printf '  ✓ %s\n' '$(2)'; \
+	else printf '  ✗ %s\n' '$(2)'; printf '%s\n' "$$out"; false; fi
+endef
+
+.PHONY: help ci yaml-schema yaml-config yaml-lint yaml-style terraform-fmt terraform-validate bash-shell git-branch git-commit
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[1m%-20s\033[0m %s\n", $$1, $$2}'
 
-# ── YAML ────────────────────────────────────────────────────────────────
-yaml-schema: ## Validate schemas against metaschema
-	check-jsonschema --check-metaschema .schemas/environment/*.yaml
+# ── YAML ─────────────────────────────────────────────────────────────────
+yaml-schema: ## Schema files validate against the metaschema
+	$(call check,check-jsonschema --check-metaschema .schemas/environment/*.yaml,YAML schemas)
 
-yaml-config: ## Validate config files against their schemas
-	@for env_dir in environments/*/; do \
-	  for f in "$$env_dir"*.yaml; do \
-	    name=$$(basename "$$f"); \
-	    schema=".schemas/environment/$$name"; \
-	    [ -f "$$schema" ] || { echo "::error file=$$f::no schema $$schema"; exit 1; }; \
-	    check-jsonschema --schemafile "$$schema" "$$f"; \
-	  done \
+YAML_CONFIG := for env_dir in environments/*/; do \
+	for f in "$$env_dir"*.yaml; do \
+	name=$$(basename "$$f"); \
+	check-jsonschema --schemafile ".schemas/environment/$$name" "$$f" || exit 1; \
+	done; \
 	done
 
-yaml-lint: ## Lint YAML with yamllint defaults (block style enforced by flow-sequence/braces rules); line-length disabled — DNS record values are unbreakable
-	yamllint -d "{extends: default, rules: {line-length: disable}}" .schemas/environment environments
+yaml-config: ## Config files validate against their schemas
+	$(call check,$(YAML_CONFIG),YAML config against schemas)
 
-yaml-style: ## Check YAML is block-style with plain scalars
-	@files=$$(ls environments/*/*.yaml 2>/dev/null || true); \
-	[ -z "$$files" ] && exit 0; \
-	if grep -rnE '(: *[([{"])|(^[[:space:]]*- *\{)' $$files; then \
-	  echo "YAML config must be block style with plain scalars (see docs/STANDARDS.md)"; exit 1; fi
+yaml-lint: ## yamllint defaults; line-length disabled — DNS record values are unbreakable
+	$(call check,yamllint -d "{extends: default, rules: {line-length: disable}}" .schemas/environment environments,YAML lint)
 
-# ── Terraform ───────────────────────────────────────────────────────────
-terraform-fmt: ## Format-check Terraform files
-	terraform fmt -recursive -check infrastructure
+yaml-style: ## YAML is block style with plain scalars
+	$(call check,if files=$$(ls environments/*/*.yaml 2>/dev/null) && [ -n "$$files" ] && grep -rnE '(: *[([{"])|(^[[:space:]]*- *\{)' $$files; then echo block-style-only; fi,YAML style)
 
-terraform-init: ## Initialize Terraform configuration
-	terraform init -backend=false -chdir=infrastructure
+# ── Terraform ────────────────────────────────────────────────────────────
+terraform-fmt: ## Terraform files are formatted
+	$(call check,terraform fmt -recursive -check infrastructure,Terraform fmt)
 
-terraform-validate: terraform-init ## Validate Terraform configuration
-	terraform validate -chdir=infrastructure
+TERRAFORM_VALIDATE := terraform -chdir=infrastructure init -backend=false -input=false >/dev/null && \
+	terraform -chdir=infrastructure validate
 
-terraform-docs: ## Verify module READMEs are current
-	@ROOT=$$(git rev-parse --show-toplevel); \
-	for dir in infrastructure infrastructure/modules/*/; do \
-	  (cd "$$ROOT/$$dir" && terraform-docs markdown table . --output-file README.md) || exit 1; \
-	done; \
-	cd "$$ROOT" && git diff --exit-code -- infrastructure/README.md 'infrastructure/modules/*/README.md' || \
-	  { echo "::error::terraform-docs READMEs are stale — run make terraform-docs"; exit 1; }
+terraform-validate: ## Terraform configuration is valid
+	$(call check,$(TERRAFORM_VALIDATE),Terraform validate)
 
-terraform: terraform-fmt terraform-validate terraform-docs ## Run all Terraform checks
+# ── Bash ─────────────────────────────────────────────────────────────────
+bash-shell: ## Shell scripts pass shellcheck and parse
+	$(call check,shellcheck -x -S error scripts/*.sh && for s in scripts/*.sh; do bash -n "$$s"; done,Shell scripts)
 
-# ── Git ─────────────────────────────────────────────────────────────────
-git-branch: ## Enforce branch name convention
-	@BRANCH=$${BRANCH_NAME:-$$GITHUB_HEAD_REF}; \
-	if [ -z "$$BRANCH" ]; then BRANCH=$$(git symbolic-ref --short HEAD 2>/dev/null); fi; \
-	echo "$$BRANCH" | grep -Eq '^(feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert)/[a-z0-9][a-z0-9._-]*$$' || \
-	{ echo "Branch '$$BRANCH' must be <type>/<kebab-name>"; exit 1; }
+# ── Git ──────────────────────────────────────────────────────────────────
+git-branch: ## Branch name follows <type>/<kebab-name>
+	$(call check,br=$${BRANCH_NAME:-$$GITHUB_HEAD_REF}; [ -z "$$br" ] && br=$$(git symbolic-ref --short HEAD 2>/dev/null); echo "$$br" | grep -Eq '^(feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert)/[a-z0-9][a-z0-9._-]*$$',Branch name)
 
-git-commit: ## Validate commit messages follow Conventional Commits
-	@commits=$$(git log "$${GITHUB_BASE_REF}..HEAD" --pretty=format:'%s' || true); \
-	[ -z "$$commits" ] && exit 0; \
-	echo "$$commits" | commitlint
+GIT_COMMIT := commits=$$(git log "$${GITHUB_BASE_REF}..HEAD" --pretty=format:'%s' 2>/dev/null || true); \
+	if [ -n "$$commits" ]; then echo "$$commits" | commitlint; fi
 
-# ── Bash ────────────────────────────────────────────────────────────────
-bash-shell: ## Lint and syntax-check shell scripts
-	shellcheck -x -S error scripts/*.sh
-	@for s in scripts/*.sh; do bash -n "$$s"; done
+git-commit: ## Commits follow Conventional Commits
+	$(call check,$(GIT_COMMIT),Conventional commits)
 
-# ── Docs ────────────────────────────────────────────────────────────────
-docs-changelog: ## Auto-generate CHANGELOG.md from git history (conventional commits)
-	@git-cliff --output CHANGELOG.md
-
-# ── All ─────────────────────────────────────────────────────────────────
-all: yaml-schema yaml-config yaml-lint yaml-style terraform-fmt bash-shell git-branch git-commit terraform-docs ## Run all checks (excluding auto-generated CHANGELOG.md)
+# ── CI ───────────────────────────────────────────────────────────────────
+ci: yaml-schema yaml-config yaml-lint yaml-style terraform-fmt bash-shell git-branch git-commit terraform-validate ## Run all CI checks

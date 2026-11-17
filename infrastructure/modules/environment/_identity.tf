@@ -38,4 +38,3 @@ resource "google_service_account_iam_member" "this" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.this.name}/attribute.environment/${var.name}"
 }
-

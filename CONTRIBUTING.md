@@ -1,44 +1,49 @@
 # Contributing
 
-## Development
+## Setup
 
-Set up your environment:
-
-```bash
-nix develop
+```sh
+nix develop     # pinned toolchain — no other dependencies
+make help       # list every check
 ```
 
-Run all checks locally:
+## Checks
 
-```bash
-make all
-```
+`make ci` runs every check. Each prints one line: ✓ when it passes, ✗
+with the tool's output when it fails. Run the full set before every push;
+CI runs exactly `make ci` on every pull request.
 
-## Commit & Branch Conventions
+## Branches and commits
 
-- Branches: `<type>/<kebab-name>` (feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert)
-- Commits: [Conventional Commits](https://www.conventionalcommits.org/)
-- PR title: same as commit message convention
-- The release GitHub App reads PR titles/bodies and generates `CHANGELOG.md` + version tags automatically on every merge to `main`. No manual steps required.
+- Branches: `<type>/<kebab-name>` — type is one of `feature`, `fix`,
+  `hotfix`, `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`,
+  `revert`. Enforced by the `Branch name` check.
+- Commits: [Conventional Commits](https://www.conventionalcommits.org/) —
+  `feat:`, `fix:`, `perf:`, `BREAKING CHANGE:` carry semantic meaning;
+  everything else is unchanged plumbing. Enforced by the
+  `Conventional commits` check.
 
-### How releases work
+## Pull requests
 
-Commits are grouped semantically. Only commits with a prefix listed below contribute to changelog entries and version bumps. Other types (`chore`, `docs`, `refactor`, etc.) appear in the changelog but don't trigger version changes:
+1. Branch from a fresh `main`; rebase and resolve conflicts yourself.
+2. Every PR updates `CHANGELOG.md` under the current unreleased heading.
+   One line per user-visible change:
+   - `feat:` → **Added**
+   - `fix:` → **Fixed**
+   - `perf:` → **Changed**
+   - anything else → **Other**
+   Docs-only and plumbing changes may be skipped if they would say
+   nothing worth reading.
+3. `make ci` passes locally.
+4. Keep PRs small and focused; the description says why, not what.
+5. Review requirements follow the repository rulesets — agents and
+   collaborators need maintainer approval; the maintainer's own PRs need
+   only green checks.
 
-| Prefix       | Version bump  | Changelog section  |
-| ------------ | ------------- | ------------------ |
-| `feat:`      | minor         | Features           |
-| `fix:`       | patch         | Bug Fixes          |
-| `BREAKING CHANGE:` | major   | BREAKING CHANGES   |
-| `hotfix:`    | patch         | Hotfixes           |
-| `perf:`      | patch/minor   | Performance        |
+## Versioning
 
-Releases use standard conventional commit prefixes: `feat`, `fix`, `perf`, `BREAKING CHANGE` for semantic versions; everything else goes into "Other Changes" at no cost. You never need to touch the changelog or version numbers yourself — the release action handles both on every push to `main`.
-
-
-## Pull Requests
-
-1. Rebase on `main`, resolve conflicts yourself
-2. All checks must pass (`make all`)
-3. Keep PRs small and focused; describe the "why" not the "what"
-4. Assign at least one reviewer; address feedback promptly
+Versions are cut manually from `CHANGELOG.md` when a release is wanted:
+summarise the unreleased section into a dated `## [x.y.z]` heading
+following [Keep a Changelog](https://keepachangelog.com/) semantics —
+feat → minor bump, fix → patch, breaking → major. Tag the commit and
+push the tag. There is no release automation to maintain.

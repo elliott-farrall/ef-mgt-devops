@@ -18,4 +18,3 @@ resource "google_project_service" "apis" {
   project            = google_project.this.project_id
   disable_on_destroy = false
 }
-

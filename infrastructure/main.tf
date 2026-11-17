@@ -1,4 +1,3 @@
-# Environments — TFC project, identity, pool, provider, bindings per environment
 module "environment" {
   source   = "./modules/environment"
   for_each = local.environments
@@ -13,7 +12,6 @@ module "environment" {
   platform_roles     = each.value.platform_roles
 }
 
-# Projects — repository, workspace, GCP project per environment project
 module "project" {
   source   = "./modules/project"
   for_each = local.projects
@@ -37,7 +35,6 @@ module "project" {
   protection                = each.value.protection
 }
 
-# Modules — repository + private registry module per modules.yaml entry
 module "module" {
   source   = "./modules/module"
   for_each = local.modules
@@ -53,7 +50,6 @@ module "module" {
   protection              = each.value.protection
 }
 
-# Zones — DNS zone + record sets per zone
 module "zone" {
   source   = "./modules/zone"
   for_each = local.zones
@@ -66,7 +62,6 @@ module "zone" {
   depends_on = [module.project]
 }
 
-# Budgets — budget alert per budget
 module "budget" {
   source   = "./modules/budget"
   for_each = local.budgets

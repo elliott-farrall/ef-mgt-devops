@@ -30,6 +30,6 @@ body:
     name: Checklist
     attributes:
       label: Pre-merge checklist
-      value: "- [ ] `make all` passes\n- [ ] Conventional commit format used (fix:)\n- [ ] CHANGELOG updated\n- [ ] Terraform files formatted\n- [ ] No destructive changes to state"
+      value: "- [ ] `make ci` passes\n- [ ] Conventional commit format used (fix:)\n- [ ] CHANGELOG updated\n- [ ] Terraform files formatted\n- [ ] No destructive changes to state"
     validations:
       required: true

@@ -46,4 +46,3 @@ variable "github_app_installation" {
   description = "Name of the TFC GitHub App installation authorised for the repository."
   type        = string
 }
-

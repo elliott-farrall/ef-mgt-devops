@@ -1,4 +1,3 @@
-# -- check budget_scopes_exist: budgets can only scope to declared projects --
 check "budget_scopes_exist" {
   assert {
     condition = alltrue([
@@ -9,7 +8,6 @@ check "budget_scopes_exist" {
   }
 }
 
-# -- check project_names_unique: project names are workspace/repo/GCP id --
 check "project_names_unique" {
   assert {
     condition = alltrue([
@@ -20,7 +18,6 @@ check "project_names_unique" {
   }
 }
 
-# -- check default_project_is_unique: exactly one default hosts pools and DNS --
 check "default_project_is_unique" {
   assert {
     condition     = length([for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : p]]) : x.name if try(x.default, false) != false]) == 1

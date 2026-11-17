@@ -1,10 +1,8 @@
 locals {
   config = merge([for f in sort(fileset("${path.root}/../environments/${var.environment}", "*.yaml")) : yamldecode(file("${path.root}/../environments/${var.environment}/${f}"))]...)
 
-  # The platform home; also consumed by data sources and checks
   google_default_project = [for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { name = "ef-${e.name}-${p.name}" })]]) : x.name if try(x.default, false) != false][0]
 
-  # One entry per environment: TFC project, identity, pool, provider, bindings
   environments = {
     for e in local.config.environments : e.name => {
       name               = e.name
@@ -19,7 +17,6 @@ locals {
     }
   }
 
-  # One entry per environment project: repository, workspace, GCP project
   projects = {
     for x in flatten([for e in local.config.environments : [for p in try(e.projects, []) : merge(p, { name = "ef-${e.name}-${p.name}", repo = try(p.repo, "ef-${e.name}-${p.name}"), env = e.name })]]) : x.name => {
       name                      = x.name
@@ -42,7 +39,6 @@ locals {
     }
   }
 
-  # One entry per modules.yaml entry: repository + private registry module
   modules = {
     for m in try(local.config.modules, []) : try(m.repo, "ef-lib-${m.name}") => {
       name                    = m.name
@@ -56,7 +52,6 @@ locals {
     }
   }
 
-  # One entry per zone: DNS zone + record sets
   zones = {
     for z in local.config.zones : replace(z.name, ".", "-") => {
       name       = replace(z.name, ".", "-")
@@ -66,7 +61,6 @@ locals {
     }
   }
 
-  # One entry per budget: billing budget alert
   budgets = {
     for b in local.config.budgets : "ef-budget-${b.name}" => {
       name               = "ef-budget-${b.name}"

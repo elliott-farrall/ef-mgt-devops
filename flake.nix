@@ -51,14 +51,10 @@
             shellcheck
             check-jsonschema
             yamllint
-            python3Packages.json-schema-for-humans
+            nodePackages.commitlint
             python3Packages.pyyaml
             yq
-            terraform-docs
-            yaml-language-server
             gettext
-            git-cliff
-            commitlint
           ];
 
           bootstrap.packages = with pkgs; [
@@ -70,11 +66,9 @@
             shellcheck
             check-jsonschema
             yamllint
-            python3Packages.json-schema-for-humans
+            nodePackages.commitlint
             python3Packages.pyyaml
             yq
-            terraform-docs
-            yaml-language-server
             gettext
             tfccli
           ];

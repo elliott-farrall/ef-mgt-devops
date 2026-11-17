@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -7,53 +8,17 @@ permissions:
   contents: read
 
 jobs:
-  yaml:
-    name: YAML
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install check-jsonschema
-        run: pipx install check-jsonschema
-      - name: Install yamllint
-        run: pipx install yamllint
-      - run: make yaml-schema
-      - run: make yaml-config
-      - run: make yaml-lint
-      - run: make yaml-style
-
-  terraform:
-    name: Terraform
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: infrastructure
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-      - name: Install terraform-docs
-        run: go install github.com/terraform-docs/terraform-docs@v0.24.0
-      - run: make terraform-fmt
-      - run: make terraform-validate
-      - run: make terraform-docs
-
-  shell:
-    name: Shell scripts
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install shellcheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
-      - run: make bash-shell
-
-  git:
-    name: Git conventions
+  ci:
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: make git-branch BRANCH_NAME=${{ github.head_ref }}
-      - run: npm install -g @commitlint/cli @commitlint/config-conventional
-      - run: make git-commit GITHUB_BASE_REF=${{ github.base_ref }}
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+
+      - uses: DeterminateSystems/magic-nix-cache-action@v9
+
+      - name: Checks
+        run: nix develop -c make ci
