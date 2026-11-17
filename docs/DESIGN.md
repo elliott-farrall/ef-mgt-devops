@@ -85,8 +85,8 @@ GCP hosts the workloads and federation plumbing. Identity admission derives from
 #### Folders
 
 One folder per environment, named `ef-<env>`. Lane environments may
-declare a cosmetic `parent` group folder — `app` collects `dev`, `pre`,
-and `prd` — hanging their folders under `ef-<parent>`. Every project is created inside its environment's folder,
+declare a cosmetic `group` — `app` collects `dev`, `pre`,
+and `prd` — hanging their folders under `ef-<group>`. Every project is created inside its environment's folder,
 which gives each environment identity a bounded creation scope: its
 `projectCreator` and `editor` roles hang off its own folder, so an
 environment can never mint projects outside it.

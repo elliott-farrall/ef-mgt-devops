@@ -6,10 +6,10 @@ environments:
   - name: mgt
 
   - name: dev
-    parent: app
+    group: app
 
   - name: pre
-    parent: app
+    group: app
 
   - name: prd
-    parent: app
+    group: app

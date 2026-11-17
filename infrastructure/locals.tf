@@ -18,37 +18,31 @@ locals {
     }
   }
 
-  # One entry per unique repository; projects and registry modules both mint repositories.
+  # One entry per unique repository: projects and lib projects both mint repositories.
   # Status checks carry one TFC predictive check per deployment workspace building the repository.
-  repository_status_checks = ["ci / branch-name (pull_request)", "ci / terraform (pull_request)", "ci / yaml (pull_request)", "ci / shell (pull_request)"]
   repositories = {
-    for key, entry in merge(
-      { for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
+    for key, entry in {
+      for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
         repo        = try(p.repo, "ef-${p.type}-${p.name}")
         description = try(p.description, null)
         settings    = try(p.settings, {})
         protection  = try(p.protection, {})
-      } },
-      { for m in try(local.config.modules, []) : try(m.repo, "ef-lib-${m.name}") => {
-        repo        = try(m.repo, "ef-lib-${m.name}")
-        description = try(m.description, null)
-        settings    = try(m.settings, {})
-        protection  = try(m.protection, {})
-      } },
-      ) : key => {
+      }
+      } : key => {
       repo        = entry.repo
       description = entry.description
       settings    = entry.settings
       protection  = entry.protection
-      status_checks = concat(local.repository_status_checks, [
-        for x in values(local.projects) : "Terraform Cloud / ${x.name} (Predict)" if x.repo == entry.repo
-      ])
+      status_checks = concat(
+        ["ci / branch-name (pull_request)", "ci / terraform (pull_request)", "ci / yaml (pull_request)", "ci / shell (pull_request)"],
+        [for x in values(local.projects) : "Terraform Cloud / ${x.name} (Predict)" if x.repo == entry.repo],
+      )
     }
   }
 
   # One entry per referenced group folder: cosmetic containers for environment folders
   environment_groups = {
-    for g in toset([for e in local.config.environments : e.parent if try(e.parent, null) != null]) : g => {
+    for g in toset([for e in local.config.environments : e.group if try(e.group, null) != null]) : g => {
       organization_id = data.google_organization.ef.id
     }
   }

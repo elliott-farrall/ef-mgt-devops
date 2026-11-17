@@ -8,13 +8,13 @@ check "deployment_environments_exist" {
   }
 }
 
-check "environment_parents_are_groups" {
+check "environment_groups_exist" {
   assert {
     condition = alltrue([
       for e in local.config.environments :
-      try(e.parent, null) == null || !contains([for x in local.config.environments : x.name], e.parent)
+      try(e.group, null) == null || !contains([for x in local.config.environments : x.name], e.group)
     ])
-    error_message = "An environment folder parent must name a group folder, never another environment."
+    error_message = "An environment group must never name another environment."
   }
 }
 

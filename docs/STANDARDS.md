@@ -11,8 +11,8 @@ here in the same PR that makes it.
   Each is top-level directly under the organisation root — no environment
   types, no parent pointers. Environments own no projects and no run
   policy; every workspace auto-applies, hardcoded in the `project` module.
-  An optional `parent` hangs an environment's folder under a cosmetic
-  group folder (`ef-<parent>`, its own module); a parent never names
+  An optional `group` hangs an environment's folder under a cosmetic
+  group folder (`ef-<group>`, its own module); a group never names
   another environment.
 - Each environment owns, derived from its name: GCP folder `ef-<env>`
   directly under the organisation root, TFC project `ef-<env>`, service

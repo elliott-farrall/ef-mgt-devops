@@ -20,7 +20,7 @@ properties:
           type: string
           pattern: '^[a-z][a-z0-9-]*$'
           description: Environment name; generates the folder ef-<name>, TFC project ef-<name>, and identity sa-<name>-tfc.
-        parent:
+        group:
           type: string
           pattern: '^[a-z][a-z0-9-]*$'
-          description: Cosmetic grouping folder ef-<parent> the environment folder hangs under; must not name an environment.
+          description: Group folder ef-<group> the environment folder hangs under; must not name an environment.
