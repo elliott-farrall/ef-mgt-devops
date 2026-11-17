@@ -284,23 +284,23 @@ printf '\nimport {\n  to   = module.environment["mgt"].google_folder.this\n  id 
 r "Rendered imports.tf — $(wc -l < "${INFRA_DIR}/imports.tf") lines"
 
 t "3.3. Importing the existing Cloudflare DNS records"
-CF_ZONE_ID="$(curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
-  "https://api.cloudflare.com/client/v4/zones?name=${GCP_DOMAIN}" | jq -r '.result[0].id')"
-[[ -n "${CF_ZONE_ID}" && "${CF_ZONE_ID}" != "null" ]] || die "Cloudflare zone '${GCP_DOMAIN}' not found with the supplied token"
-r "Cloudflare zone: ${CF_ZONE_ID}"
-CF_RECORDS="$(curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
-  "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records?per_page=100")"
-while IFS=$'\t' read -r name type content priority; do
-  [[ -n "${name}" ]] || continue
-  match="$(echo "${CF_RECORDS}" | jq -r --arg name "${name}" --arg type "${type}" --arg content "${content}" --arg priority "${priority}" \
-    '.result[] | select(.name==$name and .type==$type and .content==$content and ((.priority // "" | tostring)==$priority)) | .id' | head -n1)"
-  [[ -n "${match}" ]] || die "No live Cloudflare record matches ${name} ${type} ${content} (priority ${priority}) - reconcile the zone first"
-  record_key="$(echo "${name}" | tr '.' '-')-${type}"
-  printf '\nimport {\n  to   = module.record["%s"].cloudflare_dns_record.this\n  id   = "%s/%s"\n}\n' \
-    "${record_key}" "${CF_ZONE_ID}" "${match}" >> "${INFRA_DIR}/imports.tf"
-  r "Imported record ${name} ${type}"
-done < <(yq -r '.records[] | .name + "\t" + .type + "\t" + .content + "\t" + (.priority // "" | tostring)' "${ENV_DIR}/records.yaml")
-
+CF_ZONES="$(curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
+  "https://api.cloudflare.com/client/v4/zones?per_page=50")"
+CF_RECORDS="$(echo "${CF_ZONES}" | jq -r '.result[] | .id as $id | .name as $name | [$id, $name] | @tsv' | while IFS=$'\t' read -r zone_id zone_name; do
+  curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
+    "https://api.cloudflare.com/client/v4/zones/${zone_id}/dns_records?per_page=100" \
+    | jq -r --arg zone_id "${zone_id}" --arg zone_name "${zone_name}" '.result[] | [$zone_id, $zone_name, .id, .name, .type, .content, ((.priority // "") | tostring)] | @tsv'
+done)"
+while IFS=$'\t' read -r zone name type content priority; do
+  [[ -n "${zone}" ]] || continue
+  import_id="$(jq -r --arg zone "${zone}" --arg name "${name}" --arg type "${type}" --arg content "${content}" --arg priority "${priority}" \
+    'select(.[1]==$zone and .[3]==$name and .[4]==$type and .[5]==$content and .[6]==$priority) | .[0] + "/" + .[2]' <<<"${CF_RECORDS}" | head -n1)"
+  [[ -n "${import_id}" ]] || die "No live Cloudflare record matches ${zone} ${name} ${type} ${content} (priority ${priority}) - reconcile the zone first"
+  record_key="$(echo "${zone}" | tr '.' '-')-$(echo "${name}" | tr '.' '-')-${type}"
+  printf '\nimport {\n  to   = module.record["%s"].cloudflare_dns_record.this\n  id   = "%s"\n}\n' \
+    "${record_key}" "${import_id}" >> "${INFRA_DIR}/imports.tf"
+  r "Imported record ${zone} ${name} ${type}"
+done < <(yq -r '.records[] | [(.zone // "'"${GCP_DOMAIN}"'"), .name, .type, .content, (.priority // "" | tostring)] | @tsv' "${ENV_DIR}/records.yaml")
 # ══════════════════════════════════════════════════════════════════
 # Phase 4: Deploy
 # ══════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
-variable "zone_id" {
-  description = "Cloudflare zone identifier hosting the record."
+variable "zone" {
+  description = "Cloudflare zone name hosting the record; resolved to its identifier by data.cloudflare_zone."
   type        = string
 }
 

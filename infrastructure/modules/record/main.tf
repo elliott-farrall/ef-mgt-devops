@@ -1,5 +1,5 @@
 resource "cloudflare_dns_record" "this" {
-  zone_id  = var.zone_id
+  zone_id  = data.cloudflare_zone.this.id
   name     = var.name
   type     = var.type
   content  = var.content

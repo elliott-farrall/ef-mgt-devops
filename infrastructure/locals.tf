@@ -53,8 +53,8 @@ locals {
   }
 
   records = {
-    for r in local.config.records : "${replace(r.name, ".", "-")}-${r.type}" => {
-      zone_id  = data.cloudflare_zone.ef.id
+    for r in local.config.records : "${replace(try(r.zone, local.config.organisation.gcp.domain), ".", "-")}-${replace(r.name, ".", "-")}-${r.type}" => {
+      zone     = try(r.zone, local.config.organisation.gcp.domain)
       name     = r.name
       type     = r.type
       content  = r.content

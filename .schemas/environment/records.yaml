@@ -18,6 +18,9 @@ properties:
         - type
         - content
       properties:
+        zone:
+          type: string
+          description: Cloudflare zone hosting the record; defaults to the organisation domain.
         name:
           type: string
           description: Record name; the apex record carries the zone domain itself.
