@@ -15,9 +15,11 @@ CI runs exactly `make ci` on every pull request.
 
 ## Branches and commits
 
-- Branches: `<type>/<kebab-name>` — type is one of `feature`, `fix`,
-  `hotfix`, `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`,
-  `revert`. Enforced by the `Branch name` check.
+- Branches: `<type>/<kebab-name>`, or `<type>/<key>/<kebab-name>` when the
+  work has a Linear ticket — the key (e.g. `web-123`, lowercased) links the
+  branch to the ticket. Type is one of `feature`, `fix`, `hotfix`, `chore`,
+  `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `revert`. Enforced by
+  the `Branch name` check.
 - Commits: [Conventional Commits](https://www.conventionalcommits.org/) —
   `feat:`, `fix:`, `perf:`, `BREAKING CHANGE:` carry semantic meaning;
   everything else is unchanged plumbing. Enforced by the
