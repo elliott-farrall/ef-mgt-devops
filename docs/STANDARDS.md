@@ -145,7 +145,7 @@ here in the same PR that makes it.
   local per module — named after the module, plural, and used directly as
   that module call's `for_each` — and nothing else. Extra top-level locals
   are the rare exception, allowed only when a check or a data source needs
-  them (today: `google_default_project`). Everything else is inlined.
+  them (today: `default_project`). Everything else is inlined.
 - Every module call binds to exactly one local: `source`, then `for_each`;
   blank line; inputs; blank line; `depends_on`. Each argument is a
   pass-through of `each.value.<input-name>` — never `each.key`, never a

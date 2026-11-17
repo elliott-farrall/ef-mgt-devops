@@ -2,7 +2,7 @@ locals {
   config = merge([for f in sort(fileset("${path.root}/../environments/${var.environment}", "*.yaml")) : yamldecode(file("${path.root}/../environments/${var.environment}/${f}"))]...)
 
   # The landing deployment; also consumed by data sources and checks
-  google_default_project = [for p in local.config.projects : "ef-${p.type}-${p.name}" if try(p.default, false) != false][0]
+  default_project = [for p in local.config.projects : "ef-${p.type}-${p.name}" if try(p.default, false) != false][0]
 
   # One entry per environment: folder, TFC project, identity, pool, provider, bindings
   environments = {
@@ -10,11 +10,11 @@ locals {
       name               = e.name
       organization_id    = data.google_organization.ef.id
       billing_account_id = data.google_billing_account.ef.id
-      landing_project_id = local.google_default_project
+      landing_project_id = local.default_project
       issuer             = "https://${local.config.organisation.tfe.hostname}"
       folder_roles       = ["roles/resourcemanager.projectCreator", "roles/editor"]
       landing_roles      = ["roles/iam.serviceAccountUser", "roles/dns.admin"]
-      platform_roles     = e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.costsManager" }, { scope = "project:${local.google_default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : []
+      platform_roles     = e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.costsManager" }, { scope = "project:${local.default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : []
     }
   }
 
