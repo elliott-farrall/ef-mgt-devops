@@ -221,7 +221,7 @@ GitHub is source of truth and CI validation. It holds no cloud apply credentials
 
 #### Repositories
 
-One repository deployed today. Additional repositories appear automatically when `projects.yaml` or `modules.yaml` gain entries.
+One repository deployed today. Additional repositories appear automatically when `projects.yaml` gains entries.
 
 | Repository | Namespace | Visibility | Branch Protection | Linked Workspace |
 |-----------|-----------|------------|-------------------|------------------|

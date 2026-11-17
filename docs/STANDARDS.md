@@ -247,10 +247,8 @@ here in the same PR that makes it.
   `organisation.yaml` (who we operate as — org domain, region, billing
   account display name, TFC and GitHub handles), `budgets.yaml` (budget
   alerts), `records.yaml` (DNS records of the Cloudflare apex zone),
-  `environments.yaml`
-  (a flat list, one entry per environment, each hosting `projects`), and
-  `modules.yaml` (a flat list of Terraform module repositories outside any
-  environment).
+  `environments.yaml` (a flat list of deployment lanes), and `projects.yaml`
+  (repositories, their deployments, and their registry publishing).
 - Each file has one top-level key matching the filename; `locals.tf` merges
   the files into `config` and exposes the namespaces.
 - **A project is one entry in `projects.yaml`**: it declares `type` (the
