@@ -52,12 +52,15 @@ locals {
     }
   }
 
-  zones = {
-    for z in local.config.zones : replace(z.name, ".", "-") => {
-      name       = replace(z.name, ".", "-")
-      domain     = z.name
-      project_id = local.google_default_project
-      records    = try(z.records, [])
+  records = {
+    for r in local.config.records : "${replace(r.name, ".", "-")}-${r.type}" => {
+      zone_id  = data.cloudflare_zone.ef.id
+      name     = r.name
+      type     = r.type
+      content  = r.content
+      ttl      = try(r.ttl, 300)
+      proxied  = try(r.proxied, false)
+      priority = try(r.priority, null)
     }
   }
 

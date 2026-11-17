@@ -6,7 +6,7 @@ This repository is a landing-zone management plane. To work on it:
    change, including naming, file layout, module structure, and YAML
    style. `docs/DESIGN.md` explains why the platform looks the way it does.
 2. The platform is data: adding an environment, project, module repo,
-   zone, or budget is a YAML change in `environments/mgt/`, validated by
+   record, or budget is a YAML change in `environments/mgt/`, validated by
    its schema in `.schemas/environment/`. Never add machinery to do what
    data can do.
 3. Terraform is organised by function — `environment`, `project`,

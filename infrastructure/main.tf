@@ -50,16 +50,17 @@ module "module" {
   protection              = each.value.protection
 }
 
-module "zone" {
-  source   = "./modules/zone"
-  for_each = local.zones
+module "record" {
+  source   = "./modules/record"
+  for_each = local.records
 
-  name       = each.value.name
-  domain     = each.value.domain
-  project_id = each.value.project_id
-  records    = each.value.records
-
-  depends_on = [module.project]
+  zone_id  = each.value.zone_id
+  name     = each.value.name
+  type     = each.value.type
+  content  = each.value.content
+  ttl      = each.value.ttl
+  proxied  = each.value.proxied
+  priority = each.value.priority
 }
 
 module "budget" {

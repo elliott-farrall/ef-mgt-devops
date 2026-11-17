@@ -61,6 +61,7 @@ GH_OWNER=$(yq -r '.organisation.gh.owner' "${ENV_DIR}/organisation.yaml")
 # Credentials supplied by the caller — never stored in this repository
 [[ -n "${TF_TOKEN_APP_TERRAFORM_IO:-}" ]] || die "set TF_TOKEN_APP_TERRAFORM_IO (a user API token whose owner has authorised the TFC GitHub App)"
 [[ -n "${GITHUB_TOKEN:-}" ]] || die "set GITHUB_TOKEN (a fine-grained PAT with repo administration on ${GH_OWNER})"
+[[ -n "${CF_API_TOKEN:-}" ]] || die "set CF_API_TOKEN (a Cloudflare token with Zone.DNS Edit on ${GCP_DOMAIN})"
 
 # Derived identifiers — built once from config, referenced everywhere
 GCP_DEFAULT_PROJECT="ef-mgt-devops"
@@ -233,6 +234,35 @@ seed_var() {
 seed_var "GOOGLE_CREDENTIALS" "$(cat "${BOOTSTRAP_KEY}")" "env" true
 r "Bootstrap key seeded — the first apply authenticates with it; Terraform adds the WIF variables for every run after it"
 
+t "2.6. Ensuring the organisation-wide token set platform-tokens"
+VARSET_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" \
+  | jq -r '.data[] | select(.attributes.name=="platform-tokens") | .id' | head -n1)"
+if [[ -z "${VARSET_ID}" ]]; then
+  VARSET_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" \
+    -d "$(jq -n '{data: {type: "varsets", attributes: {name: "platform-tokens", global: true}}}')" \
+    | jq -r '.data.id')"
+  r "Created variable set platform-tokens (${VARSET_ID})"
+fi
+upsert_varset_var() {
+  local key="$1" value="$2"
+  local var_id body
+  var_id="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" \
+    | jq -r --arg key "${key}" '.data[] | select(.attributes.key==$key) | .id' | head -n1)"
+  body="$(jq -n --arg key "${key}" --arg value "${value}" \
+    '{data: {type: "vars", attributes: {key: $key, value: $value, category: "env", hcl: false, sensitive: true}}}')"
+  if [[ -n "${var_id}" ]]; then
+    curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${var_id}" -d "${body}" >/dev/null
+    r "Updated ${key}"
+  else
+    curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${body}" >/dev/null
+    r "Added ${key}"
+  fi
+}
+upsert_varset_var "GITHUB_TOKEN" "${GITHUB_TOKEN}"
+upsert_varset_var "TFE_TOKEN" "${TF_TOKEN_APP_TERRAFORM_IO}"
+upsert_varset_var "CLOUDFLARE_API_TOKEN" "${CF_API_TOKEN}"
+r "GITHUB_TOKEN, TFE_TOKEN, and CLOUDFLARE_API_TOKEN shared with every workspace via platform-tokens"
+
 # ══════════════════════════════════════════════════════════════════
 # Phase 3: Render imports from template
 # ══════════════════════════════════════════════════════════════════
@@ -252,6 +282,24 @@ t "3.2. Rendering imports.tf from template"
 envsubst < "${INFRA_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/imports.tf"
 printf '\nimport {\n  to   = module.environment["mgt"].google_folder.this\n  id   = "%s"\n}\n' "${FOLDER_ID}" >> "${INFRA_DIR}/imports.tf"
 r "Rendered imports.tf — $(wc -l < "${INFRA_DIR}/imports.tf") lines"
+
+t "3.3. Importing the existing Cloudflare DNS records"
+CF_ZONE_ID="$(curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
+  "https://api.cloudflare.com/client/v4/zones?name=${GCP_DOMAIN}" | jq -r '.result[0].id')"
+[[ -n "${CF_ZONE_ID}" && "${CF_ZONE_ID}" != "null" ]] || die "Cloudflare zone '${GCP_DOMAIN}' not found with the supplied token"
+r "Cloudflare zone: ${CF_ZONE_ID}"
+CF_RECORDS="$(curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
+  "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records?per_page=100")"
+while IFS=$'\t' read -r name type content priority; do
+  [[ -n "${name}" ]] || continue
+  match="$(echo "${CF_RECORDS}" | jq -r --arg name "${name}" --arg type "${type}" --arg content "${content}" --arg priority "${priority}" \
+    '.result[] | select(.name==$name and .type==$type and .content==$content and ((.priority // "" | tostring)==$priority)) | .id' | head -n1)"
+  [[ -n "${match}" ]] || die "No live Cloudflare record matches ${name} ${type} ${content} (priority ${priority}) - reconcile the zone first"
+  record_key="$(echo "${name}" | tr '.' '-')-${type}"
+  printf '\nimport {\n  to   = module.record["%s"].cloudflare_dns_record.this\n  id   = "%s/%s"\n}\n' \
+    "${record_key}" "${CF_ZONE_ID}" "${match}" >> "${INFRA_DIR}/imports.tf"
+  r "Imported record ${name} ${type}"
+done < <(yq -r '.records[] | .name + "\t" + .type + "\t" + .content + "\t" + (.priority // "" | tostring)' "${ENV_DIR}/records.yaml")
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 4: Deploy

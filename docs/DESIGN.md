@@ -153,7 +153,7 @@ Budget alerts trigger notifications but never cap spending — structural guardr
 
 #### DNS
 
-DNS resolution uses GCP Cloud DNS. Managed zone and six record sets hosted in `ef-mgt-devops`. Delegation: the registrar holds the NS records pointing at the zone's assigned name servers, published as the `zone_name_servers` root output. (Cloudflare currently holds registration; moving it to a registrar that allows custom name servers is required for the delegation to happen.)
+DNS for the apex lives in Cloudflare, managed as code by this repository: the `record` module creates the Proton mail records (two MX, SPF, verification, DMARC, three DKIM CNAMEs) through the Cloudflare provider. Future projects own their subdomains end to end — a Cloud DNS subzone on the GCP side plus the delegating NS records in the Cloudflare apex — so a new project subdomain never touches this repository.
 
 | Property | Value |
 |----------|-------|

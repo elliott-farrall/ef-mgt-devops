@@ -67,8 +67,12 @@ export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
   authorisation.
 - A fine-grained GitHub PAT with repository administration on
   `elliott-farrall`, exported as `GITHUB_TOKEN`. Every TFC run needs it for
-  the GitHub provider; bootstrap seeds it into the workspace as a
-  sensitive variable.
+  the GitHub provider; bootstrap shares it organisation-wide through the
+  `platform-tokens` variable set.
+- A Cloudflare token with Zone.DNS Edit on `elliott-farrall.phd`, exported
+  as `CF_API_TOKEN`. The DNS records run through the Cloudflare provider;
+  bootstrap shares the token through `platform-tokens` and imports the
+  existing records into state.
 - The org must be able to run remote workspaces (Team & Business tiers or
   above).
 
@@ -118,12 +122,13 @@ exists:
 2. **Terraform Cloud** — verify token and org access, verify the GitHub App
    installation, create TFC project `ef-mgt` and workspace
    `ef-mgt-devops`, then seed the credential layer: the organisation-wide
-   variable set `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN` — shared
-   with every workspace) and the temporary `GOOGLE_CREDENTIALS` bootstrap
-   key on the landing workspace.
-3. **Imports** — derive the import addresses and render
-   `infrastructure/imports.tf` from `imports.tf.tmpl`, addressing every
-   bootstrap-created resource at its eventual Terraform module address.
+   variable set `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN`,
+   `CLOUDFLARE_API_TOKEN` — shared with every workspace) and the temporary
+   `GOOGLE_CREDENTIALS` bootstrap key on the landing workspace.
+3. **Imports** — derive the import addresses, render
+   `infrastructure/imports.tf` from `imports.tf.tmpl`, and append import
+   blocks for the live Cloudflare DNS records so the apply adopts them
+   instead of duplicating them.
 4. **Deploy** — `terraform init` against the remote backend, then a single
    `apply` that imports the bootstrap resources into state and creates
    everything else (identities, pools, providers, bindings, budgets,

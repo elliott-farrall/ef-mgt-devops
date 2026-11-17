@@ -1,0 +1,48 @@
+---
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Record inputs (records.yaml)
+description: DNS records of the Cloudflare-hosted apex zone, managed by the record module.
+type: object
+additionalProperties: false
+required:
+  - records
+properties:
+  records:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - type
+        - content
+      properties:
+        name:
+          type: string
+          description: Record name; the apex record carries the zone domain itself.
+        type:
+          type: string
+          enum:
+            - A
+            - AAAA
+            - CNAME
+            - MX
+            - NS
+            - TXT
+            - CAA
+            - SRV
+        content:
+          type: string
+          description: Record value.
+        priority:
+          type: integer
+          description: Record priority; required for MX records.
+          minimum: 0
+        ttl:
+          type: integer
+          minimum: 60
+          description: Record TTL in seconds; defaults to 300.
+        proxied:
+          type: boolean
+          description: Whether Cloudflare proxies the record; defaults to false.

@@ -10,3 +10,6 @@ provider "tfe" {
 provider "github" {
   owner = local.config.organisation.gh.owner
 }
+
+provider "cloudflare" {
+}

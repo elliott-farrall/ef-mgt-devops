@@ -102,8 +102,8 @@ here in the same PR that makes it.
   HCP Terraform dynamic-credentials contract — never replaced with
   non-standard variable names.
 - Credentials reach every run through the organisation-wide variable set
-  `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN` — sensitive, created and
-  rotated by bootstrap, never in state). The landing workspace
+  `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN`, `CLOUDFLARE_API_TOKEN` —
+  sensitive, created and rotated by bootstrap, never in state). The landing workspace
   additionally holds, until its first apply completes, the temporary
   bootstrap `GOOGLE_CREDENTIALS` — deleted by bootstrap close-out.
   Tokens are user-bound by platform constraint, not by choice: team and
@@ -220,12 +220,24 @@ here in the same PR that makes it.
 - Modules are named after their function, not their platform; single words,
   singular, matching the deliverable they package.
 
+## Cloudflare
+
+- The apex zone `elliott-farrall.phd` lives in Cloudflare — registration
+  and DNS together. The devops repository manages its records through the
+  `record` module and the `CLOUDFLARE_API_TOKEN` variable; nothing in this
+  repository knows about project subdomains.
+- Project repositories own their subdomains end to end: a Cloud DNS
+  subzone through the GCP provider, and the delegating NS records in the
+  Cloudflare apex through the same Cloudflare provider and token. This is
+  the pattern the `research` subdomain used against Azure DNS.
+
 ## YAML
 
 - Config files are named by setup concern, not by platform:
   `organisation.yaml` (who we operate as — org domain, region, billing
   account display name, TFC and GitHub handles), `budgets.yaml` (budget
-  alerts), `zones.yaml` (DNS zones and platform records), `environments.yaml`
+  alerts), `records.yaml` (DNS records of the Cloudflare apex zone),
+  `environments.yaml`
   (a flat list, one entry per environment, each hosting `projects`), and
   `modules.yaml` (a flat list of Terraform module repositories outside any
   environment).

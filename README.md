@@ -38,7 +38,7 @@ First bring-up of the platform itself: follow
 
 ## How it works
 
-Five function modules — `environment`, `project`, `module`, `zone`,
+Five function modules — `environment`, `project`, `module`, `record`,
 `budget` — consume the merged YAML and create everything: GCP folders and
 projects, TFC projects and workspaces, GitHub repositories, workload
 identity federation, DNS, and budgets. The rules for how the code is
