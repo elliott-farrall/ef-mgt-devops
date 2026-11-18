@@ -28,9 +28,9 @@ CI runs exactly `make ci` on every pull request.
 ## Automated updates
 
 Dependency updates arrive as automated pull requests: Dependabot raises
-provider pin bumps and GitHub Actions updates weekly, and a scheduled
-workflow updates the nix flake lock on Mondays. Review, let checks run,
-and merge — version pins change only through these PRs.
+provider pin bumps, GitHub Actions updates, and nix flake lock updates
+weekly. Review, let checks run, and merge — version pins change only
+through these PRs.
 
 ## Pull requests
 
