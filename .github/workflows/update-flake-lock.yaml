@@ -18,7 +18,7 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@v14
 
-      - uses: DeterminateSystems/update-flake-lock@v27
+      - uses: DeterminateSystems/update-flake-lock@v29
         with:
           commit-msg: "chore(flake): update nix inputs"
           pr-title: "chore(flake): update nix inputs"
