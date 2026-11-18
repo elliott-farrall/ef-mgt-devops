@@ -102,6 +102,10 @@ here in the same PR that makes it.
   a one-time console action, sanctioned like the TFC GitHub App.
 - Agents integrate through Linear's MCP server rather than per-repository
   GitHub issue calls.
+- Issue-sync mappings are per repository and configured in Linear — there
+  is no auto-add for new repositories. Landing a project includes mapping
+  its repository in Linear's GitHub integration settings; an unmapped
+  repository's issues silently never sync.
 - Reference a Linear issue in branch names or pull request titles
   (`<key>-<name>`) so pull requests link to their tickets automatically.
 
