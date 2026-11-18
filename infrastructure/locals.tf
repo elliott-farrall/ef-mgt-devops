@@ -67,6 +67,20 @@ locals {
   }
 
   # One entry per lib project: private registry module from its repository
+  # One entry per consecutive deployment pair: chained runs in project environments order
+  run_triggers = {
+    for t in flatten([for p in local.config.projects : [
+      for i in range(1, length(try(p.environments, [p.type]))) : {
+        triggerable   = "ef-${try(p.environments, [p.type])[i]}-${p.name}"
+        workspace_id  = module.project["ef-${try(p.environments, [p.type])[i]}-${p.name}"].tfe_workspace.this.id
+        sourceable_id = module.project["ef-${try(p.environments, [p.type])[i - 1]}-${p.name}"].tfe_workspace.this.id
+      }
+      ]]) : t.triggerable => {
+      workspace_id  = t.workspace_id
+      sourceable_id = t.sourceable_id
+    }
+  }
+
   modules = {
     for p in local.config.projects : try(p.repo, "ef-lib-${p.name}") => {
       name                    = p.name

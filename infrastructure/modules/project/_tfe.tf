@@ -2,7 +2,7 @@ resource "tfe_workspace" "this" {
   name              = var.name
   project_id        = var.project_id
   working_directory = var.working_directory
-  auto_apply        = true
+  auto_apply        = false
 
   vcs_repo {
     identifier                 = "${var.github_owner}/${var.repo}"

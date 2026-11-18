@@ -135,10 +135,12 @@ here in the same PR that makes it.
   organisation tokens cannot create GitHub-App-backed workspaces.
   yamllint runs with default rules; the only disabled rule is
   line-length, forced by unbreakable DNS record values.
-- Run policy: every workspace auto-applies — hardcoded in the `project`
-  module, not configuration. `pre` and `prd` keep their safety gates
-  through the required reviews and predictive plans on pull requests
-  instead of apply-time confirmation.
+- Run policy: every workspace requires confirmation — `auto_apply` is
+  hardcoded off in the `project` module. Phased rollout comes from run
+  triggers chained in each project's `environments` list order: a
+  successful apply in one environment queues the next environment's run,
+  which waits for confirmation. The trigger chain is data; a new project
+  stages dev → pre → prd by listing them in that order.
 
 ## Terraform code
 

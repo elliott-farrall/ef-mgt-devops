@@ -68,6 +68,16 @@ module "module" {
   depends_on = [module.repository]
 }
 
+module "run-trigger" {
+  source   = "./modules/run-trigger"
+  for_each = local.run_triggers
+
+  workspace_id  = each.value.workspace_id
+  sourceable_id = each.value.sourceable_id
+
+  depends_on = [module.project]
+}
+
 module "record" {
   source   = "./modules/record"
   for_each = local.records

@@ -198,7 +198,7 @@ One workspace deployed today. Additional workspaces appear automatically when pr
 
 | Workspace Name | TFC Project | Repository | Execution Mode | Auto-apply | Linked Variables |
 |---------------|-------------|------------|----------------|------------|------------------|
-| `ef-mgt-devops` | `ef-mgt` | `ef-mgt-devops` | Remote | Yes | `environment=mgt`, `TFC_GCP_PROVIDER_AUTH=true`, `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER`, `TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL` |
+| `ef-mgt-devops` | `ef-mgt` | `ef-mgt-devops` | Remote | No (confirm) | `environment=mgt`, `TFC_GCP_PROVIDER_AUTH=true`, `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER`, `TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL` |
 
 Workspace variables embed identity plumbing. Three variables per workspace — declared category, assigned purpose, runtime value populated at apply.
 
@@ -286,6 +286,7 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │       ├── group            # Cosmetic group folder
 │       ├── repository       # GitHub repository + rulesets
 │       ├── project          # Workspace + GCP project
+│       ├── run-trigger      # Phased rollout chain between deployments
 │       ├── module           # Private registry module
 │       ├── record           # Cloudflare DNS record
 │       └── budget           # Billing budget alert
