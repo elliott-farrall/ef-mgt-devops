@@ -317,6 +317,11 @@ here in the same PR that makes it.
 - `environments/<name>/` — YAML inputs, one directory per environment slot,
   split by concern, merged alphabetically in `locals.tf`. A new environment
   slot adds its directory and extends the `environment` variable validation.
+- Provider versions are pinned with exact `=` constraints in the root
+  `versions.tf` — the constraint is the pin, no lockfile is committed
+  (`required_version` stays a range; the Terraform CLI itself is pinned by
+  the nix flake). Child modules declare required providers without
+  versions. Upgrades are explicit PRs that change the pins.
 - `scripts/` — bash for orchestration only (seed, adopt, deploy); never
   validation logic. `imports.tf` is transient — rendered by bootstrap,
   never committed. `inventory.yaml` is transient — deleted at close-out.
