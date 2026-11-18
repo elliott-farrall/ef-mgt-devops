@@ -286,7 +286,7 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │       ├── group            # Cosmetic group folder
 │       ├── repository       # GitHub repository + rulesets
 │       ├── project          # Workspace + GCP project
-│       ├── run-trigger      # Phased rollout chain between deployments
+│       ├── trigger         # Phased rollout chain between deployments
 │       ├── module           # Private registry module
 │       ├── record           # Cloudflare DNS record
 │       └── budget           # Billing budget alert

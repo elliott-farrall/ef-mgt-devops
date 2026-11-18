@@ -68,9 +68,9 @@ module "module" {
   depends_on = [module.repository]
 }
 
-module "run-trigger" {
-  source   = "./modules/run-trigger"
-  for_each = local.run_triggers
+module "trigger" {
+  source   = "./modules/trigger"
+  for_each = local.triggers
 
   workspace_id  = each.value.workspace_id
   sourceable_id = each.value.sourceable_id
