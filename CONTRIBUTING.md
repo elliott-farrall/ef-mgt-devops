@@ -25,6 +25,13 @@ CI runs exactly `make ci` on every pull request.
   everything else is unchanged plumbing. Enforced by the
   `Conventional commits` check.
 
+## Automated updates
+
+Dependency updates arrive as automated pull requests: Dependabot raises
+provider pin bumps and GitHub Actions updates weekly, and a scheduled
+workflow updates the nix flake lock on Mondays. Review, let checks run,
+and merge — version pins change only through these PRs.
+
 ## Pull requests
 
 1. Branch from a fresh `main`; rebase and resolve conflicts yourself.
