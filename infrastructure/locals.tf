@@ -68,7 +68,7 @@ locals {
 
   # One entry per lib project: private registry module from its repository
   # One entry per consecutive deployment pair: chained confirmations in project environments order
-  run_triggers = {
+  triggers = {
     for t in flatten([for p in local.config.projects : [
       for i in range(1, length(try(p.environments, [p.type]))) : {
         triggerable   = "ef-${try(p.environments, [p.type])[i]}-${p.name}"
