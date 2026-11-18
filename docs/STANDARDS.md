@@ -77,11 +77,12 @@ here in the same PR that makes it.
     included — can push directly to `main`. Agents and collaborators
     always work through PRs and receive the maintainer's review.
   Per-repo overrides arrive as `settings:`/`protection:` on the entry.
-- PR branches: `<type>/<kebab-name>` or `<type>/<key>/<kebab-name>` when
-  the work carries a Linear ticket — the key segment links the branch to
-  its ticket automatically. Type is one of `feature`, `fix`, `hotfix`,
-  `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `revert`.
-  Enforced by the `Branch name` check, required on `main`.
+- PR branches: `<type>/<kebab-name>`, or `<type>/<key>-<kebab-name>` when
+  the work carries a Linear ticket — the lowercased key joins the name
+  segment (`feature/web-123-add-auth`) so the branch links to its ticket.
+  Type is one of `feature`, `fix`, `hotfix`, `chore`, `docs`, `refactor`,
+  `test`, `perf`, `build`, `ci`, `revert`. Enforced by the `Branch name`
+  check, required on `main`.
 - CI runs format checks, schema validation, shellcheck, and Terraform
   validate (no backend) — plan-only, no cloud credentials. TFC runs a
   speculative plan on every PR; a successful plan is a required status
