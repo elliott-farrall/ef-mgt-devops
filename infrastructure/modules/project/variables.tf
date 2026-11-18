@@ -33,6 +33,11 @@ variable "services" {
   type        = list(string)
 }
 
+variable "queue_all_runs" {
+  description = "Whether VCS pushes queue runs; false for downstream stages, whose runs come from the trigger chain."
+  type        = bool
+}
+
 variable "working_directory" {
   description = "Terraform root inside the repository."
   type        = string

@@ -140,7 +140,10 @@ here in the same PR that makes it.
   triggers chained in each project's `environments` list order: a
   successful apply in one environment queues the next environment's run,
   which waits for confirmation. The trigger chain is data; a new project
-  stages dev → pre → prd by listing them in that order.
+  stages dev → pre → prd by listing them in that order. Only a project's
+  first environment queues runs from VCS pushes (`queue_all_runs`); every
+  later environment runs solely through the chain, so a merge can never
+  skip stages.
 
 ## Terraform code
 

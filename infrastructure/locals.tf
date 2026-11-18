@@ -49,7 +49,7 @@ locals {
 
   # One entry per deployment: workspace + GCP project in the deployment environment
   projects = {
-    for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : {
+    for x in flatten([for p in local.config.projects : [for i, e in try(p.environments, [p.type]) : {
       name                      = "ef-${e}-${p.name}"
       environment               = e
       repo                      = try(p.repo, "ef-${p.type}-${p.name}")
@@ -59,6 +59,7 @@ locals {
       labels                    = { environment = e, managed_by = "terraform", repository = try(p.repo, "ef-${p.type}-${p.name}") }
       services                  = try(p.services, [])
       working_directory         = try(p.working_directory, "infrastructure")
+      queue_all_runs            = i == 0
       github_owner              = local.config.organisation.gh.owner
       github_app_installation   = local.config.organisation.tfe.github_app_installation
       wif_provider              = "//iam.googleapis.com/${module.environment[e].google_iam_workload_identity_pool_provider.this.name}"

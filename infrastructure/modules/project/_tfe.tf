@@ -3,6 +3,7 @@ resource "tfe_workspace" "this" {
   project_id        = var.project_id
   working_directory = var.working_directory
   auto_apply        = false
+  queue_all_runs    = var.queue_all_runs
 
   vcs_repo {
     identifier                 = "${var.github_owner}/${var.repo}"
