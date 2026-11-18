@@ -3,6 +3,11 @@
 records:
   - name: elliott-farrall.phd
     zone: elliott-farrall.phd
+    type: TXT
+    content: google-site-verification=_MSrnHMD_Z-80Mft3Ud7E9QEAFcUiyV0IQU7BSn26Uk
+    ttl: 3600
+  - name: elliott-farrall.phd
+    zone: elliott-farrall.phd
     type: MX
     content: mail.protonmail.ch
     priority: 10
