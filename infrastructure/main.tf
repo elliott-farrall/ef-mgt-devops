@@ -33,6 +33,7 @@ module "repository" {
   protection    = each.value.protection
   status_checks = each.value.status_checks
   pages         = each.value.pages
+  cname         = each.value.cname
 }
 
 module "project" {

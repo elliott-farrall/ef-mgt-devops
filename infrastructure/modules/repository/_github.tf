@@ -84,6 +84,8 @@ resource "github_repository_vulnerability_alerts" "this" {
 resource "github_repository_pages" "this" {
   count = var.pages ? 1 : 0
 
-  repository = github_repository.this.name
-  build_type = "workflow"
+  repository     = github_repository.this.name
+  build_type     = "workflow"
+  cname          = var.cname
+  https_enforced = true
 }

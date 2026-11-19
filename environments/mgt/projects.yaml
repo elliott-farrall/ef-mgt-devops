@@ -5,7 +5,6 @@ projects:
     type: mgt
     description: DevOps Management.
     default: true
-    pages: true
     services:
       - iam.googleapis.com
       - serviceusage.googleapis.com

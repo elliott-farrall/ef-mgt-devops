@@ -9,6 +9,12 @@ variable "pages" {
   default     = false
 }
 
+variable "cname" {
+  description = "Custom domain for the Pages site; null when the repository hosts none."
+  type        = string
+  default     = null
+}
+
 variable "repo" {
   description = "GitHub repository name."
   type        = string

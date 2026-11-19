@@ -1,6 +1,10 @@
 ---
 # yaml-language-server: $schema=../../.schemas/environment/records.yaml
-records: []
+records:
+  - name: docs.elliott-farrall.phd
+    zone: elliott-farrall.phd
+    type: CNAME
+    content: elliott-farrall.github.io
 #  - name: elliott-farrall.phd
 #    zone: elliott-farrall.phd
 #    type: TXT

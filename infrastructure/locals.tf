@@ -27,7 +27,8 @@ locals {
         description = try(p.description, null)
         settings    = try(p.settings, {})
         protection  = try(p.protection, {})
-        pages       = try(p.pages, false)
+        pages       = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project
+        cname       = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project ? "docs.elliott-farrall.phd" : null
       }
       } : key => {
       repo        = entry.repo
