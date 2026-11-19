@@ -1,6 +1,13 @@
 site_name: EF Landing Zone
+site_url: https://docs.elliott-farrall.phd
+site_description: Documentation for the EF landing zone — GitHub, Google Cloud, and Terraform Cloud provisioned from YAML.
 
 docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - content.code.copy
 
 nav:
   - Home: index.md

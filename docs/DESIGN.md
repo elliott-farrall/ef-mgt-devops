@@ -39,6 +39,8 @@ Isolation is structural: a project lives in exactly one environment, each
 environment has its own service account and state, and cross-environment
 reuse flows through hub services and registry modules.
 
+### The environment slots
+
 ### Naming convention
 
 Config carries suffix-only names. Terraform generates full names as `ef-<env>-<suffix>`.
@@ -69,6 +71,8 @@ No shared projects exist.
 Code is organised by function, not by platform. Five repo-local modules,
 each packaging the resources of one deliverable and driven by `for_each`
 from environment configuration:
+
+### The function modules
 
 | Module | Keyed by | Packages |
 |--------|----------|----------|
@@ -232,6 +236,8 @@ Cross-environment repo sharing: multiple environment slots can share a single re
 #### Branch Protection Rules
 
 Standardised across every repository with optional per-repo overrides.
+
+### Branch protection matrix
 
 Two repository rulesets govern `main` (see STANDARDS.md):
 

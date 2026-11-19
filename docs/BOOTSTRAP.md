@@ -53,9 +53,11 @@ creates `sa-mgt-tfc`.
 
 - An HCP Terraform account with the organisation named in
   `environments/mgt/organisation.yaml` (`organisation.tfe.organisation`).
-- A **user** API token with org admin rights — team and organisation
-  tokens cannot create or update workspaces connected through the GitHub
-  App. Export it as:
+!!! note "User token required"
+    Team and organisation tokens cannot create or update workspaces
+    connected through the GitHub App — the token below must be a **user**
+    token, and its owner must have authorised the Terraform Cloud GitHub
+    App once in the browser.
 
 ```sh
 export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
@@ -78,10 +80,10 @@ export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
 
 ### 4. GitHub App installation
 
-The Terraform Cloud GitHub App must be installed on the GitHub
-organisation named in `organisation.yaml` (`organisation.gh.owner`). This
-is the one sanctioned console action in the platform — GitHub requires an
-interactive web flow to install an application; no API can do it for you.
+!!! warning "One-time console action"
+    Installing the Terraform Cloud GitHub App is the one sanctioned
+    console action in the platform — GitHub requires an interactive web
+    flow to install an application, and no API can do it for you.
 
 1. Open <https://app.terraform.io/app/settings/organizations/<org>/github-app>
    (or GitHub → organisation → Settings → GitHub Apps).
@@ -136,8 +138,12 @@ exists:
    the workspace variables it creates switch every later run to workload
    identity federation.
 5. **Close out** — delete the `GOOGLE_CREDENTIALS` variable and the
-   temporary bootstrap service account and key. Never rerun phase 4 after
-   close-out without rerunning the whole script.
+   temporary bootstrap service account and key.
+
+   !!! warning "Phase 4 never reruns after close-out"
+       The temporary credentials are gone once close-out completes.
+       Rerunning the apply alone would fail authentication — rerun the
+       whole script if a full bring-up is ever needed again.
 
 ## After the first run
 

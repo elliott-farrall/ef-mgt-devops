@@ -76,6 +76,10 @@ here in the same PR that makes it.
     maintainer's own pull requests need no approval, but nobody — admins
     included — can push directly to `main`. Agents and collaborators
     always work through PRs and receive the maintainer's review.
+
+    !!! note
+        The bypass actor is the repository **admin role**, not a named
+        user — any future admin gets the same review bypass on their PRs.
   Per-repo overrides arrive as `settings:`/`protection:` on the entry.
 - PR branches: `<type>/<kebab-name>`, or `<type>/<key>-<kebab-name>` when
   the work carries a Linear ticket — the lowercased key joins the name
@@ -231,8 +235,9 @@ here in the same PR that makes it.
   plane publishes no outputs. The federation chain is convention-locked:
   workspace in environment `<env>` authenticates through provider
   `tfc-<env>` and receives `TFC_GCP_WORKLOAD_IDENTITY_PROVIDER` as a run environment variable.
-- Recursive modules are banned — their cache layout breaks `terraform init`
-  reruns.
+!!! danger "Recursive modules"
+    Recursive modules are banned — their cache layout breaks
+    `terraform init` reruns.
 
 ## Terraform naming
 
@@ -344,8 +349,10 @@ here in the same PR that makes it.
 
 ## Review rules
 
-- Steady state is code-only: console changes are read-only; any manual
-  change is drift and must be adopted or reverted within one working day.
+!!! warning "Console changes are drift"
+    Steady state is code-only: console changes are read-only; any manual
+    change is drift and must be adopted or reverted within one working
+    day.
   The one sanctioned exception: installing the TFC GitHub App itself.
 - Every change arrives as a PR; CI runs fmt/validate/plan; merge to `main`
   triggers the TFC run. The plan-only pass catches validation, precondition,
