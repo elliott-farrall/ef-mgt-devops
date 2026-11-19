@@ -89,3 +89,14 @@ resource "github_repository_pages" "this" {
   cname          = var.cname
   https_enforced = true
 }
+
+resource "cloudflare_dns_record" "pages" {
+  count = var.pages ? 1 : 0
+
+  zone_id = data.cloudflare_zone.this.id
+  name    = var.cname
+  type    = "CNAME"
+  content = "${var.github_owner}.github.io"
+  ttl     = 3600
+  proxied = false
+}

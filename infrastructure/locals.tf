@@ -23,12 +23,14 @@ locals {
   repositories = {
     for key, entry in {
       for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
-        repo        = try(p.repo, "ef-${p.type}-${p.name}")
-        description = try(p.description, null)
-        settings    = try(p.settings, {})
-        protection  = try(p.protection, {})
-        pages       = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project
-        cname       = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project ? "docs.elliott-farrall.phd" : null
+        repo         = try(p.repo, "ef-${p.type}-${p.name}")
+        description  = try(p.description, null)
+        zone         = local.config.organisation.gcp.domain
+        github_owner = local.config.organisation.gh.owner
+        settings     = try(p.settings, {})
+        protection   = try(p.protection, {})
+        pages        = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project
+        cname        = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project ? "docs.elliott-farrall.phd" : null
       }
       } : key => {
       repo        = entry.repo

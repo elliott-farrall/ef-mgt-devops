@@ -3,5 +3,8 @@ terraform {
     github = {
       source = "integrations/github"
     }
+    cloudflare = {
+      source = "cloudflare/cloudflare"
+    }
   }
 }

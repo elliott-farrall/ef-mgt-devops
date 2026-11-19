@@ -9,6 +9,16 @@ variable "pages" {
   default     = false
 }
 
+variable "zone" {
+  description = "Cloudflare zone hosting the platform DNS records."
+  type        = string
+}
+
+variable "github_owner" {
+  description = "GitHub account owning the repository; builds the Pages domain."
+  type        = string
+}
+
 variable "cname" {
   description = "Custom domain for the Pages site; null when the repository hosts none."
   type        = string

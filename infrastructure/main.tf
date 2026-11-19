@@ -34,6 +34,8 @@ module "repository" {
   status_checks = each.value.status_checks
   pages         = each.value.pages
   cname         = each.value.cname
+  zone          = each.value.zone
+  github_owner  = each.value.github_owner
 }
 
 module "project" {
