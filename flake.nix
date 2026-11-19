@@ -52,6 +52,7 @@
             check-jsonschema
             yamllint
             nodePackages.commitlint
+            python3Packages.mkdocs-material
             python3Packages.pyyaml
             yq
             gettext
@@ -67,6 +68,7 @@
             check-jsonschema
             yamllint
             nodePackages.commitlint
+            python3Packages.mkdocs-material
             python3Packages.pyyaml
             yq
             gettext

@@ -7,7 +7,7 @@ define check
 	else printf '  ✗ %s\n' '$(2)'; printf '%s\n' "$$out"; false; fi
 endef
 
-.PHONY: help ci yaml-schema yaml-config yaml-lint yaml-style terraform-fmt terraform-validate bash-shell git-branch git-commit
+.PHONY: help ci yaml-schema yaml-config yaml-lint yaml-style terraform-fmt terraform-validate bash-shell git-branch git-commit docs-build
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[1m%-20s\033[0m %s\n", $$1, $$2}'
@@ -56,5 +56,9 @@ GIT_COMMIT := commits=$$(git log "$${GITHUB_BASE_REF}..HEAD" --pretty=format:'%s
 git-commit: ## Commits follow Conventional Commits
 	$(call check,$(GIT_COMMIT),Conventional commits)
 
+# ── Docs ─────────────────────────────────────────────────────────────────
+docs-build: ## Documentation builds strictly
+	$(call check,mkdocs build --strict --site-dir /tmp/docs-site,Docs build)
+
 # ── CI ───────────────────────────────────────────────────────────────────
-ci: yaml-schema yaml-config yaml-lint yaml-style terraform-fmt bash-shell git-branch git-commit terraform-validate ## Run all CI checks
+ci: yaml-schema yaml-config yaml-lint yaml-style terraform-fmt bash-shell git-branch git-commit docs-build terraform-validate ## Run all CI checks

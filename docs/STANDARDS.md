@@ -143,7 +143,9 @@ here in the same PR that makes it.
   stages dev → pre → prd by listing them in that order. Only a project's
   first environment queues runs from VCS pushes (`queue_all_runs`); every
   later environment runs solely through the chain, so a merge can never
-  skip stages.
+  skip stages. Workspaces trigger on `infrastructure/**` and
+  `environments/**` only — documentation changes never deploy
+  infrastructure.
 
 ## Terraform code
 
@@ -333,8 +335,10 @@ here in the same PR that makes it.
 - `.schemas/environment/` — one schema per config filename.
 - `docs/` — exactly three files: `DESIGN.md` (decisions and rationale),
   `STANDARDS.md` (binding rules, this file), `BOOTSTRAP.md` (the one-time
-  bring-up procedure); `README.md` points here. New documentation extends
-  these; it does not add a fourth.
+  bring-up procedure) — plus `index.md`, the entry page of the MkDocs
+  site (`mkdocs.yml` at the root renders `docs/` to GitHub Pages through
+  the `docs` workflow). New documentation extends these; it does not add
+  a fourth.
 
 ## Review rules
 

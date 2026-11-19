@@ -80,3 +80,10 @@ resource "github_repository_ruleset" "review" {
 resource "github_repository_vulnerability_alerts" "this" {
   repository = github_repository.this.name
 }
+
+resource "github_repository_pages" "this" {
+  count = var.pages ? 1 : 0
+
+  repository = github_repository.this.name
+  build_type = "workflow"
+}

@@ -27,6 +27,7 @@ locals {
         description = try(p.description, null)
         settings    = try(p.settings, {})
         protection  = try(p.protection, {})
+        pages       = try(p.pages, false)
       }
       } : key => {
       repo        = entry.repo

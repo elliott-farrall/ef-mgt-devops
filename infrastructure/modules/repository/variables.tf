@@ -3,6 +3,12 @@ variable "status_checks" {
   type        = list(string)
 }
 
+variable "pages" {
+  description = "Whether the repository hosts a docs site built by the docs workflow."
+  type        = bool
+  default     = false
+}
+
 variable "repo" {
   description = "GitHub repository name."
   type        = string

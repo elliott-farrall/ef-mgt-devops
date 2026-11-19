@@ -46,6 +46,9 @@ definitions:
       default:
         type: boolean
         description: Exactly one project is the platform home; its landing deployment hosts every identity pool, service account, and DNS zone.
+      pages:
+        type: boolean
+        description: Repository hosts a docs site built by the docs workflow; enables GitHub Pages.
       services:
         type: array
         description: GCP APIs enabled on every deployment's project.

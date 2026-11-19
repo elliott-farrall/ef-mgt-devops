@@ -1,9 +1,14 @@
+locals {
+  workspace_trigger_patterns = ["infrastructure/**", "environments/**"]
+}
+
 resource "tfe_workspace" "this" {
   name              = var.name
   project_id        = var.project_id
   working_directory = var.working_directory
   auto_apply        = false
   queue_all_runs    = var.queue_all_runs
+  trigger_patterns  = local.workspace_trigger_patterns
 
   vcs_repo {
     identifier                 = "${var.github_owner}/${var.repo}"

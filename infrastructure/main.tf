@@ -32,6 +32,7 @@ module "repository" {
   settings      = each.value.settings
   protection    = each.value.protection
   status_checks = each.value.status_checks
+  pages         = each.value.pages
 }
 
 module "project" {

@@ -1,0 +1,9 @@
+site_name: EF Landing Zone
+
+docs_dir: docs
+
+nav:
+  - Home: index.md
+  - Design: DESIGN.md
+  - Standards: STANDARDS.md
+  - Bootstrap: BOOTSTRAP.md
