@@ -9,7 +9,7 @@ variable "environment" {
   }
 
   validation {
-    condition     = fileexists("${path.root}/../environments/${var.environment}")
+    condition     = fileexists("${path.root}/../environments/${var.environment}/organisation.yaml")
     error_message = "No environments/${var.environment}/ directory exists in this repository."
   }
 }
