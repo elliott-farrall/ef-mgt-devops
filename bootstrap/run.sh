@@ -203,49 +203,27 @@ curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/sett
   -d "$(jq -n '{data: {type: "workspace-settings", attributes: {execution_mode: "local"}}}')" >/dev/null
 r "Workspace runs locally for the first apply; Terraform switches it to remote"
 
-t "2.6. Checking the organisation-wide token set platform-tokens"
+t "2.6. Rotating the organisation-wide token set platform-tokens"
 VARSET_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" \
   | jq -r '.data[] | select(.attributes.name=="platform-tokens") | .id' | head -n1)"
-if [[ -z "${VARSET_ID}" ]]; then
-  VARSET_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" \
-    -d "$(jq -n '{data: {type: "varsets", attributes: {name: "platform-tokens", global: true}}}')" \
-    | jq -r '.data.id')"
-  r "Created variable set platform-tokens (${VARSET_ID})"
+if [[ -n "${VARSET_ID}" ]]; then
+  curl -s -X DELETE "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}" >/dev/null
+  r "Removed previous token set"
 fi
-VARSET_VARS=$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars")
 
 t "2.7. Seeding the platform tokens"
-VAR_BODY="$(jq -n --arg value "${GITHUB_TOKEN}" '{data: {type: "vars", attributes: {key: "GITHUB_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
-VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="GITHUB_TOKEN") | .id' | head -n1)"
-if [[ -n "${VAR_ID}" ]]; then
-  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${VAR_ID}" -d "${VAR_BODY}" >/dev/null
-  r "Updated GITHUB_TOKEN"
-else
-  curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
-  r "Added GITHUB_TOKEN"
-fi
-
-VAR_BODY="$(jq -n --arg value "${TFC_TOKEN}" '{data: {type: "vars", attributes: {key: "TFE_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
-VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="TFE_TOKEN") | .id' | head -n1)"
-if [[ -n "${VAR_ID}" ]]; then
-  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${VAR_ID}" -d "${VAR_BODY}" >/dev/null
-  r "Updated TFE_TOKEN"
-else
-  curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
-  r "Added TFE_TOKEN"
-fi
-
-VAR_BODY="$(jq -n --arg value "${CF_API_TOKEN}" '{data: {type: "vars", attributes: {key: "CLOUDFLARE_API_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
-VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="CLOUDFLARE_API_TOKEN") | .id' | head -n1)"
-if [[ -n "${VAR_ID}" ]]; then
-  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${VAR_ID}" -d "${VAR_BODY}" >/dev/null
-  r "Updated CLOUDFLARE_API_TOKEN"
-else
-  curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
-  r "Added CLOUDFLARE_API_TOKEN"
-fi
-
-r "GITHUB_TOKEN, TFE_TOKEN, and CLOUDFLARE_API_TOKEN shared with every workspace via platform-tokens"
+VARSET_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" \
+  -d "$(jq -n \
+    --arg gh "${GITHUB_TOKEN}" \
+    --arg tfe "${TFC_TOKEN}" \
+    --arg cf "${CF_API_TOKEN}" \
+    '{data: {type: "varsets", attributes: {name: "platform-tokens", global: true}, relationships: {vars: {data: [ \
+      {type: "vars", attributes: {key: "GITHUB_TOKEN", value: $gh, category: "env", hcl: false, sensitive: true}}, \
+      {type: "vars", attributes: {key: "TFE_TOKEN", value: $tfe, category: "env", hcl: false, sensitive: true}}, \
+      {type: "vars", attributes: {key: "CLOUDFLARE_API_TOKEN", value: $cf, category: "env", hcl: false, sensitive: true}}]}}}}')" \
+  | jq -r '.data.id')"
+[[ -n "${VARSET_ID}" && "${VARSET_ID}" != "null" ]] || die "failed to create the platform-tokens variable set"
+r "platform-tokens (${VARSET_ID}) holds GITHUB_TOKEN, TFE_TOKEN, and CLOUDFLARE_API_TOKEN, shared with every workspace"
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 3: Imports — render bootstrap.tf from the collected IDs
