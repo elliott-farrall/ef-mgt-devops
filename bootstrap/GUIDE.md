@@ -127,10 +127,10 @@ exists:
    variable set `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN`,
    `CLOUDFLARE_API_TOKEN` — shared with every workspace) and the temporary
    `GOOGLE_CREDENTIALS` bootstrap key on the landing workspace.
-3. **Imports** — derive the import addresses, render
-   `infrastructure/bootstrap.tf` from `imports.tf.tmpl`, and append import
-   blocks for the live Cloudflare DNS records so the apply adopts them
-   instead of duplicating them.
+3. **Imports** — derive the import addresses and render
+   `infrastructure/bootstrap.tf` from `imports.tf.tmpl`. The live
+   Cloudflare DNS records are imported through the committed
+   `infrastructure/imports.tf`, which applies in the same run.
 4. **Deploy** — `terraform init` against the remote backend, then a single
    `apply` that imports the bootstrap resources into state and creates
    everything else (identities, pools, providers, bindings, budgets,
