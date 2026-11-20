@@ -214,3 +214,67 @@ exists:
 - Verify in the GCP console that the org now contains the project, WIF
   pools, and service account expected from [DESIGN.md](DESIGN.md), then
   stay out of the console — manual changes are drift.
+
+## Setup gotchas (encountered during initial bring-up)
+
+Lessons from the initial run, kept so a re-run on new infrastructure or a
+recovery from scratch does not repeat them:
+
+### Organisations
+
+- A domain-bound organisation is created automatically when a Cloud
+  Identity is provisioned for the domain. A manually created, domainless
+  organisation cannot be renamed, cannot own the Cloud Identity, and ends
+  up alongside it — two organisations is the broken state this setup
+  started in. Keep exactly one: the domain-bound org. Organisations cannot
+  be renamed; pick the survivor deliberately before populating it.
+- A project ID is global. Deleting a project does not free its ID for
+  reuse during the 30-day deletion window. If a seed project must be
+  recreated under a different organisation, **move** it — do not delete
+  and recreate.
+
+### Moving a project between organisations
+
+- Cross-organisation moves are blocked by org policy by default:
+  `constraints/resourcemanager.allowedExportDestinations` on the source
+  and `constraints/resourcemanager.allowedImportSources` on the target.
+  Setting them requires `roles/orgpolicy.policyAdmin` (not included in
+  Organization Administrator). Both constraints only accept organisation
+  values; policy changes take up to 15 minutes to enforce. Working rules:
+  - source (export): `folders/<id>/policies/resourcemanager.allowedExportDestinations`
+    with `values.allowedValues: [under:organizations/<target-org-id>]`
+  - target (import): `organizations/<id>/policies/resourcemanager.allowedImportSources`
+    with `values.allowedValues: [under:organizations/<source-org-id>]`
+  - apply with `gcloud org-policies set-policy <file>`, move with
+    `gcloud alpha projects move <project> --organization=<id>`, then delete
+    both constraints.
+- Restoring a deleted project requires its full parent chain (folder and
+  organisation) to be active first — restore bottom-up: organisation,
+  folder (`gcloud resource-manager folders undelete`), then the project
+  (console only; there is no gcloud undelete for projects).
+
+### Platform gotchas
+
+- Terraform's `remote` backend with a single `workspaces { name }` block
+  rejects `TF_WORKSPACE` — the CLI then tries explicit workspace selection
+  and fails with "workspaces not supported". Never export `TF_WORKSPACE`
+  against a single-name backend.
+- The remote backend is also poisoned by stale `.terraform/terraform.tfstate`
+  left behind by an init under a different backend; if workspace errors
+  persist inexplicably, `rm -rf .terraform` and re-init.
+- `terraform plan`/`apply` against the HCP Terraform CLI-driven workflow
+  requires the workspace's execution mode to be `local`; the API has no
+  "list variables of a varset" endpoint, and the legacy
+  `POST /workspaces/:id/settings` no-ops — use `PATCH /workspaces/:id` and
+  verify the response.
+- Terraform global variable sets enforce unique keys across *global* sets;
+  legacy sets holding the same keys (e.g. `GITHUB_TOKEN`) must be removed
+  before creating `platform-tokens`.
+- Google Cloud Billing API is strictly rate-limited (per project, per
+  minute); scripts should check current state before writing (the billing
+  link step does).
+- `fileexists()` fails on directories — validate a directory by checking a
+  file inside it.
+- Third-party CLI wrappers drift from their own documentation (tfccli
+  flags, yq output options); prefer the platform's own API for anything
+  the script parses.
