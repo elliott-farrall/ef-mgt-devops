@@ -24,8 +24,8 @@ nix develop .#bootstrap
 ```
 
 That shell provides `gcloud`, `terraform`, `gh`, `jq`, `git`,
-`shellcheck`, `check-jsonschema`, `yq`, `terraform-docs`, `gettext`,
-`tfccli`, and `yaml-language-server`. Outside Nix, install the same set.
+`shellcheck`, `check-jsonschema`, `yq`, `gettext`, and `tfccli`. Outside
+Nix, install the same set.
 
 ### 2. GCP access
 
@@ -49,6 +49,18 @@ gcloud config set project <any-project-you-can-query>
 The application-default login is required: the first apply runs locally
 and its Google provider authenticates through it.
 
+Verify you hold the organisation role (it must list
+`roles/resourcemanager.organizationAdmin`):
+
+```sh
+gcloud organizations get-iam-policy <org-id> \
+  --format="table(bindings.role, bindings.members)" | grep -i elliott
+```
+
+If the role is missing but you are the organisation's super admin, grant
+it to yourself in the console (IAM & Admin → your account). If you cannot,
+stop — the org was created under a different identity.
+
 The script resolves the organisation by domain, creates the project
 `ef-mgt-devops` directly under the organisation root, enables its APIs, and
 creates `sa-mgt-tfc`.
@@ -63,6 +75,9 @@ creates `sa-mgt-tfc`.
     token, and its owner must have authorised the Terraform Cloud GitHub
     App once in the browser.
 
+Create it at **TFC → Settings → API Tokens → Create an API token**
+(user scope), then export:
+
 ```sh
 export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
 ```
@@ -71,18 +86,43 @@ export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
   App once in the browser (User Settings → Authorized GitHub Apps) — the
   first apply links the workspace to the repository through that
   authorisation.
-- A fine-grained GitHub PAT with repository administration on
-  `elliott-farrall`, exported as `GITHUB_TOKEN`. Every TFC run needs it for
-  the GitHub provider; bootstrap shares it organisation-wide through the
-  `platform-tokens` variable set.
-- A Cloudflare token with Zone.DNS Edit on `elliott-farrall.phd`, exported
-  as `CF_API_TOKEN`. The DNS records run through the Cloudflare provider;
-  bootstrap shares the token through `platform-tokens` and imports the
-  existing records into state.
 - The org must be able to run remote workspaces (Team & Business tiers or
   above).
 
-### 4. GitHub App installation
+### 4. GitHub token
+
+Create a fine-grained PAT at **GitHub → Settings → Developer settings →
+Fine-grained tokens → Generate new token**, scoped to the `ef-mgt-devops`
+repository with **Administration: read and write** (the provider manages
+rulesets and vulnerability alerts). Export:
+
+```sh
+export GITHUB_TOKEN=<fine-grained-pat>
+```
+
+Every TFC run needs it for the GitHub provider; bootstrap shares it
+organisation-wide through the `platform-tokens` variable set.
+
+### 5. Cloudflare token
+
+Create an API token at **Cloudflare → My Profile → API Tokens → Create
+Token**, using the **Edit zone DNS** template, scoped to zone
+`elliott-farrall.phd`. Export:
+
+```sh
+export CF_API_TOKEN=<api-token>
+```
+
+The DNS records run through the Cloudflare provider; bootstrap shares the
+token through `platform-tokens` and the existing records are imported
+into state.
+
+### 6. Plan requirement
+
+The org must be able to run remote workspaces (Team & Business tiers or
+above).
+
+### 7. GitHub App installation
 
 !!! warning "One-time console action"
     Installing the Terraform Cloud GitHub App is the one sanctioned
@@ -90,14 +130,15 @@ export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
     flow to install an application, and no API can do it for you.
 
 1. Open <https://app.terraform.io/app/settings/organizations/<org>/github-app>
-   (or GitHub → organisation → Settings → GitHub Apps).
-2. Install the Terraform Cloud app on the GitHub organisation
-   `elliott-farrall`, granting repository access.
+   and run the connect flow.
+2. GitHub hosts the repositories under the personal account
+   `elliott-farrall` (there is no organisation) — install or configure the
+   Terraform Cloud app there, granting **All repositories** access.
 
 Bootstrap step 2.2 verifies the installation by name and aborts if it is
 missing. The installation name must match `organisation.gh.owner`.
 
-### 5. Configuration review
+### 8. Configuration review
 
 Check `environments/mgt/*.yaml` before running — the script and the first
 apply consume every value in them:
@@ -105,15 +146,16 @@ apply consume every value in them:
 - `organisation.yaml` — domain, region, billing account display name, TFC
   org and hostname, GitHub owner, and the GitHub App installation name.
 - `budgets.yaml` — budget alerts (defaults are sensible).
-- `zones.yaml` — DNS zones and record sets (must exist or the apply will
-  create them).
+- `records.yaml` — DNS records of the Cloudflare apex zone. All nine live
+  records are already declared and imported via `infrastructure/imports.tf`
+  during the apply.
 - `environments.yaml` — `mgt/devops` must exist with `default: true` and
   its `services` list; the other environments stay bare.
 
 ## Running
 
-From the repository root, with `TF_TOKEN_APP_TERRAFORM_IO` and
-`GITHUB_TOKEN` exported:
+From the repository root, with `TF_TOKEN_APP_TERRAFORM_IO`, `GITHUB_TOKEN`,
+and `CF_API_TOKEN` exported:
 
 ```sh
 nix develop .#bootstrap -c ./bootstrap/run.sh
