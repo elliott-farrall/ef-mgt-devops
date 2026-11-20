@@ -84,13 +84,15 @@ if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
 fi
 r "Application-default credentials present"
 
-t "1.2. Checking the GCP organisation ${GCP_DOMAIN}"
-GCP_ORG_ID="$(gcloud organizations list \
-  --filter="display_name=${GCP_DOMAIN}" \
-  --format='value(name)' 2>/dev/null | head -n1)"
+t "1.2. Checking the GCP organisation"
+GCP_ORG_ID="$(gcloud organizations list --format='value(name)' 2>/dev/null | head -n1)"
 if [[ -z "${GCP_ORG_ID}" ]]; then
-  r "Organisation '${GCP_DOMAIN}' not accessible"
-  die "Abort: account '${CURRENT_GCP_ACCT}' lacks access to '${GCP_DOMAIN}'"
+  r "No accessible GCP organisation"
+  die "Abort: account '${CURRENT_GCP_ACCT}' lacks access to a GCP organisation"
+fi
+ORG_COUNT="$(gcloud organizations list --format='value(name)' 2>/dev/null | wc -l)"
+if [[ "${ORG_COUNT}" -gt 1 ]]; then
+  die "Abort: account '${CURRENT_GCP_ACCT}' can access ${ORG_COUNT} organisations - specify the intended one"
 fi
 r "Resolved: ${GCP_ORG_ID}"
 

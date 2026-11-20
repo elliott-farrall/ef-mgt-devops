@@ -29,8 +29,7 @@ Nix, install the same set.
 
 ### 2. GCP access
 
-The Google identity running the script needs, on the organisation named in
-`environments/mgt/organisation.yaml` (resolved by domain):
+The Google identity running the script needs, on your GCP organisation:
 
 - `roles/resourcemanager.organizationAdmin` — create the project, and
   grant the platform roles Terraform later adopts.
@@ -61,9 +60,9 @@ If the role is missing but you are the organisation's super admin, grant
 it to yourself in the console (IAM & Admin → your account). If you cannot,
 stop — the org was created under a different identity.
 
-The script resolves the organisation by domain, creates the project
-`ef-mgt-devops` directly under the organisation root, enables its APIs, and
-creates `sa-mgt-tfc`.
+The script resolves your accessible GCP organisation (it must be the only
+one your identity can access), creates the project `ef-mgt-devops` in the
+`ef-mgt` folder, enables its APIs, and creates `sa-mgt-tfc`.
 
 ### 3. Terraform Cloud
 
