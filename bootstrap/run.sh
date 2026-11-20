@@ -22,8 +22,6 @@ r()     { printf '│   └── %s\n' "$*"; }
 # Dependencies
 # ══════════════════════════════════════════════════════════════════
 
-h "Dependencies"
-
 for tool in gcloud terraform jq git tfccli envsubst yq; do
   command -v "${tool}" >/dev/null || die "${tool} not found on PATH"
 done
@@ -31,8 +29,6 @@ done
 # ══════════════════════════════════════════════════════════════════
 # Config
 # ══════════════════════════════════════════════════════════════════
-
-h "Config"
 
 GCP_DOMAIN=$(yq -r '.organisation.gcp.domain' "${ENV_DIR}/organisation.yaml")
 GCP_BILLING_NAME=$(yq -r '.organisation.gcp.billing' "${ENV_DIR}/organisation.yaml")
