@@ -22,7 +22,7 @@ r()     { printf '│   └── %s\n' "$*"; }
 # Dependencies
 # ══════════════════════════════════════════════════════════════════
 
-for tool in gcloud terraform jq git tfccli envsubst yq; do
+for tool in gcloud terraform jq git gh tfccli envsubst yq; do
   command -v "${tool}" >/dev/null || die "${tool} not found on PATH"
 done
 
@@ -37,6 +37,13 @@ TFC_ORG=$(yq -r '.organisation.tfe.organisation' "${ENV_DIR}/organisation.yaml")
 TFC_HOSTNAME=$(yq -r '.organisation.tfe.hostname' "${ENV_DIR}/organisation.yaml")
 GH_OWNER=$(yq -r '.organisation.gh.owner' "${ENV_DIR}/organisation.yaml")
 
+[[ -n "${GCP_DOMAIN}" ]] || die "gcp domain not found in ${ENV_DIR}/organisation.yaml"
+[[ -n "${GCP_ORG_NAME}" ]] || die "gcp organisation name not found in ${ENV_DIR}/organisation.yaml"
+[[ -n "${GCP_BILLING_ID}" ]] || die "billing account ID not found in ${ENV_DIR}/organisation.yaml"
+[[ -n "${TFC_ORG}" ]] || die "TFC organisation not found in ${ENV_DIR}/organisation.yaml"
+[[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"
+[[ -n "${GH_OWNER}" ]] || die "GitHub owner not found in ${ENV_DIR}/organisation.yaml"
+
 PROJECTS_YAML="${ENV_DIR}/projects.yaml"
 if ! grep -q '^  - name: devops$' "${PROJECTS_YAML}" || \
    ! grep -q 'type: mgt' "${PROJECTS_YAML}"; then
@@ -45,22 +52,20 @@ fi
 mapfile -t DEVOPS_SERVICES < <(yq -r '.projects[] | select(.name=="devops") | .services[]' "${PROJECTS_YAML}")
 [[ ${#DEVOPS_SERVICES[@]} -gt 0 ]] || die "devops services missing from mgt/projects.yaml"
 
-[[ -n "${GCP_DOMAIN}" ]] || die "gcp domain not found in ${ENV_DIR}/organisation.yaml"
-[[ -n "${GCP_ORG_NAME}" ]] || die "gcp organisation name not found in ${ENV_DIR}/organisation.yaml"
-[[ -n "${GCP_BILLING_ID}" ]] || die "billing account ID not found in ${ENV_DIR}/organisation.yaml"
-t "Resolving the billing account: ${GCP_BILLING_ID}"
-[[ -n "${TFC_ORG}" ]] || die "TFC organisation not found in ${ENV_DIR}/organisation.yaml"
-[[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"
-[[ -n "${GH_OWNER}" ]] || die "GitHub owner not found in ${ENV_DIR}/organisation.yaml"
-
-[[ -f ~/.terraform.d/credentials.tfrc.json ]] || die "run terraform login first (stores the Terraform Cloud token)"
-command -v gh >/dev/null || die "gh not found on PATH"
-gh auth status >/dev/null 2>&1 || die "run gh auth login first (GitHub CLI authentication)"
-[[ -n "${CF_API_TOKEN:-}" ]] || die "set CF_API_TOKEN (a Cloudflare token with Zone.DNS Edit on the apex zone)"
-
 GCP_DEFAULT_PROJECT="ef-mgt-devops"
 SA_NAME="sa-mgt-tfc"
 SA_EMAIL="${SA_NAME}@${GCP_DEFAULT_PROJECT}.iam.gserviceaccount.com"
+
+# ══════════════════════════════════════════════════════════════════
+# Credentials
+# ══════════════════════════════════════════════════════════════════
+
+gh auth status >/dev/null 2>&1 || die "run gh auth login first (GitHub CLI authentication)"
+GITHUB_TOKEN="$(gh auth token)"
+[[ -n "${CF_API_TOKEN:-}" ]] || die "set CF_API_TOKEN (a Cloudflare token with Zone.DNS Edit on the apex zone)"
+[[ -f ~/.terraform.d/credentials.tfrc.json ]] || die "run terraform login first (stores the Terraform Cloud token)"
+TFC_TOKEN="$(jq -r '.credentials["app.terraform.io"].token' ~/.terraform.d/credentials.tfrc.json)"
+[[ -n "${TFC_TOKEN}" && "${TFC_TOKEN}" != "null" ]] || die "no Terraform Cloud token in ~/.terraform.d/credentials.tfrc.json — run terraform login"
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 1: Google Cloud — seed the resources Terraform cannot create
@@ -76,21 +81,21 @@ fi
 CURRENT_GCP_ACCT="$(gcloud auth list --filter=status:ACTIVE --format='value(account)')"
 r "Authenticated as ${CURRENT_GCP_ACCT}"
 
-t "1.1.1. Verifying application-default credentials for the local apply"
+t "1.2. Verifying application-default credentials for the local apply"
 if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
   r "No application-default credentials"
   die "Abort: run gcloud auth application-default login first"
 fi
 r "Application-default credentials present"
 
-t "1.2. Checking the GCP organisation"
+t "1.3. Checking the GCP organisation"
 GCP_ORG_ID="$(gcloud organizations list \
   --filter="displayName=${GCP_ORG_NAME}" \
   --format='value(name)' 2>/dev/null | head -n1)"
 [[ -n "${GCP_ORG_ID}" ]] || die "GCP organisation '${GCP_ORG_NAME}' not found or not accessible"
 r "Resolved: ${GCP_ORG_ID}"
 
-t "1.3. Checking the environment folder ef-mgt"
+t "1.4. Checking the environment folder ef-mgt"
 FOLDER_NAME="$(gcloud resource-manager folders list \
   --organization="${GCP_ORG_ID#organizations/}" \
   --filter="displayName=ef-mgt" --format='value(name)' 2>/dev/null | head -n1)"
@@ -105,7 +110,7 @@ fi
 FOLDER_ID="${FOLDER_NAME#folders/}"
 r "Folder ef-mgt: ${FOLDER_NAME}"
 
-t "1.4. Checking the project ${GCP_DEFAULT_PROJECT}"
+t "1.5. Checking the project ${GCP_DEFAULT_PROJECT}"
 if gcloud projects describe "${GCP_DEFAULT_PROJECT}" >/dev/null 2>&1; then
   r "Project already exists"
 else
@@ -124,14 +129,14 @@ GCP_PROJ_NUM="$(gcloud projects describe "${GCP_DEFAULT_PROJECT}" --format='valu
 [[ -n "${GCP_PROJ_NUM}" ]] || die "project number not found for ${GCP_DEFAULT_PROJECT}"
 r "Project number: ${GCP_PROJ_NUM}"
 
-t "1.5. Enabling the required APIs"
+t "1.6. Enabling the required APIs"
 for svc in "${DEVOPS_SERVICES[@]}"; do
   gcloud services enable "${svc}.googleapis.com" \
     --project="${GCP_DEFAULT_PROJECT}" >/dev/null
 done
 r "Enabled APIs: ${DEVOPS_SERVICES[*]}"
 
-t "1.6. Creating the mgt identity ${SA_NAME}"
+t "1.7. Creating the mgt identity ${SA_NAME}"
 if gcloud iam service-accounts describe "${SA_EMAIL}" --project="${GCP_DEFAULT_PROJECT}" >/dev/null 2>&1; then
   r "Identity already exists"
 else
@@ -149,8 +154,6 @@ h "Phase 2: Terraform Cloud"
 
 TFC_OPTS="--address https://${TFC_HOSTNAME} --org ${TFC_ORG} --output-format json"
 TFC_API="https://${TFC_HOSTNAME}/api/v2"
-TFC_TOKEN="$(jq -r '.credentials["app.terraform.io"].token' ~/.terraform.d/credentials.tfrc.json)"
-[[ -n "${TFC_TOKEN}" && "${TFC_TOKEN}" != "null" ]] || die "no Terraform Cloud token in ~/.terraform.d/credentials.tfrc.json — run terraform login"
 TFC_AUTH=( -H "Authorization: Bearer ${TFC_TOKEN}" -H "Content-Type: application/vnd.api+json" )
 
 t "2.1. Checking the Terraform Cloud token"
@@ -207,30 +210,30 @@ fi
 VARSET_VARS=$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars")
 
 t "2.7. Seeding the platform tokens"
-GITHUB_TOKEN_VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="GITHUB_TOKEN") | .id' | head -n1)"
 VAR_BODY="$(jq -n --arg value "${GITHUB_TOKEN}" '{data: {type: "vars", attributes: {key: "GITHUB_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
-if [[ -n "${GITHUB_TOKEN_VAR_ID}" ]]; then
-  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${GITHUB_TOKEN_VAR_ID}" -d "${VAR_BODY}" >/dev/null
+VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="GITHUB_TOKEN") | .id' | head -n1)"
+if [[ -n "${VAR_ID}" ]]; then
+  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${VAR_ID}" -d "${VAR_BODY}" >/dev/null
   r "Updated GITHUB_TOKEN"
 else
   curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
   r "Added GITHUB_TOKEN"
 fi
 
-TFE_TOKEN_VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="TFE_TOKEN") | .id' | head -n1)"
 VAR_BODY="$(jq -n --arg value "${TFC_TOKEN}" '{data: {type: "vars", attributes: {key: "TFE_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
-if [[ -n "${TFE_TOKEN_VAR_ID}" ]]; then
-  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${TFE_TOKEN_VAR_ID}" -d "${VAR_BODY}" >/dev/null
+VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="TFE_TOKEN") | .id' | head -n1)"
+if [[ -n "${VAR_ID}" ]]; then
+  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${VAR_ID}" -d "${VAR_BODY}" >/dev/null
   r "Updated TFE_TOKEN"
 else
   curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
   r "Added TFE_TOKEN"
 fi
 
-CLOUDFLARE_TOKEN_VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="CLOUDFLARE_API_TOKEN") | .id' | head -n1)"
 VAR_BODY="$(jq -n --arg value "${CF_API_TOKEN}" '{data: {type: "vars", attributes: {key: "CLOUDFLARE_API_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
-if [[ -n "${CLOUDFLARE_TOKEN_VAR_ID}" ]]; then
-  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${CLOUDFLARE_TOKEN_VAR_ID}" -d "${VAR_BODY}" >/dev/null
+VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="CLOUDFLARE_API_TOKEN") | .id' | head -n1)"
+if [[ -n "${VAR_ID}" ]]; then
+  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${VAR_ID}" -d "${VAR_BODY}" >/dev/null
   r "Updated CLOUDFLARE_API_TOKEN"
 else
   curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
@@ -247,20 +250,17 @@ h "Phase 3: Imports"
 
 t "3.1. Deriving import addresses"
 export GCP_DEFAULT_PROJECT
+export GCP_PROJ_NUM
 export GCP_SA_EMAIL="${SA_EMAIL}"
 export TFC_ENV_NAME="mgt"
 export TFC_PROJ_ID="${TFC_PROJECT_ID#prj-}"
-export TFC_WS_NAME="${GCP_DEFAULT_PROJECT}"
 export TFC_WSID="${TFC_WORKSPACE_ID}"
 r "Import addresses derived"
 
 t "3.2. Rendering bootstrap.tf from template"
 DEVOPS_SERVICES_JSON="$(yq -o=json '.projects[] | select(.name=="devops") | .services' "${PROJECTS_YAML}")"
-DEVOPS_SERVICES_JSON="$(yq -o=json '.projects[] | select(.name=="devops") | .services' "${PROJECTS_YAML}")"
 DEVOPS_IMPORTS="$(jq -rn --arg project "${GCP_DEFAULT_PROJECT}" --argjson services "${DEVOPS_SERVICES_JSON}" \
   '$services | map("import {\\n  to   = module.project[\\"mgt\\"].google_project_service.this[\\"\($project)-\(.)\\"]\\n  id   = \\"\($project)/\(.).googleapis.com\\"\\n}\\n\\n") | join("")')"
-
-export FOLDER_ID
 export FOLDER_ID
 export DEVOPS_IMPORTS
 envsubst < "${BOOTSTRAP_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/bootstrap.tf"
@@ -275,13 +275,12 @@ h "Phase 4: Deploy"
 t "4.1. Initialising Terraform against workspace ${GCP_DEFAULT_PROJECT}"
 export TF_WORKSPACE="${GCP_DEFAULT_PROJECT}"
 export TFE_TOKEN="${TFC_TOKEN}"
-GITHUB_TOKEN="$(gh auth token)"
 export GITHUB_TOKEN
 export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
 terraform -chdir="${INFRA_DIR}" init -backend-config="organization=${TFC_ORG}"
 r "Initialised"
 
-t "Running Terraform apply to import existing + deploy non-existing resources"
+t "4.2. Running Terraform apply to import existing + deploy non-existing resources"
 terraform -chdir="${INFRA_DIR}" apply -auto-approve
 r "Deploy complete"
 
