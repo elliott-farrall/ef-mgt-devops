@@ -27,3 +27,9 @@ import {
   to   = module.project["mgt"].tfe_workspace_settings["${GCP_DEFAULT_PROJECT}"].this
   id   = "${TFC_WSID}"
 }
+
+import {
+  to   = module.environment["mgt"].google_folder.this
+  id   = "${FOLDER_ID}"
+}
+${DEVOPS_IMPORTS}

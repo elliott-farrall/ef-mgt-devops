@@ -255,12 +255,18 @@ export TFC_WSID="${TFC_WORKSPACE_ID}"
 r "Import addresses derived"
 
 t "3.2. Rendering bootstrap.tf from template"
+DEVOPS_IMPORTS="$(for svc in "${DEVOPS_SERVICES[@]}"; do
+  cat <<IMPORT
+
+import {
+  to   = module.project["mgt"].google_project_service.this["${GCP_DEFAULT_PROJECT}-${svc}"]
+  id   = "${GCP_DEFAULT_PROJECT}/${svc}.googleapis.com"
+}
+IMPORT
+done)"
+export FOLDER_ID
+export DEVOPS_IMPORTS
 envsubst < "${BOOTSTRAP_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/bootstrap.tf"
-printf '\nimport {\n  to   = module.environment["mgt"].google_folder.this\n  id   = "%s"\n}\n' "${FOLDER_ID}" >> "${INFRA_DIR}/bootstrap.tf"
-for svc in "${DEVOPS_SERVICES[@]}"; do
-  printf '\nimport {\n  to   = module.project["mgt"].google_project_service.this["%s-%s"]\n  id   = "%s/%s.googleapis.com"\n}\n' \
-    "${GCP_DEFAULT_PROJECT}" "${svc}" "${GCP_DEFAULT_PROJECT}" "${svc}" >> "${INFRA_DIR}/bootstrap.tf"
-done
 r "Rendered bootstrap.tf — $(wc -l < "${INFRA_DIR}/bootstrap.tf") lines"
 
 # ══════════════════════════════════════════════════════════════════
