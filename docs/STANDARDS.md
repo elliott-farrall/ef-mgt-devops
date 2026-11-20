@@ -206,7 +206,7 @@ here in the same PR that makes it.
   a module holds several of one type). No pre-extracted or renamed
   attributes; the consumer picks what it needs.
 - Data sources always live in a `data.tf` — root or module — never in
-  `main.tf`. A module's lookup belongs in that module's `data.tf`; the root
+  resource files. A module's lookup belongs in that module's `data.tf`; the root
   `data.tf` holds only organisation-level lookups the platform does not
   create (`google_organization`, `google_billing_account`). This codebase
   creates its projects, so project data is never read back through data
@@ -223,7 +223,7 @@ here in the same PR that makes it.
   Terraform can order resources against each other but never sibling
   instances of one module set.
 - `check` blocks live in `checks.tf` — root or module — never in
-  `main.tf`. A check belongs in the module that owns the invariant; the
+  resource files. A check belongs in the module that owns the invariant; the
   root `checks.tf` keeps cross-registry referential integrity (project and
   repository names unique, exactly one default project, budget
   scope→project).
