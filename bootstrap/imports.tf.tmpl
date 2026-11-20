@@ -1,10 +1,10 @@
 import {
-  to   = module.project["mgt"].google_project["${GCP_DEFAULT_PROJECT}"].this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].google_project["${GCP_DEFAULT_PROJECT}"].this
   id   = "${GCP_PROJ_NUM}"
 }
 
 import {
-  to   = module.project["mgt"].module.repository.github_repository.this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].module.repository.github_repository.this
   id   = "${GCP_DEFAULT_PROJECT}"
 }
 
@@ -19,12 +19,12 @@ import {
 }
 
 import {
-  to   = module.project["mgt"].tfe_workspace["${GCP_DEFAULT_PROJECT}"].this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].tfe_workspace["${GCP_DEFAULT_PROJECT}"].this
   id   = "${TFC_WSID}"
 }
 
 import {
-  to   = module.project["mgt"].tfe_workspace_settings["${GCP_DEFAULT_PROJECT}"].this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].tfe_workspace_settings["${GCP_DEFAULT_PROJECT}"].this
   id   = "${TFC_WSID}"
 }
 
