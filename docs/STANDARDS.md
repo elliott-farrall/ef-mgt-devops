@@ -182,9 +182,9 @@ here in the same PR that makes it.
   blank line; inputs; blank line; `depends_on`. Each argument is a
   pass-through of `each.value.<input-name>` — never `each.key`, never a
   bare `each.value`, never a constant. No comprehensions, ternaries, or
-  index lookups in `main.tf` — resolution lives in `locals.tf`, so
-  `main.tf` is pure wiring and `locals.tf` is the only place to read to
-  understand what a call receives.
+  index lookups in module calls — resolution lives in `locals.tf`, so
+  wiring is pure pass-through and `locals.tf` is the only place to read
+  to understand what a call receives.
 - The iterated object's keys are exactly the module's input names, and
   every argument reads `each.value.<input-name>`. The loop element *is* the
   argument list, so the call reads as a mirror of the local and the
