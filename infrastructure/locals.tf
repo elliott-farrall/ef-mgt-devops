@@ -19,7 +19,7 @@ locals {
       billing_account_id = local.config.organisation.gcp.billing
       landing_project_id = local.default_project
       issuer             = "https://${local.config.organisation.tfe.hostname}"
-      folder_parent      = try(e.group, null) != null ? "folders/${module.group[e.group].google_folder.folder_id}" : "organizations/${data.google_organization.this.id}"
+      folder_parent      = try(e.group, null) != null ? "folders/${module.group[e.group].google_folder.folder_id}" : data.google_organization.this.id
     }
   }
 
