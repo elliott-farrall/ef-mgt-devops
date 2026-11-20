@@ -40,13 +40,13 @@ TFC_ORG=$(yq -r '.organisation.tfe.organisation' "${ENV_DIR}/organisation.yaml")
 TFC_HOSTNAME=$(yq -r '.organisation.tfe.hostname' "${ENV_DIR}/organisation.yaml")
 GH_OWNER=$(yq -r '.organisation.gh.owner' "${ENV_DIR}/organisation.yaml")
 
-MGT_ENV_YAML="${ENV_DIR}/environments.yaml"
-if ! grep -q '^  - name: mgt$' "${MGT_ENV_YAML}" || \
-   ! grep -A50 '^  - name: mgt$' "${MGT_ENV_YAML}" | grep -q 'name: devops'; then
-  die "mgt/devops project configuration missing from ${MGT_ENV_YAML}"
+PROJECTS_YAML="${ENV_DIR}/projects.yaml"
+if ! grep -q '^  - name: devops$' "${PROJECTS_YAML}" || \
+   ! grep -q 'type: mgt' "${PROJECTS_YAML}"; then
+  die "mgt/devops project configuration missing from ${PROJECTS_YAML}"
 fi
-mapfile -t DEVOPS_SERVICES < <(yq -r '.environments[] | select(.name=="mgt") | .projects[] | select(.name=="devops") | .services[]' "${MGT_ENV_YAML}")
-[[ ${#DEVOPS_SERVICES[@]} -gt 0 ]] || die "devops services missing from mgt/environments.yaml"
+mapfile -t DEVOPS_SERVICES < <(yq -r '.projects[] | select(.name=="devops") | .services[]' "${PROJECTS_YAML}")
+[[ ${#DEVOPS_SERVICES[@]} -gt 0 ]] || die "devops services missing from mgt/projects.yaml"
 
 [[ -n "${GCP_DOMAIN}" ]] || die "gcp domain not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${GCP_BILLING_NAME}" ]] || die "billing account name not found in ${ENV_DIR}/organisation.yaml"
