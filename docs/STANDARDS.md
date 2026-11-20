@@ -62,7 +62,8 @@ here in the same PR that makes it.
 - Source of truth and CI validation; holds no cloud apply credentials. A
   compromised repository cannot touch infrastructure.
 - Repositories are private with squash-merge only, branch deletion on
-  merge, and vulnerability alerts enabled. `main` is governed by two
+  merge, and vulnerability alerts enabled. Every optional tab is pinned:
+  issues on, discussions, projects, wiki, and downloads off. `main` is governed by two
   repository rulesets, not classic branch protection:
   - **Enforcement** — no bypass for anyone, admin included: linear history,
     no force-pushes, no deletions, and strict status checks on
