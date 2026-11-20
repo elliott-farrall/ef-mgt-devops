@@ -186,13 +186,14 @@ else
 fi
 
 t "2.4. Checking the workspace ${GCP_DEFAULT_PROJECT}"
-TFC_WORKSPACE_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/projects/${TFC_PROJECT_ID}/workspaces?page%5Bsize%5D=100" \
+TFC_WORKSPACE_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/workspaces?page%5Bsize%5D=100" \
   | jq -r ".data[] | select(.attributes.name==\"${GCP_DEFAULT_PROJECT}\") | .id" | head -n1)"
 if [[ -n "${TFC_WORKSPACE_ID}" ]]; then
   r "Workspace already exists (${TFC_WORKSPACE_ID})"
 else
-  TFC_WORKSPACE_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/projects/${TFC_PROJECT_ID}/workspaces" \
-    -d "$(jq -n '{data: {type: "workspaces", attributes: {name: "'${GCP_DEFAULT_PROJECT}'"}}}')" \
+  TFC_WORKSPACE_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/workspaces" \
+    -d "$(jq -n --arg name "${GCP_DEFAULT_PROJECT}" --arg project "${TFC_PROJECT_ID}" \
+      '{data: {type: "workspaces", attributes: {name: $name}, relationships: {project: {data: {type: "projects", id: $project}}}}}')" \
     | jq -r '.data.id')"
   r "Created workspace (${TFC_WORKSPACE_ID})"
 fi
