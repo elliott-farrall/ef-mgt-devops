@@ -6,11 +6,11 @@ projects:
     description: DevOps Management.
     default: true
     services:
-      - iam.googleapis.com
-      - serviceusage.googleapis.com
-      - cloudbilling.googleapis.com
-      - dns.googleapis.com
-      - compute.googleapis.com
+      - iam
+      - serviceusage
+      - cloudbilling
+      - dns
+      - compute
 
   - name: registry
     type: lib

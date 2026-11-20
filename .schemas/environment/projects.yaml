@@ -48,9 +48,10 @@ definitions:
         description: Exactly one project is the platform home; its landing deployment hosts every identity pool, service account, and DNS zone.
       services:
         type: array
-        description: GCP APIs enabled on every deployment's project.
+        description: Prefixes of the GCP APIs enabled on every deployment's project; the code appends .googleapis.com.
         items:
           type: string
+          pattern: '^[a-z0-9-]+$' 
       working_directory:
         type: string
         description: Terraform root inside the repository; defaults to infrastructure.
