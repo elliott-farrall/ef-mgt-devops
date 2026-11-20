@@ -1,7 +1,3 @@
-locals {
-  kind = var.scope == "" ? "" : element(split("/", var.scope), 0)
-}
-
 resource "google_billing_budget" "this" {
   billing_account = var.billing_account_id
   display_name    = var.name
