@@ -255,7 +255,6 @@ r "Rendered bootstrap.tf — $(wc -l < "${INFRA_DIR}/bootstrap.tf") lines"
 h "Phase 4: Deploy"
 
 t "4.1. Initialising Terraform against workspace ${GCP_DEFAULT_PROJECT}"
-export TF_WORKSPACE="${GCP_DEFAULT_PROJECT}"
 export TFE_TOKEN="${TFC_TOKEN}"
 export GITHUB_TOKEN
 export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
