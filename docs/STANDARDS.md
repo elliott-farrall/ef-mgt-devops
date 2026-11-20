@@ -227,7 +227,7 @@ here in the same PR that makes it.
   root `checks.tf` keeps cross-registry referential integrity (project and
   repository names unique, exactly one default project, budget
   scope→project).
-- `main.tf` is composition only — no hand-written resources, no exceptions.
+- Root wiring is composition only — no hand-written resources, no exceptions.
 - Validation is Terraform-native: `validation`, `precondition`, and
   `check` blocks must fail bad input at plan time. Shell scripts only
   orchestrate — if a rule can be checked in HCL, it must be.
