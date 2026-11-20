@@ -254,8 +254,15 @@ export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
 terraform -chdir="${INFRA_DIR}" init -backend-config="organization=${TFC_ORG}"
 r "Initialised"
 
-t "4.2. Running Terraform apply to import existing + deploy non-existing resources"
-terraform -chdir="${INFRA_DIR}" apply -auto-approve
+t "4.2. Planning the first apply"
+terraform -chdir="${INFRA_DIR}" plan -out=tfplan
+read -r -p "Approve the plan above? [yes/no] " REPLY
+[[ "${REPLY}" == "yes" ]] || die "apply declined"
+r "Plan approved"
+
+t "4.3. Applying the approved plan"
+terraform -chdir="${INFRA_DIR}" apply tfplan
+rm -f "${INFRA_DIR}/tfplan"
 r "Deploy complete"
 
 r "Bootstrap complete — the platform now runs from main via TFC"
