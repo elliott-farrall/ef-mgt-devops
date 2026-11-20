@@ -8,8 +8,8 @@ locals {
   environments = {
     for e in local.config.environments : e.name => {
       name               = e.name
-      organization_id    = data.google_organization.ef.id
-      billing_account_id = data.google_billing_account.ef.id
+      organization_id    = data.google_organization.this.id
+      billing_account_id = data.google_billing_account.this.id
       landing_project_id = local.default_project
       issuer             = "https://${local.config.organisation.tfe.hostname}"
       folder_roles       = ["roles/resourcemanager.projectCreator", "roles/editor"]
@@ -47,7 +47,7 @@ locals {
   # One entry per referenced group folder: cosmetic containers for environment folders
   groups = {
     for g in toset([for e in local.config.environments : e.group if try(e.group, null) != null]) : g => {
-      organization_id = data.google_organization.ef.id
+      organization_id = data.google_organization.this.id
     }
   }
 
@@ -59,11 +59,9 @@ locals {
       repo                      = try(p.repo, "ef-${p.type}-${p.name}")
       project_id                = module.environment[e].tfe_project.this.id
       folder_id                 = module.environment[e].google_folder.this.folder_id
-      billing_account_id        = data.google_billing_account.ef.id
-      labels                    = { environment = e, managed_by = "terraform", repository = try(p.repo, "ef-${p.type}-${p.name}") }
+      billing_account_id        = data.google_billing_account.this.id
       services                  = try(p.services, [])
       working_directory         = try(p.working_directory, "infrastructure")
-      queue_all_runs            = i == 0
       github_owner              = local.config.organisation.gh.owner
       github_app_installation   = local.config.organisation.tfe.github_app_installation
       wif_provider              = "//iam.googleapis.com/${module.environment[e].google_iam_workload_identity_pool_provider.this.name}"
@@ -113,7 +111,7 @@ locals {
   budgets = {
     for b in local.config.budgets : "ef-budget-${b.name}" => {
       name               = "ef-budget-${b.name}"
-      billing_account_id = data.google_billing_account.ef.id
+      billing_account_id = data.google_billing_account.this.id
       amount             = b.amount
       thresholds         = b.thresholds
       scope              = try(b.scope, null) == null ? "" : b.scope

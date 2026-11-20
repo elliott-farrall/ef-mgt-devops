@@ -16,9 +16,6 @@ module "environment" {
   billing_account_id = each.value.billing_account_id
   landing_project_id = each.value.landing_project_id
   issuer             = each.value.issuer
-  folder_roles       = each.value.folder_roles
-  landing_roles      = each.value.landing_roles
-  platform_roles     = each.value.platform_roles
 
   depends_on = [module.group]
 }
@@ -48,10 +45,8 @@ module "project" {
   project_id                = each.value.project_id
   folder_id                 = each.value.folder_id
   billing_account_id        = each.value.billing_account_id
-  labels                    = each.value.labels
   services                  = each.value.services
   working_directory         = each.value.working_directory
-  queue_all_runs            = each.value.queue_all_runs
   github_owner              = each.value.github_owner
   github_app_installation   = each.value.github_app_installation
   wif_provider              = each.value.wif_provider

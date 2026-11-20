@@ -7,7 +7,7 @@ resource "tfe_workspace" "this" {
   project_id        = var.project_id
   working_directory = var.working_directory
   auto_apply        = false
-  queue_all_runs    = var.queue_all_runs
+  queue_all_runs    = local.queue_all_runs
   trigger_patterns  = local.workspace_trigger_patterns
 
   vcs_repo {
@@ -23,34 +23,41 @@ resource "tfe_workspace_settings" "this" {
   execution_mode = "remote"
 }
 
-resource "tfe_variable" "environment" {
-  key          = "environment"
-  value        = var.environment
-  category     = "terraform"
-  workspace_id = tfe_workspace.this.id
-  description  = "Environment slot this workspace deploys."
+locals {
+  variables = {
+    environment = {
+      key         = "environment"
+      value       = var.environment
+      category    = "terraform"
+      description = "Environment slot this workspace deploys."
+    }
+    gcp_provider_auth = {
+      key         = "TFC_GCP_PROVIDER_AUTH"
+      value       = "true"
+      category    = "env"
+      description = "Enables HCP Terraform dynamic credentials for the Google provider in this run."
+    }
+    gcp_workload_identity_provider = {
+      key         = "TFC_GCP_WORKLOAD_IDENTITY_PROVIDER"
+      value       = var.wif_provider
+      category    = "env"
+      description = "Workload identity provider this run authenticates through; consumed by the Google provider."
+    }
+    gcp_run_service_account = {
+      key         = "TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL"
+      value       = var.gcp_service_account_email
+      category    = "env"
+      description = "Service account this run impersonates after workload identity token exchange."
+    }
+  }
 }
 
-resource "tfe_variable" "gcp_provider_auth" {
-  key          = "TFC_GCP_PROVIDER_AUTH"
-  value        = "true"
-  category     = "env"
-  workspace_id = tfe_workspace.this.id
-  description  = "Enables HCP Terraform dynamic credentials for the Google provider in this run."
-}
+resource "tfe_variable" "this" {
+  for_each = local.variables
 
-resource "tfe_variable" "gcp_workload_identity_provider" {
-  key          = "TFC_GCP_WORKLOAD_IDENTITY_PROVIDER"
-  value        = var.wif_provider
-  category     = "env"
+  key          = each.value.key
+  value        = each.value.value
+  category     = each.value.category
   workspace_id = tfe_workspace.this.id
-  description  = "Workload identity provider this run authenticates through; consumed by the Google provider."
-}
-
-resource "tfe_variable" "gcp_run_service_account" {
-  key          = "TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL"
-  value        = var.gcp_service_account_email
-  category     = "env"
-  workspace_id = tfe_workspace.this.id
-  description  = "Service account this run impersonates after workload identity token exchange."
+  description  = each.value.description
 }

@@ -5,7 +5,7 @@ output "google_project" {
 
 output "google_project_service" {
   description = "Map of enabled GCP APIs keyed by service name."
-  value       = google_project_service.apis
+  value       = google_project_service.this
 }
 
 output "tfe_workspace" {

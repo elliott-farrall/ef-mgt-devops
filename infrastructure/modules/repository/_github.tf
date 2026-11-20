@@ -90,7 +90,7 @@ resource "github_repository_pages" "this" {
   https_enforced = true
 }
 
-resource "cloudflare_dns_record" "pages" {
+resource "cloudflare_dns_record" "this" {
   count = var.pages ? 1 : 0
 
   zone_id = data.cloudflare_zone.this.id

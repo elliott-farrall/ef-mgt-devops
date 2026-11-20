@@ -23,19 +23,15 @@ variable "billing_account_id" {
   type        = string
 }
 
-variable "labels" {
-  description = "Mandatory label set."
-  type        = map(string)
-}
-
 variable "services" {
   description = "GCP APIs to enable on the project."
   type        = list(string)
 }
 
-variable "queue_all_runs" {
-  description = "Whether VCS pushes queue runs; false for downstream stages, whose runs come from the trigger chain."
-  type        = bool
+variable "run_after_workspace_id" {
+  description = "Workspace whose successful apply queues this workspace's run; null for the first environment in a project."
+  type        = string
+  default     = null
 }
 
 variable "working_directory" {

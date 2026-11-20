@@ -194,6 +194,13 @@ here in the same PR that makes it.
   caller-passed overrides: `working_directory` = `infrastructure` and
   `auto_apply` = `true` in `project`, repository and branch-protection
   defaults in `project` and `module`, `budget` currency = GBP in `budget`.
+- Module variables are minimal: a variable exists only if the value must
+  be passed in from config or another module — anything derivable inside
+  the module (labels, run policy, role sets, the platform-home detection)
+  is a module local. Resources and data sources are named `this`;
+  a module holding several resources of one type loops them with
+  `for_each` instead of duplicating names, and semantic exceptions
+  (`github_repository_ruleset.enforcement` / `.review`) are deliberate.
 - Module outputs are mechanical: one output per resource the module
   creates, exporting the whole resource object — named after the resource
   type (`google_project`, `tfe_workspace`, plus `tfe_variable_<name>` where

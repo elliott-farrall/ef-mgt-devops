@@ -3,7 +3,7 @@ resource "google_project" "this" {
   project_id      = var.name
   folder_id       = var.folder_id
   billing_account = var.billing_account_id
-  labels          = var.labels
+  labels          = local.labels
   deletion_policy = "PREVENT"
 
   lifecycle {
@@ -11,7 +11,7 @@ resource "google_project" "this" {
   }
 }
 
-resource "google_project_service" "apis" {
+resource "google_project_service" "this" {
   for_each = { for s in var.services : s => s }
 
   service            = each.value

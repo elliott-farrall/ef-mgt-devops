@@ -28,21 +28,3 @@ variable "issuer" {
   type        = string
 }
 
-variable "folder_roles" {
-  description = "Roles the environment identity holds on its own folder; grants project creation inside it."
-  type        = list(string)
-}
-
-variable "landing_roles" {
-  description = "Roles the environment identity holds on the landing project."
-  type        = list(string)
-}
-
-variable "platform_roles" {
-  description = "Scoped role pairs for platform duties: organization, billing, or project:<id>."
-  type = list(object({
-    scope = string
-    role  = string
-  }))
-  default = []
-}
