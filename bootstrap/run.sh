@@ -118,9 +118,7 @@ if gcloud projects describe "${GCP_DEFAULT_PROJECT}" >/dev/null 2>&1; then
   r "Project already exists"
 else
   gcloud projects create "${GCP_DEFAULT_PROJECT}" \
-    --folder="${FOLDER_ID}" \
-    --billing-account="${GCP_BILLING_ACCOUNT}" \
-    --set-as-default
+    --folder="${FOLDER_ID}"
   r "Created project"
 fi
 GCP_PROJ_NUM="$(gcloud projects describe "${GCP_DEFAULT_PROJECT}" --format='value(projectNumber)' 2>/dev/null | head -n1)"
