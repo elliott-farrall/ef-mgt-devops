@@ -320,12 +320,12 @@ here in the same PR that makes it.
 ## Layout
 
 - `infrastructure/` — all Terraform (the TFC working directory); purpose
-  files; repo-local modules under `modules/<function>/`, each with
-  `variables.tf`, `outputs.tf`, `versions.tf`, plus
-  `data.tf`/`checks.tf`/`_<category>.tf` when owned. Root outputs are
-  minimised — only where absolutely necessary (today: the DNS name
-  servers for registrar delegation). No cross-stack outputs, no
-  `terraform_remote_state` coupling. No comments in any `.tf` file.
+  files (`providers.tf`, `variables.tf`, `locals.tf`, `main.tf`, `data.tf`,
+  `checks.tf` — no root `outputs.tf`: the platform publishes no outputs);
+  repo-local modules under `modules/<function>/`, each with `variables.tf`,
+  `outputs.tf`, `versions.tf`, plus `data.tf`/`checks.tf`/`_<category>.tf`
+  when owned. No cross-stack outputs, no `terraform_remote_state` coupling.
+  No comments in any `.tf` file.
 - `environments/<name>/` — YAML inputs, one directory per environment slot,
   split by concern, merged alphabetically in `locals.tf`. A new environment
   slot adds its directory and extends the `environment` variable validation.
