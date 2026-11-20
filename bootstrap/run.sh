@@ -265,7 +265,10 @@ terraform -chdir="${INFRA_DIR}" init -input=false -no-color -backend-config="org
 r "Initialised (${BOOTSTRAP_DIR}/init.txt)"
 
 t "4.2. Planning the first apply"
-terraform -chdir="${INFRA_DIR}" plan -no-color -out=tfplan > "${BOOTSTRAP_DIR}/plan.txt" 2>&1
+terraform -chdir="${INFRA_DIR}" plan -no-color -input=false -out=tfplan > "${BOOTSTRAP_DIR}/plan.txt" 2>&1 || {
+  tail -20 "${BOOTSTRAP_DIR}/plan.txt" >&2
+  die "terraform plan failed — full log: ${BOOTSTRAP_DIR}/plan.txt"
+}
 r "Plan written: ${BOOTSTRAP_DIR}/plan.txt — share it for review before approving"
 read -r -p "Approve the plan above? [yes/no] " REPLY
 [[ "${REPLY}" == "yes" ]] || die "apply declined"
