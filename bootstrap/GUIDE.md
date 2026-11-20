@@ -149,8 +149,10 @@ apply consume every value in them:
 - `records.yaml` — DNS records of the Cloudflare apex zone. All nine live
   records are already declared and imported via `infrastructure/imports.tf`
   during the apply.
-- `environments.yaml` — `mgt/devops` must exist with `default: true` and
-  its `services` list; the other environments stay bare.
+- `environments.yaml` — the five deployment lanes (`mgt`, `hub`, `dev`,
+  `pre`, `prd`).
+- `projects.yaml` — the `mgt/devops` project with `default: true` and its
+  `services` list; no other projects yet.
 
 ## Running
 
