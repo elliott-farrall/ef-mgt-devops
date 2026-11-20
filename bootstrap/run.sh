@@ -67,6 +67,7 @@ GITHUB_TOKEN="$(gh auth token)"
 TFC_TOKEN="$(jq -r '.credentials["app.terraform.io"].token' ~/.terraform.d/credentials.tfrc.json)"
 [[ -n "${TFC_TOKEN}" && "${TFC_TOKEN}" != "null" ]] || die "no Terraform Cloud token in ~/.terraform.d/credentials.tfrc.json — run terraform login"
 export TFE_TOKEN="${TFC_TOKEN}"
+tfccli init --non-interactive --address "${TFC_HOSTNAME}" --default-org "${TFC_ORG}" --yes >/dev/null 2>&1
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 1: Google Cloud — seed the resources Terraform cannot create
