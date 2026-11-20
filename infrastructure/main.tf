@@ -24,21 +24,24 @@ module "project" {
   source   = "./modules/project"
   for_each = local.projects
 
-  name                    = each.value.name
-  environments            = each.value.environments
-  repo                    = each.value.repo
-  description             = each.value.description
-  settings                = each.value.settings
-  protection              = each.value.protection
-  pages                   = each.value.pages
-  cname                   = each.value.cname
-  zone                    = each.value.zone
-  github_owner            = each.value.github_owner
-  github_app_installation = each.value.github_app_installation
-  billing_account_id      = each.value.billing_account_id
-  services                = each.value.services
-  working_directory       = each.value.working_directory
-  environment_details     = each.value.infrastructure
+  name                       = each.value.name
+  environments               = each.value.environments
+  repo                       = each.value.repo
+  description                = each.value.description
+  settings                   = each.value.settings
+  protection                 = each.value.protection
+  pages                      = each.value.pages
+  cname                      = each.value.cname
+  zone                       = each.value.zone
+  github_owner               = each.value.github_owner
+  github_app_installation    = each.value.github_app_installation
+  billing_account_id         = each.value.billing_account_id
+  services                   = each.value.services
+  working_directory          = each.value.working_directory
+  tfc_project_ids            = each.value.tfc_project_ids
+  folder_ids                 = each.value.folder_ids
+  wif_providers              = each.value.wif_providers
+  gcp_service_account_emails = each.value.gcp_service_account_emails
 
   depends_on = [module.environment]
 }

@@ -25,27 +25,25 @@ locals {
 
   projects = {
     for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
-      name                    = p.name
-      type                    = p.type
-      repo                    = try(p.repo, "ef-${p.type}-${p.name}")
-      environments            = try(p.environments, [p.type])
-      description             = try(p.description, null)
-      services                = try(p.services, [])
-      working_directory       = try(p.working_directory, "infrastructure")
-      settings                = try(p.settings, {})
-      protection              = try(p.protection, {})
-      pages                   = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project
-      cname                   = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project ? "docs.elliott-farrall.phd" : null
-      billing_account_id      = data.google_billing_account.this.id
-      zone                    = local.config.organisation.gcp.domain
-      github_owner            = local.config.organisation.gh.owner
-      github_app_installation = local.config.organisation.tfe.github_app_installation
-      infrastructure = { for name in try(p.environments, [p.type]) : name => {
-        tfc_project_id            = module.environment[name].tfe_project.this.id
-        folder_id                 = module.environment[name].google_folder.this.folder_id
-        wif_provider              = "//iam.googleapis.com/${module.environment[name].google_iam_workload_identity_pool_provider.this.name}"
-        gcp_service_account_email = module.environment[name].google_service_account.this.email
-      } }
+      name                       = p.name
+      type                       = p.type
+      repo                       = try(p.repo, "ef-${p.type}-${p.name}")
+      environments               = try(p.environments, [p.type])
+      description                = try(p.description, null)
+      services                   = try(p.services, [])
+      working_directory          = try(p.working_directory, "infrastructure")
+      settings                   = try(p.settings, {})
+      protection                 = try(p.protection, {})
+      pages                      = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project
+      cname                      = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project ? "docs.elliott-farrall.phd" : null
+      billing_account_id         = data.google_billing_account.this.id
+      zone                       = local.config.organisation.gcp.domain
+      github_owner               = local.config.organisation.gh.owner
+      github_app_installation    = local.config.organisation.tfe.github_app_installation
+      tfc_project_ids            = { for name in try(p.environments, [p.type]) : name => module.environment[name].tfe_project.this.id }
+      folder_ids                 = { for name in try(p.environments, [p.type]) : name => module.environment[name].google_folder.this.folder_id }
+      wif_providers              = { for name in try(p.environments, [p.type]) : name => "//iam.googleapis.com/${module.environment[name].google_iam_workload_identity_pool_provider.this.name}" }
+      gcp_service_account_emails = { for name in try(p.environments, [p.type]) : name => module.environment[name].google_service_account.this.email }
     }
   }
 

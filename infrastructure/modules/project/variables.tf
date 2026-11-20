@@ -53,6 +53,26 @@ variable "github_owner" {
   type        = string
 }
 
+variable "tfc_project_ids" {
+  description = "TFC project ID hosting each environment's workspaces, keyed by environment."
+  type        = map(string)
+}
+
+variable "folder_ids" {
+  description = "Numeric folder ID of each environment's folder, keyed by environment."
+  type        = map(string)
+}
+
+variable "wif_providers" {
+  description = "Full WIF provider resource path for each environment, keyed by environment."
+  type        = map(string)
+}
+
+variable "gcp_service_account_emails" {
+  description = "Service account email impersonated in each environment, keyed by environment."
+  type        = map(string)
+}
+
 variable "github_app_installation" {
   description = "Name of the TFC GitHub App installation; resolved by data.tfe_github_app_installation within this module."
   type        = string
@@ -73,12 +93,3 @@ variable "working_directory" {
   type        = string
 }
 
-variable "environment_details" {
-  description = "Deployment facts per environment: TFC project id, folder id, WIF provider path, and service account email."
-  type = map(object({
-    tfc_project_id            = string
-    folder_id                 = string
-    wif_provider              = string
-    gcp_service_account_email = string
-  }))
-}
