@@ -11,7 +11,7 @@ is a data change, never new machinery.
 |------|---------|
 | [docs/DESIGN.md](docs/DESIGN.md) | Architecture decisions and rationale |
 | [docs/STANDARDS.md](docs/STANDARDS.md) | Binding rules — read before changing anything structural |
-| [docs/BOOTSTRAP.md](docs/BOOTSTRAP.md) | One-time bring-up procedure |
+| [bootstrap/GUIDE.md](bootstrap/GUIDE.md) | One-time bring-up procedure |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development workflow and conventions |
 | [CHANGELOG.md](CHANGELOG.md) | What changed, and when |
 
@@ -20,9 +20,9 @@ is a data change, never new machinery.
 ```
 ├── environments/mgt/       # YAML inputs — the platform is defined here
 ├── .schemas/environment/   # JSON Schema per config file
-├── infrastructure/         # Terraform: five function modules + wiring
-├── scripts/bootstrap.sh    # One-time bring-up
-└── docs/                   # Design, standards, bootstrap
+├── infrastructure/         # Terraform: six function modules + wiring
+├── bootstrap/              # run.sh, import template, bring-up guide
+└── docs/                   # Design and standards (MkDocs site)
 ```
 
 ## Getting started
@@ -34,7 +34,7 @@ make ci            # run every check
 ```
 
 First bring-up of the platform itself: follow
-[docs/BOOTSTRAP.md](docs/BOOTSTRAP.md).
+[bootstrap/GUIDE.md](bootstrap/GUIDE.md).
 
 ## How it works
 

@@ -12,6 +12,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_DIR="${REPO_ROOT}/environments/mgt"
 INFRA_DIR="${REPO_ROOT}/infrastructure"
+BOOTSTRAP_DIR="${REPO_ROOT}/bootstrap"
 
 die()   { printf '\033[1;31mfatal: %s\n' "$*" >&2; exit 1; }
 
@@ -278,10 +279,10 @@ export TFC_WS_NAME="${GCP_DEFAULT_PROJECT}"
 export TFC_WSID="${TFC_WORKSPACE_ID}"
 r "Import addresses derived"
 
-t "3.2. Rendering imports.tf from template"
-envsubst < "${INFRA_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/imports.tf"
-printf '\nimport {\n  to   = module.environment["mgt"].google_folder.this\n  id   = "%s"\n}\n' "${FOLDER_ID}" >> "${INFRA_DIR}/imports.tf"
-r "Rendered imports.tf — $(wc -l < "${INFRA_DIR}/imports.tf") lines"
+t "3.2. Rendering bootstrap.tf from template"
+envsubst < "${BOOTSTRAP_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/bootstrap.tf"
+printf '\nimport {\n  to   = module.environment["mgt"].google_folder.this\n  id   = "%s"\n}\n' "${FOLDER_ID}" >> "${INFRA_DIR}/bootstrap.tf"
+r "Rendered bootstrap.tf — $(wc -l < "${INFRA_DIR}/bootstrap.tf") lines"
 
 t "3.3. Importing the existing Cloudflare DNS records"
 CF_ZONES="$(curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
@@ -298,7 +299,7 @@ while IFS=$'\t' read -r zone name type content priority; do
   [[ -n "${import_id}" ]] || die "No live Cloudflare record matches ${zone} ${name} ${type} ${content} (priority ${priority}) - reconcile the zone first"
   record_key="$(echo "${zone}" | tr '.' '-')-$(echo "${name}" | tr '.' '-')-${type}"
   printf '\nimport {\n  to   = module.record["%s"].cloudflare_dns_record.this\n  id   = "%s"\n}\n' \
-    "${record_key}" "${import_id}" >> "${INFRA_DIR}/imports.tf"
+    "${record_key}" "${import_id}" >> "${INFRA_DIR}/bootstrap.tf"
   r "Imported record ${zone} ${name} ${type}"
 done < <(yq -r '.records[] | [.zone, .name, .type, .content, (.priority // "" | tostring)] | @tsv' "${ENV_DIR}/records.yaml")
 # ══════════════════════════════════════════════════════════════════

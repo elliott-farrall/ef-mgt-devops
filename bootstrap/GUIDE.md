@@ -112,7 +112,7 @@ From the repository root, with `TF_TOKEN_APP_TERRAFORM_IO` and
 `GITHUB_TOKEN` exported:
 
 ```sh
-nix develop .#bootstrap -c ./scripts/bootstrap.sh
+nix develop .#bootstrap -c ./bootstrap/run.sh
 ```
 
 The script runs four phases and is idempotent — reruns skip what already
@@ -128,7 +128,7 @@ exists:
    `CLOUDFLARE_API_TOKEN` — shared with every workspace) and the temporary
    `GOOGLE_CREDENTIALS` bootstrap key on the landing workspace.
 3. **Imports** — derive the import addresses, render
-   `infrastructure/imports.tf` from `imports.tf.tmpl`, and append import
+   `infrastructure/bootstrap.tf` from `imports.tf.tmpl`, and append import
    blocks for the live Cloudflare DNS records so the apply adopts them
    instead of duplicating them.
 4. **Deploy** — `terraform init` against the remote backend, then a single
@@ -147,9 +147,10 @@ exists:
 
 ## After the first run
 
-- `infrastructure/imports.tf` is transient — it exists only for the first
-  apply. Delete it once applied (or leave it; it references imported
-  resources and is harmless, but it must never be committed).
+- `infrastructure/bootstrap.tf` is transient — it exists only for the
+  first apply. Delete it once applied (or leave it; it references imported
+  resources and is harmless, but it is gitignored and must never be
+  committed).
 - The workspace `ef-mgt-devops` now runs the platform from `main`. Every
   future change is a PR: CI validates, TFC plans on the PR, merge triggers
   the run.

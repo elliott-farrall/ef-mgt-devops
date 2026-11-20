@@ -334,18 +334,19 @@ here in the same PR that makes it.
   (`required_version` stays a range; the Terraform CLI itself is pinned by
   the nix flake). Child modules declare required providers without
   versions. Upgrades are explicit PRs that change the pins.
-- `scripts/` — bash for orchestration only (seed, adopt, deploy); never
-  validation logic. `imports.tf` is transient — rendered by bootstrap,
-  never committed. `inventory.yaml` is transient — deleted at close-out.
+- `bootstrap/` — bash orchestration only (`run.sh`: seed, adopt, deploy),
+  the import template (`imports.tf.tmpl`), and `GUIDE.md`; never validation
+  logic. The rendered `infrastructure/bootstrap.tf` is transient —
+  gitignored, never committed.
 - `.schemas/environment/` — one schema per config filename.
-- `docs/` — exactly three files: `DESIGN.md` (decisions and rationale),
-  `STANDARDS.md` (binding rules, this file), `BOOTSTRAP.md` (the one-time
-  bring-up procedure) — plus `index.md`, the entry page of the MkDocs
-  site (`mkdocs.yaml` at the root renders `docs/` to GitHub Pages through
-  the `docs` workflow, served at docs.elliott-farrall.phd — the Pages
-  site and its DNS record are Terraform-managed on the platform home
-  repository). New documentation extends these; it does not add
-  a fourth.
+- `docs/` — exactly two files: `DESIGN.md` (decisions and rationale) and
+  `STANDARDS.md` (binding rules, this file) — plus `index.md`, the entry
+  page of the MkDocs site (`mkdocs.yaml` at the root renders `docs/` to
+  GitHub Pages through the `docs` workflow, served at
+  docs.elliott-farrall.phd — the Pages site and its DNS record are
+  Terraform-managed on the platform home repository). The bring-up
+  procedure lives at `bootstrap/GUIDE.md`. New documentation extends
+  these; it does not add a third.
 
 ## Review rules
 

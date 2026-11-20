@@ -268,7 +268,7 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 ```
 ├── .github/workflows/       # CI: branch-name, schema, fmt/validate
 ├── .schemas/environment/    # JSON Schema per environment config file
-├── scripts/
+├── bootstrap/
 │   └── bootstrap.sh         # Bash orchestration (seed, import, deploy)
 ├── docs/                    # Two-file convention
 │   ├── DESIGN.md            # Decisions and rationale (this file)

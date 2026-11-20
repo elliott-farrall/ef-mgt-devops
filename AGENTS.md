@@ -16,7 +16,7 @@ This repository is a landing-zone management plane. To work on it:
    Checks print one tick/cross line each; failures show the tool output.
 5. Every PR updates `CHANGELOG.md` (see `CONTRIBUTING.md`); releases are
    cut manually from it.
-6. Bring-up procedures live in `docs/BOOTSTRAP.md`. Bootstrap is
+6. Bring-up procedures live in `bootstrap/GUIDE.md`. Bootstrap is
    one-time; steady state is PR-only.
 
 This file and the docs it points at must stay in sync with the code in

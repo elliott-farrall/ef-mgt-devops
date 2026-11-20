@@ -6,4 +6,4 @@ Cloud from YAML.
 
 Start with the [design overview](DESIGN.md), read the binding
 [standards](STANDARDS.md) before proposing anything structural, and follow
-the [bootstrap procedure](BOOTSTRAP.md) for first bring-up.
+the [bootstrap procedure](../bootstrap/GUIDE.md) for first bring-up.

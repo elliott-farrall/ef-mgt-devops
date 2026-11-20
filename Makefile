@@ -44,7 +44,7 @@ terraform-validate: ## Terraform configuration is valid
 
 # ── Bash ─────────────────────────────────────────────────────────────────
 bash-shell: ## Shell scripts pass shellcheck and parse
-	$(call check,shellcheck -x -S error scripts/*.sh && for s in scripts/*.sh; do bash -n "$$s"; done,Shell scripts)
+	$(call check,shellcheck -x -S error bootstrap/*.sh && for s in bootstrap/*.sh; do bash -n "$$s"; done,Shell scripts)
 
 # ── Git ──────────────────────────────────────────────────────────────────
 git-branch: ## Branch name follows <type>/<kebab-name>
