@@ -23,7 +23,3 @@ resource "tfe_registry_module" "this" {
 
   depends_on = [module.repository]
 }
-
-data "tfe_github_app_installation" "this" {
-  name = var.github_app_installation
-}
