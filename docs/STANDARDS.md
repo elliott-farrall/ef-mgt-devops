@@ -341,7 +341,7 @@ here in the same PR that makes it.
 - `docs/` — exactly three files: `DESIGN.md` (decisions and rationale),
   `STANDARDS.md` (binding rules, this file), `BOOTSTRAP.md` (the one-time
   bring-up procedure) — plus `index.md`, the entry page of the MkDocs
-  site (`mkdocs.yml` at the root renders `docs/` to GitHub Pages through
+  site (`mkdocs.yaml` at the root renders `docs/` to GitHub Pages through
   the `docs` workflow, served at docs.elliott-farrall.phd — the Pages
   site and its DNS record are Terraform-managed on the platform home
   repository). New documentation extends these; it does not add
