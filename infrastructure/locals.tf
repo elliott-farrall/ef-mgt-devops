@@ -19,7 +19,7 @@ locals {
       billing_account_id = local.config.organisation.gcp.billing
       landing_project_id = local.default_project
       issuer             = "https://${local.config.organisation.tfe.hostname}"
-      folder_parent      = try(e.group, null) != null ? "folders/${module.group[e.group].google_folder.this.folder_id}" : "organizations/${data.google_organization.this.id}"
+      folder_parent      = try(e.group, null) != null ? "folders/${module.group[e.group].google_folder.folder_id}" : "organizations/${data.google_organization.this.id}"
     }
   }
 
@@ -40,10 +40,10 @@ locals {
       zone                       = local.config.organisation.gcp.domain
       github_owner               = local.config.organisation.gh.owner
       github_app_installation    = local.config.organisation.tfe.github_app_installation
-      tfc_project_ids            = { for name in try(p.environments, [p.type]) : name => module.environment[name].tfe_project.this.id }
-      folder_ids                 = { for name in try(p.environments, [p.type]) : name => module.environment[name].google_folder.this.folder_id }
-      wif_providers              = { for name in try(p.environments, [p.type]) : name => "//iam.googleapis.com/${module.environment[name].google_iam_workload_identity_pool_provider.this.name}" }
-      gcp_service_account_emails = { for name in try(p.environments, [p.type]) : name => module.environment[name].google_service_account.this.email }
+      tfc_project_ids            = { for name in try(p.environments, [p.type]) : name => module.environment[name].tfe_project.id }
+      folder_ids                 = { for name in try(p.environments, [p.type]) : name => module.environment[name].google_folder.folder_id }
+      wif_providers              = { for name in try(p.environments, [p.type]) : name => "//iam.googleapis.com/${module.environment[name].google_iam_workload_identity_pool_provider.name}" }
+      gcp_service_account_emails = { for name in try(p.environments, [p.type]) : name => module.environment[name].google_service_account.email }
     }
   }
 
