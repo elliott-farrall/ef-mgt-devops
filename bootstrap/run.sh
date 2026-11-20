@@ -213,7 +213,7 @@ fi
 
 t "2.7. Seeding the platform tokens"
 VAR_BODY="$(jq -n --arg gh "${GITHUB_TOKEN}" --arg tfe "${TFC_TOKEN}" --arg cf "${CF_API_TOKEN}" '{data: {type: "varsets", attributes: {name: "platform-tokens", global: true}, relationships: {vars: {data: [{type: "vars", attributes: {key: "GITHUB_TOKEN", value: $gh, category: "env", hcl: false, sensitive: true}}, {type: "vars", attributes: {key: "TFE_TOKEN", value: $tfe, category: "env", hcl: false, sensitive: true}}, {type: "vars", attributes: {key: "CLOUDFLARE_API_TOKEN", value: $cf, category: "env", hcl: false, sensitive: true}}]}}}}')"
-VARSET_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" -d "${VAR_BODY}" | tee /dev/stderr | jq -r '.data.id')"
+VARSET_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" -d "${VAR_BODY}" | jq -r '.data.id')"
 [[ -n "${VARSET_ID}" && "${VARSET_ID}" != "null" ]] || die "failed to create the platform-tokens variable set"
 r "platform-tokens (${VARSET_ID}) holds GITHUB_TOKEN, TFE_TOKEN, and CLOUDFLARE_API_TOKEN, shared with every workspace"
 
@@ -233,7 +233,7 @@ export TFC_WSID="${TFC_WORKSPACE_ID}"
 r "Import addresses derived"
 
 t "3.2. Rendering bootstrap.tf from template"
-DEVOPS_SERVICES_JSON="$(yq -o=json '.projects[] | select(.name=="devops") | .services' "${PROJECTS_YAML}")"
+DEVOPS_SERVICES_JSON="$(jq -cn '$ARGS.positional' --args "${DEVOPS_SERVICES[@]}")"
 DEVOPS_IMPORTS="$(jq -rn --arg project "${GCP_DEFAULT_PROJECT}" --argjson services "${DEVOPS_SERVICES_JSON}" \
   '$services | map("import {\\n  to   = module.project[\\"mgt\\"].google_project_service.this[\\"\($project)-\(.)\\"]\\n  id   = \\"\($project)/\(.).googleapis.com\\"\\n}\\n\\n") | join("")')"
 export FOLDER_ID
