@@ -89,19 +89,20 @@ export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
 - The org must be able to run remote workspaces (Team & Business tiers or
   above).
 
-### 4. GitHub token
+### 4. GitHub CLI
 
-Create a fine-grained PAT at **GitHub → Settings → Developer settings →
-Fine-grained tokens → Generate new token**, scoped to the `ef-mgt-devops`
-repository with **Administration: read and write** (the provider manages
-rulesets and vulnerability alerts). Export:
+Authenticate the GitHub CLI, which owns the repositories:
 
 ```sh
-export GITHUB_TOKEN=<fine-grained-pat>
+gh auth login
 ```
 
-Every TFC run needs it for the GitHub provider; bootstrap shares it
-organisation-wide through the `platform-tokens` variable set.
+The script reads the token with `gh auth token` for the GitHub provider;
+bootstrap shares it organisation-wide through the `platform-tokens`
+variable set. The OAuth token's `repo` scope covers the provider's
+operations on your own repositories — if any call is rejected, a
+fine-grained PAT with **Administration: read and write** on
+`ef-mgt-devops` is the fallback.
 
 ### 5. Cloudflare token
 
@@ -154,8 +155,8 @@ apply consume every value in them:
 
 ## Running
 
-From the repository root, with `TF_TOKEN_APP_TERRAFORM_IO`, `GITHUB_TOKEN`,
-and `CF_API_TOKEN` exported:
+From the repository root, with `CF_API_TOKEN` exported and `terraform
+login` + `gh auth login` completed:
 
 ```sh
 nix develop .#bootstrap -c ./bootstrap/run.sh

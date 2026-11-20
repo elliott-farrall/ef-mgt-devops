@@ -54,8 +54,9 @@ mapfile -t DEVOPS_SERVICES < <(yq -r '.environments[] | select(.name=="mgt") | .
 [[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${GH_OWNER}" ]] || die "GitHub owner not found in ${ENV_DIR}/organisation.yaml"
 
-[[ -n "${TF_TOKEN_APP_TERRAFORM_IO:-}" ]] || die "set TF_TOKEN_APP_TERRAFORM_IO (a user API token whose owner has authorised the TFC GitHub App)"
-[[ -n "${GITHUB_TOKEN:-}" ]] || die "set GITHUB_TOKEN (a fine-grained PAT with repo administration on ${GH_OWNER})"
+[[ -f ~/.terraform.d/credentials.tfrc.json ]] || die "run terraform login first (stores the Terraform Cloud token)"
+command -v gh >/dev/null || die "gh not found on PATH"
+gh auth status >/dev/null 2>&1 || die "run gh auth login first (GitHub CLI authentication)"
 [[ -n "${CF_API_TOKEN:-}" ]] || die "set CF_API_TOKEN (a Cloudflare token with Zone.DNS Edit on ${GCP_DOMAIN})"
 
 GCP_DEFAULT_PROJECT="ef-mgt-devops"
@@ -145,7 +146,9 @@ h "Phase 2: Terraform Cloud"
 
 TFC_OPTS="--address https://${TFC_HOSTNAME} --org ${TFC_ORG} --output-format json"
 TFC_API="https://${TFC_HOSTNAME}/api/v2"
-TFC_AUTH=( -H "Authorization: Bearer ${TF_TOKEN_APP_TERRAFORM_IO}" -H "Content-Type: application/vnd.api+json" )
+TFC_TOKEN="$(jq -r '.credentials["app.terraform.io"].token' ~/.terraform.d/credentials.tfrc.json)"
+[[ -n "${TFC_TOKEN}" && "${TFC_TOKEN}" != "null" ]] || die "no Terraform Cloud token in ~/.terraform.d/credentials.tfrc.json — run terraform login"
+TFC_AUTH=( -H "Authorization: Bearer ${TFC_TOKEN}" -H "Content-Type: application/vnd.api+json" )
 
 t "2.1. Checking the Terraform Cloud token"
 TFC_ORG_ID="$(tfccli organizations get --name "${TFC_ORG}" ${TFC_OPTS} | jq -r '.data.id' 2>/dev/null)"
@@ -212,7 +215,7 @@ else
 fi
 
 TFE_TOKEN_VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="TFE_TOKEN") | .id' | head -n1)"
-VAR_BODY="$(jq -n --arg value "${TF_TOKEN_APP_TERRAFORM_IO}" '{data: {type: "vars", attributes: {key: "TFE_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
+VAR_BODY="$(jq -n --arg value "${TFC_TOKEN}" '{data: {type: "vars", attributes: {key: "TFE_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
 if [[ -n "${TFE_TOKEN_VAR_ID}" ]]; then
   curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${TFE_TOKEN_VAR_ID}" -d "${VAR_BODY}" >/dev/null
   r "Updated TFE_TOKEN"
@@ -264,13 +267,10 @@ r "Rendered bootstrap.tf — $(wc -l < "${INFRA_DIR}/bootstrap.tf") lines"
 h "Phase 4: Deploy"
 
 t "4.1. Initialising Terraform against workspace ${GCP_DEFAULT_PROJECT}"
-export TF_ADDRESS="https://${TFC_HOSTNAME}"
-export TF_CREDENTIALS="env"
-export TF_HTTP_USERNAME="token"
-export TF_HTTP_PASSWORD="${TF_TOKEN_APP_TERRAFORM_IO}"
 export TF_WORKSPACE="${GCP_DEFAULT_PROJECT}"
-export TFE_TOKEN="${TF_TOKEN_APP_TERRAFORM_IO}"
-export GITHUB_TOKEN="${GITHUB_TOKEN}"
+export TFE_TOKEN="${TFC_TOKEN}"
+GITHUB_TOKEN="$(gh auth token)"
+export GITHUB_TOKEN
 export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
 terraform -chdir="${INFRA_DIR}" init -backend-config="organization=${TFC_ORG}"
 r "Initialised"
