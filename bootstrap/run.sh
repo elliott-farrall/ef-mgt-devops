@@ -5,8 +5,7 @@ set -euo pipefail
 # 1) Google Cloud   — seed: folder, project, APIs, mgt identity + key
 # 2) Terraform Cloud — seed: project, workspace, credential variables
 # 3) Imports        — render bootstrap.tf from the collected IDs
-# 4) Deploy         — single apply importing + creating everything
-# 5) Close out      — revoke the temporary credentials
+# 4) Deploy         — local-execution apply importing + creating everything
 # ──────────────────────────────────────────────────────────────────
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -62,7 +61,6 @@ mapfile -t DEVOPS_SERVICES < <(yq -r '.environments[] | select(.name=="mgt") | .
 GCP_DEFAULT_PROJECT="ef-mgt-devops"
 SA_NAME="sa-mgt-tfc"
 SA_EMAIL="${SA_NAME}@${GCP_DEFAULT_PROJECT}.iam.gserviceaccount.com"
-SA_KEY="/tmp/${SA_NAME}.json"
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 1: Google Cloud — seed the resources Terraform cannot create
@@ -135,30 +133,6 @@ else
 fi
 r "SA email: ${SA_EMAIL}"
 
-t "1.7. Granting the first-apply permissions to ${SA_NAME}"
-gcloud organizations add-iam-policy-binding "${GCP_ORG_ID#organizations/}" \
-  --member="serviceAccount:${SA_EMAIL}" \
-  --role="roles/resourcemanager.organizationAdmin" --condition=None >/dev/null
-r "Granted organisation admin (managed by Terraform)"
-gcloud projects add-iam-policy-binding "${GCP_DEFAULT_PROJECT}" \
-  --member="serviceAccount:${SA_EMAIL}" \
-  --role="roles/owner" >/dev/null
-r "Granted project owner on ${GCP_DEFAULT_PROJECT} (managed by Terraform)"
-gcloud billing accounts add-iam-policy-binding "${GCP_BILLING_ACCOUNT}" \
-  --member="serviceAccount:${SA_EMAIL}" \
-  --role="roles/billing.admin" >/dev/null
-r "Granted billing admin (temporary — removed after the first apply)"
-
-t "1.8. Creating the first-apply key for ${SA_NAME}"
-if gcloud iam service-accounts keys list --iam-account="${SA_EMAIL}" \
-   --format="value(name)" --project="${GCP_DEFAULT_PROJECT}" 2>/dev/null | grep -q "/keys/"; then
-  r "Key already exists"
-else
-  gcloud iam service-accounts keys create "${SA_KEY}" \
-    --iam-account="${SA_EMAIL}" >/dev/null
-  r "Created key ${SA_KEY}"
-fi
-
 # ══════════════════════════════════════════════════════════════════
 # Phase 2: Terraform Cloud — seed the org, workspace, credentials
 # ══════════════════════════════════════════════════════════════════
@@ -206,23 +180,10 @@ else
   r "Created workspace (${TFC_WORKSPACE_ID})"
 fi
 
-t "2.5. Checking workspace credential variables"
-seed_var() {
-  local key="$1" value="$2" category="$3" sensitive="$4"
-  local body existing
-  existing="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/vars" \
-    | jq -r ".data[] | select(.attributes.key==\"${key}\" and .attributes.category==\"${category}\") | .id" | head -n1)"
-  body=$(jq -n --arg key "${key}" --arg value "${value}" --arg category "${category}" --argjson sensitive "${sensitive}" \
-    '{data: {type: "vars", attributes: {key: $key, value: $value, category: $category, hcl: false, sensitive: $sensitive}}}')
-  if [[ -n "${existing}" ]]; then
-    curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/vars/${existing}" -d "${body}" >/dev/null
-    r "Updated ${key}"
-  else
-    curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/vars" -d "${body}" >/dev/null
-    r "Created ${key}"
-  fi
-}
-seed_var "GOOGLE_CREDENTIALS" "$(cat "${SA_KEY}")" "env" true
+t "2.5. Setting workspace execution to local for the first apply"
+curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/settings" \
+  -d "$(jq -n '{data: {type: "workspace-settings", attributes: {execution_mode: "local"}}}')" >/dev/null
+r "Workspace runs locally for the first apply; Terraform switches it to remote"
 r "Mgt key seeded — the first apply authenticates with it; Terraform adds the WIF variables for every run after it"
 
 t "2.6. Checking the organisation-wide token set platform-tokens"
@@ -292,29 +253,5 @@ r "Initialised"
 t "Running Terraform apply to import existing + deploy non-existing resources"
 terraform -chdir="${INFRA_DIR}" apply -auto-approve
 r "Deploy complete"
-
-# ══════════════════════════════════════════════════════════════════
-# Phase 5: Close out — revoke the temporary credentials
-# ══════════════════════════════════════════════════════════════════
-
-h "Phase 5: Close out"
-
-t "5.1. Removing the first-apply credentials from the workspace"
-GOOGLE_CREDS_VAR_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/vars" \
-  | jq -r '.data[] | select(.attributes.key=="GOOGLE_CREDENTIALS" and .attributes.category=="env") | .id' | head -n1)"
-if [[ -n "${GOOGLE_CREDS_VAR_ID}" ]]; then
-  curl -s -X DELETE "${TFC_AUTH[@]}" "${TFC_API}/vars/${GOOGLE_CREDS_VAR_ID}" >/dev/null
-  r "Deleted GOOGLE_CREDENTIALS workspace variable"
-fi
-
-t "5.2. Revoking the first-apply key"
-shred -u "${SA_KEY}" 2>/dev/null || rm -f "${SA_KEY}"
-r "Deleted the key file"
-
-t "5.3. Revoking the temporary billing admin grant"
-gcloud billing accounts remove-iam-policy-binding "${GCP_BILLING_ACCOUNT}" \
-  --member="serviceAccount:${SA_EMAIL}" \
-  --role="roles/billing.admin" >/dev/null
-r "Revoked billing admin — the managed costsManager grant remains"
 
 r "Bootstrap complete — the platform now runs from main via TFC"
