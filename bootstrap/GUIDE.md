@@ -62,7 +62,10 @@ stop — the org was created under a different identity.
 
 The script resolves your accessible GCP organisation (it must be the only
 one your identity can access), creates the project `ef-mgt-devops` in the
-`ef-mgt` folder, enables its APIs, and creates `sa-mgt-tfc`.
+`ef-mgt` folder, enables its APIs, and creates `sa-mgt-tfc`. Linking the
+billing account to the project is done in the console (Billing → Link a
+billing account) — newer gcloud versions dropped the `--billing-account`
+flag on `projects create`.
 
 ### 3. Terraform Cloud
 
