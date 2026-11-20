@@ -20,14 +20,6 @@ locals {
     }
   }
 
-  environment_infra = {
-    for name, environment in local.environments : name => {
-      tfc_project_id            = module.environment[name].tfe_project.this.id
-      folder_id                 = module.environment[name].google_folder.this.folder_id
-      wif_provider              = "//iam.googleapis.com/${module.environment[name].google_iam_workload_identity_pool_provider.this.name}"
-      gcp_service_account_email = module.environment[name].google_service_account.this.email
-    }
-  }
 
   projects = {
     for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
@@ -46,7 +38,12 @@ locals {
       zone                    = local.config.organisation.gcp.domain
       github_owner            = local.config.organisation.gh.owner
       github_app_installation = local.config.organisation.tfe.github_app_installation
-      infrastructure          = { for name in try(p.environments, [p.type]) : name => local.environment_infra[name] }
+      infrastructure = { for name in try(p.environments, [p.type]) : name => {
+        tfc_project_id            = module.environment[name].tfe_project.this.id
+        folder_id                 = module.environment[name].google_folder.this.folder_id
+        wif_provider              = "//iam.googleapis.com/${module.environment[name].google_iam_workload_identity_pool_provider.this.name}"
+        gcp_service_account_email = module.environment[name].google_service_account.this.email
+      } }
     }
   }
 
