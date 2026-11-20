@@ -20,39 +20,27 @@ module "environment" {
   depends_on = [module.group]
 }
 
-module "repository" {
-  source   = "./modules/repository"
-  for_each = local.repositories
-
-  repo          = each.value.repo
-  description   = each.value.description
-  settings      = each.value.settings
-  protection    = each.value.protection
-  status_checks = each.value.status_checks
-  pages         = each.value.pages
-  cname         = each.value.cname
-  zone          = each.value.zone
-  github_owner  = each.value.github_owner
-}
-
 module "project" {
   source   = "./modules/project"
   for_each = local.projects
 
-  name                      = each.value.name
-  environment               = each.value.environment
-  repo                      = each.value.repo
-  project_id                = each.value.project_id
-  folder_id                 = each.value.folder_id
-  billing_account_id        = each.value.billing_account_id
-  services                  = each.value.services
-  working_directory         = each.value.working_directory
-  github_owner              = each.value.github_owner
-  github_app_installation   = each.value.github_app_installation
-  wif_provider              = each.value.wif_provider
-  gcp_service_account_email = each.value.gcp_service_account_email
+  name                    = each.value.name
+  environments            = each.value.environments
+  repo                    = each.value.repo
+  description             = each.value.description
+  settings                = each.value.settings
+  protection              = each.value.protection
+  pages                   = each.value.pages
+  cname                   = each.value.cname
+  zone                    = each.value.zone
+  github_owner            = each.value.github_owner
+  github_app_installation = each.value.github_app_installation
+  billing_account_id      = each.value.billing_account_id
+  services                = each.value.services
+  working_directory       = each.value.working_directory
+  environment_details     = each.value.infrastructure
 
-  depends_on = [module.environment, module.repository]
+  depends_on = [module.environment]
 }
 
 module "module" {
@@ -62,20 +50,12 @@ module "module" {
   name                    = each.value.name
   module_provider         = each.value.module_provider
   organization            = each.value.organization
-  repository_id           = each.value.repository_id
+  description             = each.value.description
+  settings                = each.value.settings
+  protection              = each.value.protection
+  zone                    = each.value.zone
+  github_owner            = each.value.github_owner
   github_app_installation = each.value.github_app_installation
-
-  depends_on = [module.repository]
-}
-
-module "trigger" {
-  source   = "./modules/trigger"
-  for_each = local.triggers
-
-  workspace_id  = each.value.workspace_id
-  sourceable_id = each.value.sourceable_id
-
-  depends_on = [module.project]
 }
 
 module "record" {

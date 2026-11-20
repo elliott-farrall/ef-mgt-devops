@@ -22,7 +22,7 @@ check "names_and_repos_unique" {
   assert {
     condition = alltrue([
       length([for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : "ef-${e}-${p.name}"]]) : x]) == length(toset([for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : "ef-${e}-${p.name}"]]) : x])),
-      length([for r in keys(local.repositories) : r]) == length(toset([for r in keys(local.repositories) : r])),
+      length([for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}")]) == length(toset([for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}")])),
     ])
     error_message = "Deployment names double as workspace and GCP project ids and must be unique; repository names double as GitHub repo ids and must be unique across projects and modules."
   }
@@ -49,7 +49,7 @@ check "budget_scopes_exist" {
   assert {
     condition = alltrue([
       for b in values(local.budgets) :
-      b.scope == "" || !startswith(b.scope, "projects/") || contains(keys(local.projects), trimprefix(b.scope, "projects/"))
+      b.scope == "" || !startswith(b.scope, "projects/") || contains([for x in flatten([for p in local.config.projects : [for e in try(p.environments, [p.type]) : "ef-${e}-${p.name}"]]) : x], trimprefix(b.scope, "projects/"))
     ])
     error_message = "Every budget projects scope must name a declared deployment."
   }

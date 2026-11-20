@@ -1,41 +1,50 @@
 variable "name" {
-  description = "Full project name; doubles as the GCP project id and the workspace name."
+  description = "Project suffix; completes every generated name."
   type        = string
 }
 
-variable "environment" {
-  description = "Environment slot injected as the terraform environment variable."
-  type        = string
-}
-
-variable "project_id" {
-  description = "Owning TFC project ID from module.environment."
-  type        = string
-}
-
-variable "folder_id" {
-  description = "Numeric ID of the environment folder hosting the project."
-  type        = string
-}
-
-variable "billing_account_id" {
-  description = "GCP billing account to attach."
-  type        = string
-}
-
-variable "services" {
-  description = "GCP APIs to enable on the project."
+variable "environments" {
+  description = "Environments the project deploys into, in rollout order."
   type        = list(string)
 }
 
-variable "run_after_workspace_id" {
-  description = "Workspace whose successful apply queues this workspace's run; null for the first environment in a project."
+variable "repo" {
+  description = "GitHub repository the project builds; created by the nested repository module."
+  type        = string
+}
+
+variable "description" {
+  description = "Repository description."
   type        = string
   default     = null
 }
 
-variable "working_directory" {
-  description = "Terraform root inside the repository."
+variable "settings" {
+  description = "Overrides for github_repository platform defaults."
+  type        = any
+  default     = {}
+}
+
+variable "protection" {
+  description = "Overrides for the main-branch rulesets."
+  type        = any
+  default     = {}
+}
+
+variable "pages" {
+  description = "Whether the repository hosts the docs site; true for the platform home."
+  type        = bool
+  default     = false
+}
+
+variable "cname" {
+  description = "Custom domain for the Pages site; null when the repository hosts none."
+  type        = string
+  default     = null
+}
+
+variable "zone" {
+  description = "Cloudflare zone hosting the platform DNS records."
   type        = string
 }
 
@@ -49,18 +58,27 @@ variable "github_app_installation" {
   type        = string
 }
 
-variable "wif_provider" {
-  description = "Full WIF provider resource name this workspace authenticates through; exposed to runs as the WIF_PROVIDER variable."
+variable "billing_account_id" {
+  description = "GCP billing account attached to every deployment's project."
   type        = string
 }
 
-variable "gcp_service_account_email" {
-  description = "Service account the run impersonates once its workload identity token is exchanged."
+variable "services" {
+  description = "GCP APIs enabled on every deployment's project."
+  type        = list(string)
+}
+
+variable "working_directory" {
+  description = "Terraform root inside the repository."
   type        = string
 }
 
-variable "repo" {
-  description = "GitHub repository this workspace builds; created by module.repository."
-  type        = string
+variable "environment_details" {
+  description = "Deployment facts per environment: TFC project id, folder id, WIF provider path, and service account email."
+  type = map(object({
+    tfc_project_id            = string
+    folder_id                 = string
+    wif_provider              = string
+    gcp_service_account_email = string
+  }))
 }
-

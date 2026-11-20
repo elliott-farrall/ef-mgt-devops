@@ -1,7 +1,6 @@
 locals {
   config = merge([for f in sort(fileset("${path.root}/../environments/${var.environment}", "*.yaml")) : yamldecode(file("${path.root}/../environments/${var.environment}/${f}"))]...)
 
-  # The landing deployment; also consumed by data sources and checks
   default_project = [for p in local.config.projects : "ef-${p.type}-${p.name}" if try(p.default, false) != false][0]
 
   # One entry per environment: folder, TFC project, identity, pool, provider, bindings
@@ -12,35 +11,7 @@ locals {
       billing_account_id = data.google_billing_account.this.id
       landing_project_id = local.default_project
       issuer             = "https://${local.config.organisation.tfe.hostname}"
-      folder_roles       = ["roles/resourcemanager.projectCreator", "roles/editor"]
-      landing_roles      = ["roles/iam.serviceAccountUser", "roles/dns.admin"]
-      platform_roles     = e.name == "mgt" ? [for pair in [{ scope = "organization", role = "roles/resourcemanager.organizationAdmin" }, { scope = "billing", role = "roles/billing.costsManager" }, { scope = "project:${local.default_project}", role = "roles/resourcemanager.projectOwner" }] : pair] : []
-    }
-  }
-
-  # One entry per unique repository: projects and lib projects both mint repositories.
-  # Status checks carry one TFC predictive check per deployment workspace building the repository.
-  repositories = {
-    for key, entry in {
-      for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
-        repo         = try(p.repo, "ef-${p.type}-${p.name}")
-        description  = try(p.description, null)
-        zone         = local.config.organisation.gcp.domain
-        github_owner = local.config.organisation.gh.owner
-        settings     = try(p.settings, {})
-        protection   = try(p.protection, {})
-        pages        = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project
-        cname        = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project ? "docs.elliott-farrall.phd" : null
-      }
-      } : key => {
-      repo        = entry.repo
-      description = entry.description
-      settings    = entry.settings
-      protection  = entry.protection
-      status_checks = concat(
-        ["ci / branch-name (pull_request)", "ci / terraform (pull_request)", "ci / yaml (pull_request)", "ci / shell (pull_request)"],
-        [for x in values(local.projects) : "Terraform Cloud / ${x.name} (Predict)" if x.repo == entry.repo],
-      )
+      folder_parent      = try(e.group, null) != null ? "folders/${module.group[e.group].google_folder.this.folder_id}" : "organizations/${data.google_organization.this.id}"
     }
   }
 
@@ -51,46 +22,50 @@ locals {
     }
   }
 
-  # One entry per deployment: workspace + GCP project in the deployment environment
-  projects = {
-    for x in flatten([for p in local.config.projects : [for i, e in try(p.environments, [p.type]) : {
-      name                      = "ef-${e}-${p.name}"
-      environment               = e
-      repo                      = try(p.repo, "ef-${p.type}-${p.name}")
-      project_id                = module.environment[e].tfe_project.this.id
-      folder_id                 = module.environment[e].google_folder.this.folder_id
-      billing_account_id        = data.google_billing_account.this.id
-      services                  = try(p.services, [])
-      working_directory         = try(p.working_directory, "infrastructure")
-      github_owner              = local.config.organisation.gh.owner
-      github_app_installation   = local.config.organisation.tfe.github_app_installation
-      wif_provider              = "//iam.googleapis.com/${module.environment[e].google_iam_workload_identity_pool_provider.this.name}"
-      gcp_service_account_email = module.environment[e].google_service_account.this.email
-    }]]) : x.name => x
-  }
-
-  # One entry per lib project: private registry module from its repository
-  # One entry per consecutive deployment pair: chained confirmations in project environments order
-  triggers = {
-    for t in flatten([for p in local.config.projects : [
-      for i in range(1, length(try(p.environments, [p.type]))) : {
-        triggerable   = "ef-${try(p.environments, [p.type])[i]}-${p.name}"
-        workspace_id  = module.project["ef-${try(p.environments, [p.type])[i]}-${p.name}"].tfe_workspace.this.id
-        sourceable_id = module.project["ef-${try(p.environments, [p.type])[i - 1]}-${p.name}"].tfe_workspace.this.id
-      }
-      ]]) : t.triggerable => {
-      workspace_id  = t.workspace_id
-      sourceable_id = t.sourceable_id
+  # Infrastructure facts per environment, consumed by project deployments
+  environment_infra = {
+    for name, environment in local.environments : name => {
+      tfc_project_id            = module.environment[name].tfe_project.this.id
+      folder_id                 = module.environment[name].google_folder.this.folder_id
+      wif_provider              = "//iam.googleapis.com/${module.environment[name].google_iam_workload_identity_pool_provider.this.name}"
+      gcp_service_account_email = module.environment[name].google_service_account.this.email
     }
   }
 
+  # One entry per project: repository + deployments in the declared environments
+  projects = {
+    for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
+      name                    = p.name
+      type                    = p.type
+      repo                    = try(p.repo, "ef-${p.type}-${p.name}")
+      environments            = try(p.environments, [p.type])
+      description             = try(p.description, null)
+      services                = try(p.services, [])
+      working_directory       = try(p.working_directory, "infrastructure")
+      settings                = try(p.settings, {})
+      protection              = try(p.protection, {})
+      pages                   = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project
+      cname                   = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project ? "docs.elliott-farrall.phd" : null
+      billing_account_id      = data.google_billing_account.this.id
+      zone                    = local.config.organisation.gcp.domain
+      github_owner            = local.config.organisation.gh.owner
+      github_app_installation = local.config.organisation.tfe.github_app_installation
+      infrastructure          = { for name in try(p.environments, [p.type]) : name => local.environment_infra[name] }
+    }
+  }
+
+  # One entry per lib project: private registry module from its repository
   modules = {
     for p in local.config.projects : try(p.repo, "ef-lib-${p.name}") => {
       name                    = p.name
       module_provider         = try(p.module_provider, "google")
       organization            = local.config.organisation.tfe.organisation
-      repository_id           = "${local.config.organisation.gh.owner}/${try(p.repo, "ef-lib-${p.name}")}"
       github_app_installation = local.config.organisation.tfe.github_app_installation
+      description             = try(p.description, null)
+      settings                = try(p.settings, {})
+      protection              = try(p.protection, {})
+      zone                    = local.config.organisation.gcp.domain
+      github_owner            = local.config.organisation.gh.owner
     } if p.type == "lib"
   }
 

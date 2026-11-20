@@ -291,8 +291,8 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │       ├── environment      # Folder + TFC project + identity + WIF + bindings
 │       ├── group            # Cosmetic group folder
 │       ├── repository       # GitHub repository + rulesets
-│       ├── project          # Workspace + GCP project
-│       ├── trigger         # Phased rollout chain between deployments
+│       ├── project          # Repository + deployments + trigger chain
+│       ├── module           # Registry module (nested repository)
 │       ├── module           # Private registry module
 │       ├── record           # Cloudflare DNS record
 │       └── budget           # Billing budget alert
