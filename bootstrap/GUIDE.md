@@ -33,6 +33,10 @@ The Google identity running the script needs, on your GCP organisation:
 
 - `roles/resourcemanager.organizationAdmin` — create the project, and
   grant the platform roles Terraform later adopts.
+- `roles/resourcemanager.folderCreator` — the script creates the
+  environment folder as you; org admin alone does not include folder
+  creation. Bootstrap-scaffolding only: not managed by Terraform, and
+  unnecessary once the platform identity takes over.
 - Billing viewer/user on the billing account named in `organisation.yaml`
   (`roles/billing.user` minimum; `roles/billing.admin` to link the account
   during project creation).
@@ -49,7 +53,8 @@ The application-default login is required: the first apply runs locally
 and its Google provider authenticates through it.
 
 Verify you hold the organisation role (it must list
-`roles/resourcemanager.organizationAdmin`):
+`roles/resourcemanager.organizationAdmin`); verify folder creator the
+same way (`roles/resourcemanager.folderCreator`):
 
 ```sh
 gcloud organizations get-iam-policy <org-id> \
