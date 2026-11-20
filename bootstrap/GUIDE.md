@@ -126,19 +126,21 @@ exists:
    `ef-mgt-devops`, then seed the credential layer: the organisation-wide
    variable set `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN`,
    `CLOUDFLARE_API_TOKEN` — shared with every workspace) and the temporary
-   `GOOGLE_CREDENTIALS` bootstrap key on the landing workspace.
+   `GOOGLE_CREDENTIALS` key on the landing workspace — the first apply
+   authenticates as `sa-mgt-tfc` itself, using permissions granted in
+   phase 1.
 3. **Imports** — derive the import addresses and render
    `infrastructure/bootstrap.tf` from `imports.tf.tmpl`. The live
    Cloudflare DNS records are imported through the committed
    `infrastructure/imports.tf`, which applies in the same run.
 4. **Deploy** — `terraform init` against the remote backend, then a single
    `apply` that imports the bootstrap resources into state and creates
-   everything else (identities, pools, providers, bindings, budgets,
-   zones). The first run authenticates to Google with the bootstrap key;
-   the workspace variables it creates switch every later run to workload
-   identity federation.
-5. **Close out** — delete the `GOOGLE_CREDENTIALS` variable and the
-   temporary bootstrap service account and key.
+   everything else (identities, pools, providers, bindings, budgets). The
+   first run authenticates to Google as `sa-mgt-tfc`; the workspace
+   variables it creates switch every later run to workload identity
+   federation.
+5. **Close out** — delete the `GOOGLE_CREDENTIALS` variable, revoke the
+   first-apply key, and remove the temporary billing admin grant.
 
    !!! warning "Phase 4 never reruns after close-out"
        The temporary credentials are gone once close-out completes.
