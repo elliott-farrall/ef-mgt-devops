@@ -22,13 +22,13 @@ properties:
           - domain
           - region
           - name
-          - id
           - billing
         properties:
           domain:
             type: string
             pattern: '^[a-z0-9.-]+\.[a-z]{2,}$'
-            description: Domain registered to the GCP organisation.
+            description: Domain bound to the GCP organisation; resolves the organisation
+              by lookup.
           region:
             type: string
             pattern: '^[a-z]+-[a-z0-9]+$'
@@ -36,10 +36,6 @@ properties:
           name:
             type: string
             description: Display name used to resolve the GCP organisation.
-          id:
-            type: string
-            pattern: '^[0-9]+$'
-            description: Numeric ID of the GCP organisation; the domain alone is ambiguous.
           billing:
             type: string
             minLength: 1
