@@ -76,6 +76,13 @@ fi
 CURRENT_GCP_ACCT="$(gcloud auth list --filter=status:ACTIVE --format='value(account)')"
 r "Authenticated as ${CURRENT_GCP_ACCT}"
 
+t "1.1.1. Verifying application-default credentials for the local apply"
+if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
+  r "No application-default credentials"
+  die "Abort: run gcloud auth application-default login first"
+fi
+r "Application-default credentials present"
+
 t "1.2. Checking the GCP organisation ${GCP_DOMAIN}"
 GCP_ORG_ID="$(gcloud organizations list \
   --filter="display_name=${GCP_DOMAIN}" \
@@ -244,6 +251,10 @@ r "Import addresses derived"
 t "3.2. Rendering bootstrap.tf from template"
 envsubst < "${BOOTSTRAP_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/bootstrap.tf"
 printf '\nimport {\n  to   = module.environment["mgt"].google_folder.this\n  id   = "%s"\n}\n' "${FOLDER_ID}" >> "${INFRA_DIR}/bootstrap.tf"
+for svc in "${DEVOPS_SERVICES[@]}"; do
+  printf '\nimport {\n  to   = module.project["mgt"].google_project_service.this["%s-%s"]\n  id   = "%s/%s.googleapis.com"\n}\n' \
+    "${GCP_DEFAULT_PROJECT}" "${svc}" "${GCP_DEFAULT_PROJECT}" "${svc}" >> "${INFRA_DIR}/bootstrap.tf"
+done
 r "Rendered bootstrap.tf — $(wc -l < "${INFRA_DIR}/bootstrap.tf") lines"
 
 # ══════════════════════════════════════════════════════════════════
@@ -258,6 +269,9 @@ export TF_CREDENTIALS="env"
 export TF_HTTP_USERNAME="token"
 export TF_HTTP_PASSWORD="${TF_TOKEN_APP_TERRAFORM_IO}"
 export TF_WORKSPACE="${GCP_DEFAULT_PROJECT}"
+export TFE_TOKEN="${TF_TOKEN_APP_TERRAFORM_IO}"
+export GITHUB_TOKEN="${GITHUB_TOKEN}"
+export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
 terraform -chdir="${INFRA_DIR}" init -backend-config="organization=${TFC_ORG}"
 r "Initialised"
 

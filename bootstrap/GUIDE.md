@@ -42,8 +42,12 @@ Authenticate before running:
 
 ```sh
 gcloud auth login
+gcloud auth application-default login
 gcloud config set project <any-project-you-can-query>
 ```
+
+The application-default login is required: the first apply runs locally
+and its Google provider authenticates through it.
 
 The script resolves the organisation by domain, creates the project
 `ef-mgt-devops` directly under the organisation root, enables its APIs, and
@@ -134,7 +138,8 @@ exists:
 4. **Deploy** — `terraform init` against the remote backend, then a single
    local-execution `apply` that imports the bootstrap resources into state
    and creates everything else (identities, pools, providers, bindings,
-   budgets), running under your own Google identity. The workspace
+   budgets), running under your own Google identity. The API enablements
+   and the live Cloudflare records are imported here too. The workspace
    variables it creates switch every later run to workload identity
    federation and remote execution — there are no temporary credentials
    and no close-out step.
