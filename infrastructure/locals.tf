@@ -3,7 +3,6 @@ locals {
 
   default_project = [for p in local.config.projects : "ef-${p.type}-${p.name}" if try(p.default, false) != false][0]
 
-  # One entry per environment: folder, TFC project, identity, pool, provider, bindings
   environments = {
     for e in local.config.environments : e.name => {
       name               = e.name
@@ -15,14 +14,12 @@ locals {
     }
   }
 
-  # One entry per referenced group folder: cosmetic containers for environment folders
   groups = {
     for g in toset([for e in local.config.environments : e.group if try(e.group, null) != null]) : g => {
       organization_id = data.google_organization.this.id
     }
   }
 
-  # Infrastructure facts per environment, consumed by project deployments
   environment_infra = {
     for name, environment in local.environments : name => {
       tfc_project_id            = module.environment[name].tfe_project.this.id
@@ -32,7 +29,6 @@ locals {
     }
   }
 
-  # One entry per project: repository + deployments in the declared environments
   projects = {
     for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
       name                    = p.name
@@ -54,7 +50,6 @@ locals {
     }
   }
 
-  # One entry per lib project: private registry module from its repository
   modules = {
     for p in local.config.projects : try(p.repo, "ef-lib-${p.name}") => {
       name                    = p.name
@@ -69,7 +64,6 @@ locals {
     } if p.type == "lib"
   }
 
-  # One entry per record: Cloudflare DNS record in its declared zone
   records = {
     for r in local.config.records : "${replace(r.zone, ".", "-")}-${replace(r.name, ".", "-")}-${r.type}" => {
       zone     = r.zone
@@ -82,7 +76,6 @@ locals {
     }
   }
 
-  # One entry per budget: billing budget alert
   budgets = {
     for b in local.config.budgets : "ef-budget-${b.name}" => {
       name               = "ef-budget-${b.name}"
