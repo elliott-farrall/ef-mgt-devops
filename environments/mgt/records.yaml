@@ -1,42 +1,42 @@
 ---
 # yaml-language-server: $schema=../../.schemas/environment/records.yaml
 records:
-#  - name: elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: TXT
-#    content: google-site-verification=_MSrnHMD_Z-80Mft3Ud7E9QEAFcUiyV0IQU7BSn26Uk
-#    ttl: 3600
-#  - name: elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: MX
-#    content: mail.protonmail.ch
-#    priority: 10
-#  - name: elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: MX
-#    content: mailsec.protonmail.ch
-#    priority: 20
-#  - name: elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: TXT
-#    content: v=spf1 include:_spf.protonmail.ch ~all
-#  - name: elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: TXT
-#    content: protonmail-verification=ea77d033a00e948f715ba9d296e7e1d273cd601d
-#  - name: _dmarc.elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: TXT
-#    content: v=DMARC1; p=quarantine
-#  - name: protonmail._domainkey.elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: CNAME
-#    content: protonmail.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch
-#  - name: protonmail2._domainkey.elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: CNAME
-#    content: protonmail2.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch
-#  - name: protonmail3._domainkey.elliott-farrall.phd
-#    zone: elliott-farrall.phd
-#    type: CNAME
-#    content: protonmail3.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch
+ - name: elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: TXT
+   content: google-site-verification=_MSrnHMD_Z-80Mft3Ud7E9QEAFcUiyV0IQU7BSn26Uk
+   ttl: 3600
+ - name: elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: MX
+   content: mail.protonmail.ch
+   priority: 10
+ - name: elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: MX
+   content: mailsec.protonmail.ch
+   priority: 20
+ - name: elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: TXT
+   content: v=spf1 include:_spf.protonmail.ch ~all
+ - name: elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: TXT
+   content: protonmail-verification=ea77d033a00e948f715ba9d296e7e1d273cd601d
+ - name: _dmarc.elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: TXT
+   content: v=DMARC1; p=quarantine
+ - name: protonmail._domainkey.elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: CNAME
+   content: protonmail.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch
+ - name: protonmail2._domainkey.elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: CNAME
+   content: protonmail2.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch
+ - name: protonmail3._domainkey.elliott-farrall.phd
+   zone: elliott-farrall.phd
+   type: CNAME
+   content: protonmail3.domainkey.dhfr5g7zlfrxnvkaaoev3xpmrbs6oc6foctcn3g3y3xgsfosafm7q.domains.proton.ch

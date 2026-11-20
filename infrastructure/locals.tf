@@ -62,7 +62,7 @@ locals {
   }
 
   records = {
-    for r in local.config.records : "${replace(r.zone, ".", "-")}-${replace(r.name, ".", "-")}-${r.type}" => {
+    for r in local.config.records : "${replace(r.zone, ".", "-")}-${replace(r.name, ".", "-")}-${r.type}-${substr(sha256(r.content), 0, 8)}" => {
       zone     = r.zone
       name     = r.name
       type     = r.type

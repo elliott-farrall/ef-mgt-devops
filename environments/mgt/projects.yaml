@@ -11,8 +11,3 @@ projects:
       - cloudbilling
       - dns
       - compute
-
-  - name: registry
-    type: lib
-    description: Private Terraform module registry.
-    environments: []

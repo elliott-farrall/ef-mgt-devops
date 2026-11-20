@@ -284,24 +284,6 @@ envsubst < "${BOOTSTRAP_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/bootstrap.tf"
 printf '\nimport {\n  to   = module.environment["mgt"].google_folder.this\n  id   = "%s"\n}\n' "${FOLDER_ID}" >> "${INFRA_DIR}/bootstrap.tf"
 r "Rendered bootstrap.tf — $(wc -l < "${INFRA_DIR}/bootstrap.tf") lines"
 
-t "3.3. Importing the existing Cloudflare DNS records"
-CF_ZONES="$(curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
-  "https://api.cloudflare.com/client/v4/zones?per_page=50")"
-CF_RECORDS="$(echo "${CF_ZONES}" | jq -r '.result[] | .id as $id | .name as $name | [$id, $name] | @tsv' | while IFS=$'\t' read -r zone_id zone_name; do
-  curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" \
-    "https://api.cloudflare.com/client/v4/zones/${zone_id}/dns_records?per_page=100" \
-    | jq -r --arg zone_id "${zone_id}" --arg zone_name "${zone_name}" '.result[] | [$zone_id, $zone_name, .id, .name, .type, .content, ((.priority // "") | tostring)] | @tsv'
-done)"
-while IFS=$'\t' read -r zone name type content priority; do
-  [[ -n "${zone}" ]] || continue
-  import_id="$(jq -r --arg zone "${zone}" --arg name "${name}" --arg type "${type}" --arg content "${content}" --arg priority "${priority}" \
-    'select(.[1]==$zone and .[3]==$name and .[4]==$type and .[5]==$content and .[6]==$priority) | .[0] + "/" + .[2]' <<<"${CF_RECORDS}" | head -n1)"
-  [[ -n "${import_id}" ]] || die "No live Cloudflare record matches ${zone} ${name} ${type} ${content} (priority ${priority}) - reconcile the zone first"
-  record_key="$(echo "${zone}" | tr '.' '-')-$(echo "${name}" | tr '.' '-')-${type}"
-  printf '\nimport {\n  to   = module.record["%s"].cloudflare_dns_record.this\n  id   = "%s"\n}\n' \
-    "${record_key}" "${import_id}" >> "${INFRA_DIR}/bootstrap.tf"
-  r "Imported record ${zone} ${name} ${type}"
-done < <(yq -r '.records[] | [.zone, .name, .type, .content, (.priority // "" | tostring)] | @tsv' "${ENV_DIR}/records.yaml")
 # ══════════════════════════════════════════════════════════════════
 # Phase 4: Deploy
 # ══════════════════════════════════════════════════════════════════
