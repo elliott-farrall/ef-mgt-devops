@@ -1,5 +1,6 @@
 provider "google" {
-  region = local.config.organisation.gcp.region
+  project = local.default_project
+  region  = local.config.organisation.gcp.region
 }
 
 provider "tfe" {
