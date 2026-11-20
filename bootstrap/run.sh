@@ -56,7 +56,7 @@ t "Resolving the billing account: ${GCP_BILLING_ID}"
 [[ -f ~/.terraform.d/credentials.tfrc.json ]] || die "run terraform login first (stores the Terraform Cloud token)"
 command -v gh >/dev/null || die "gh not found on PATH"
 gh auth status >/dev/null 2>&1 || die "run gh auth login first (GitHub CLI authentication)"
-[[ -n "${CF_API_TOKEN:-}" ]] || die "set CF_API_TOKEN (a Cloudflare token with Zone.DNS Edit on ${GCP_DOMAIN})"
+[[ -n "${CF_API_TOKEN:-}" ]] || die "set CF_API_TOKEN (a Cloudflare token with Zone.DNS Edit on the apex zone)"
 
 GCP_DEFAULT_PROJECT="ef-mgt-devops"
 SA_NAME="sa-mgt-tfc"
@@ -88,14 +88,6 @@ GCP_ORG_ID="$(gcloud organizations list \
   --filter="displayName=${GCP_ORG_NAME}" \
   --format='value(name)' 2>/dev/null | head -n1)"
 [[ -n "${GCP_ORG_ID}" ]] || die "GCP organisation '${GCP_ORG_NAME}' not found or not accessible"
-if [[ -z "${GCP_ORG_ID}" ]]; then
-  r "No accessible GCP organisation"
-  die "Abort: account '${CURRENT_GCP_ACCT}' lacks access to a GCP organisation"
-fi
-ORG_COUNT="$(gcloud organizations list --format='value(name)' 2>/dev/null | wc -l)"
-if [[ "${ORG_COUNT}" -gt 1 ]]; then
-  die "Abort: account '${CURRENT_GCP_ACCT}' can access ${ORG_COUNT} organisations - specify the intended one"
-fi
 r "Resolved: ${GCP_ORG_ID}"
 
 t "1.3. Checking the environment folder ef-mgt"
@@ -123,18 +115,20 @@ else
 fi
 if gcloud billing projects link --help >/dev/null 2>&1; then
   gcloud billing projects link "${GCP_DEFAULT_PROJECT}" \
-    --billing-account="billingAccounts/${GCP_BILLING_ACCOUNT}" >/dev/null
-  r "Billing linked: ${GCP_BILLING_NAME} (${GCP_BILLING_ACCOUNT})"
+    --billing-account="billingAccounts/${GCP_BILLING_ID}" >/dev/null
+  r "Billing linked: ${GCP_BILLING_ID}"
 else
-  t "gcloud billing projects link unavailable — link ${GCP_DEFAULT_PROJECT} to ${GCP_BILLING_NAME} in the console"
+  t "gcloud billing projects link unavailable — link ${GCP_DEFAULT_PROJECT} to ${GCP_BILLING_ID} in the console"
 fi
 GCP_PROJ_NUM="$(gcloud projects describe "${GCP_DEFAULT_PROJECT}" --format='value(projectNumber)' 2>/dev/null | head -n1)"
 [[ -n "${GCP_PROJ_NUM}" ]] || die "project number not found for ${GCP_DEFAULT_PROJECT}"
 r "Project number: ${GCP_PROJ_NUM}"
 
 t "1.5. Enabling the required APIs"
-gcloud services enable iam.googleapis.com serviceusage.googleapis.com cloudbilling.googleapis.com dns.googleapis.com compute.googleapis.com \
-  --project="${GCP_DEFAULT_PROJECT}"
+for svc in "${DEVOPS_SERVICES[@]}"; do
+  gcloud services enable "${svc}.googleapis.com" \
+    --project="${GCP_DEFAULT_PROJECT}" >/dev/null
+done
 r "Enabled APIs: ${DEVOPS_SERVICES[*]}"
 
 t "1.6. Creating the mgt identity ${SA_NAME}"

@@ -145,7 +145,7 @@ missing. The installation name must match `organisation.gh.owner`.
 Check `environments/mgt/*.yaml` before running — the script and the first
 apply consume every value in them:
 
-- `organisation.yaml` — domain, region, billing account display name, TFC
+- `organisation.yaml` — domain, org name, region, billing account ID, TFC
   org and hostname, GitHub owner, and the GitHub App installation name.
 - `budgets.yaml` — budget alerts (defaults are sensible).
 - `records.yaml` — DNS records of the Cloudflare apex zone. All nine live
