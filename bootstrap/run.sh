@@ -121,6 +121,13 @@ else
     --folder="${FOLDER_ID}"
   r "Created project"
 fi
+if gcloud billing projects link --help >/dev/null 2>&1; then
+  gcloud billing projects link "${GCP_DEFAULT_PROJECT}" \
+    --billing-account="billingAccounts/${GCP_BILLING_ACCOUNT}" >/dev/null
+  r "Billing linked: ${GCP_BILLING_NAME} (${GCP_BILLING_ACCOUNT})"
+else
+  t "gcloud billing projects link unavailable — link ${GCP_DEFAULT_PROJECT} to ${GCP_BILLING_NAME} in the console"
+fi
 GCP_PROJ_NUM="$(gcloud projects describe "${GCP_DEFAULT_PROJECT}" --format='value(projectNumber)' 2>/dev/null | head -n1)"
 [[ -n "${GCP_PROJ_NUM}" ]] || die "project number not found for ${GCP_DEFAULT_PROJECT}"
 r "Project number: ${GCP_PROJ_NUM}"
