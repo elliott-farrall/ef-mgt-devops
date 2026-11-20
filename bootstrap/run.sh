@@ -132,7 +132,7 @@ r "Project number: ${GCP_PROJ_NUM}"
 t "1.6. Enabling the required APIs"
 for svc in "${DEVOPS_SERVICES[@]}"; do
   gcloud services enable "${svc}.googleapis.com" \
-    --project="${GCP_DEFAULT_PROJECT}" >/dev/null
+    --project="${GCP_DEFAULT_PROJECT}" --quiet >/dev/null
 done
 r "Enabled APIs: ${DEVOPS_SERVICES[*]}"
 
@@ -142,7 +142,7 @@ if gcloud iam service-accounts describe "${SA_EMAIL}" --project="${GCP_DEFAULT_P
 else
   gcloud iam service-accounts create "${SA_NAME}" \
     --display-name="Management plane" \
-    --project="${GCP_DEFAULT_PROJECT}"
+    --project="${GCP_DEFAULT_PROJECT}" --quiet
   r "Created identity"
 fi
 
@@ -157,7 +157,7 @@ TFC_API="https://${TFC_HOSTNAME}/api/v2"
 TFC_AUTH=( -H "Authorization: Bearer ${TFC_TOKEN}" -H "Content-Type: application/vnd.api+json" )
 
 t "2.1. Checking the Terraform Cloud token"
-TFC_ORG_ID="$(tfccli organizations get --name "${TFC_ORG}" ${TFC_OPTS} | jq -r '.data.id' 2>/dev/null)"
+TFC_ORG_ID="$(tfccli organizations get "${TFC_ORG}" ${TFC_OPTS} 2>/dev/null | jq -r '.data.id // .id' 2>/dev/null)"
 if [[ -z "${TFC_ORG_ID}" || "${TFC_ORG_ID}" == "null" ]]; then
   r "Organisation '${TFC_ORG}' inaccessible"
   die "Abort: token lacks access to TFC organisation '${TFC_ORG}'"
