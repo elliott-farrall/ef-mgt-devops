@@ -25,6 +25,7 @@ resource "google_iam_workload_identity_pool_provider" "this" {
 
   attribute_condition = "assertion.workspace_name.startsWith(\"ef-${var.name}-\")"
   attribute_mapping = {
+    "google.subject"        = "assertion.sub"
     "attribute.environment" = "\"${var.name}\""
   }
 

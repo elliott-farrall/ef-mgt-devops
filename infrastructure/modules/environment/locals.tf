@@ -4,7 +4,7 @@ locals {
   platform_pairs = var.name == "mgt" ? { for pair in [
     { scope = "organization", role = "roles/resourcemanager.organizationAdmin" },
     { scope = "billing", role = "roles/billing.costsManager" },
-    { scope = "project:${var.landing_project_id}", role = "roles/resourcemanager.projectOwner" },
+    { scope = "project:${var.landing_project_id}", role = "roles/owner" },
   ] : pair.role => pair } : {}
 
   folder_scopes  = { for role in local.folder_roles : role => google_folder.this.name }

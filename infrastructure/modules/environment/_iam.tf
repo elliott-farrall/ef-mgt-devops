@@ -17,7 +17,7 @@ resource "google_project_iam_member" "this" {
 resource "google_organization_iam_member" "this" {
   for_each = { for pair in local.platform_pairs : pair.role => pair if pair.scope == "organization" }
 
-  org_id = var.organization_id
+  org_id = trimprefix(var.organization_id, "organizations/")
   role   = each.value.role
   member = "serviceAccount:${google_service_account.this.email}"
 }
