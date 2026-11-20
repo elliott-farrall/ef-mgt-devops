@@ -199,9 +199,17 @@ else
 fi
 
 t "2.5. Setting workspace execution to local for the first apply"
-curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/settings" \
-  -d "$(jq -n '{data: {type: "workspace-settings", attributes: {execution_mode: "local"}}}')" >/dev/null
-r "Workspace runs locally for the first apply; Terraform switches it to remote"
+EXEC_MODE="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}" \
+  | jq -r '.data.attributes."execution-mode"')"
+if [[ "${EXEC_MODE}" != "local" ]]; then
+  RESULT="$(curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}" \
+    -d "$(jq -n '{data: {type: "workspaces", attributes: {"execution-mode": "local"}}}')" \
+    | jq -r '.data.attributes."execution-mode" // empty')"
+  [[ "${RESULT}" == "local" ]] || die "could not set the workspace to local execution (got: ${RESULT:-no response})"
+  r "Switched to local execution for the first apply; Terraform switches it to remote"
+else
+  r "Workspace already runs locally for the first apply; Terraform switches it to remote"
+fi
 
 t "2.6. Rotating the organisation-wide token set platform-tokens"
 VARSET_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" \
