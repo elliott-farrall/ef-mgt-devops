@@ -345,14 +345,15 @@ here in the same PR that makes it.
   logic. The rendered `infrastructure/bootstrap.tf` is transient —
   gitignored, never committed.
 - `.schemas/environment/` — one schema per config filename.
-- `docs/` — `README.md` (the entry page of the MkDocs site; `mkdocs.yaml`
-  at the root renders `docs/` to GitHub Pages through the `docs` workflow,
-  served at docs.elliott-farrall.phd — the Pages site and its DNS record
-  are Terraform-managed on the platform home repository), `DESIGN.md`
-  (decisions and rationale), `STANDARDS.md` (binding rules, this file),
-  and `CONTRIBUTING.md` (development workflow). The bring-up procedure
-  lives at `bootstrap/GUIDE.md`. New documentation extends these; it does
-  not add a fifth.
+- `docs/` — `README.md` (the repo readme AND the entry page of the MkDocs
+  site; `mkdocs.yaml` at the root renders `docs/` to GitHub Pages through
+  the `docs` workflow, served at docs.elliott-farrall.phd — the Pages site
+  and its DNS record are Terraform-managed on the platform home
+  repository), `DESIGN.md` (decisions and rationale), `STANDARDS.md`
+  (binding rules, this file), and `CONTRIBUTING.md` (development
+  workflow). The bring-up procedure lives at `bootstrap/GUIDE.md`. There
+  is no root `README.md` — the single `docs/README.md` serves both
+  roles. New documentation extends these; it does not add a fifth.
 
 ## Review rules
 
