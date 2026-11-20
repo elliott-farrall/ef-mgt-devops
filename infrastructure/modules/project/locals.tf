@@ -19,7 +19,7 @@ locals {
 
   project_services = { for pair in flatten([
     for key, deployment in local.deployments : [
-      for service in var.services : {
+      for service in local.services : {
         key        = "${key}-${service}"
         deployment = key
         service    = service

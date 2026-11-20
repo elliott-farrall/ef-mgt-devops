@@ -125,7 +125,7 @@ r "Project number: ${GCP_PROJ_NUM}"
 
 t "1.5. Enabling required APIs on ${GCP_DEFAULT_PROJECT}"
 for svc in "${DEVOPS_SERVICES[@]}"; do
-  gcloud services enable "${svc}" --project="${GCP_DEFAULT_PROJECT}"
+  gcloud services enable "${svc}.googleapis.com" --project="${GCP_DEFAULT_PROJECT}"
   r "Enabled API: ${svc}"
 done
 
