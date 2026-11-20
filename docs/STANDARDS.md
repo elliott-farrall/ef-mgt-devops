@@ -326,7 +326,7 @@ here in the same PR that makes it.
 ## Layout
 
 - `infrastructure/` — all Terraform (the TFC working directory); purpose
-  files (`providers.tf`, `variables.tf`, `locals.tf`, `main.tf`, `data.tf`,
+  files (`providers.tf`, `variables.tf`, `locals.tf`, `data.tf`,
   `checks.tf` — no root `outputs.tf`: the platform publishes no outputs);
   repo-local modules under `modules/<function>/`, each with `variables.tf`,
   `outputs.tf`, `versions.tf`, plus `data.tf`/`checks.tf`/`_<category>.tf`
