@@ -118,7 +118,7 @@ if gcloud projects describe "${GCP_DEFAULT_PROJECT}" >/dev/null 2>&1; then
   r "Project already exists"
 else
   gcloud projects create "${GCP_DEFAULT_PROJECT}" \
-    --folder="${FOLDER_ID}"
+    --folder="${FOLDER_ID}" >/dev/null 2>&1
   r "Created project"
 fi
 if gcloud billing projects link --help >/dev/null 2>&1; then
