@@ -51,7 +51,7 @@ GCP_BILLING_ACCOUNT="$(gcloud billing accounts list \
   --format='value(name)' 2>/dev/null | head -n1)"
 [[ -n "${GCP_BILLING_ACCOUNT}" ]] || die "billing account '${GCP_BILLING_NAME}' not found or not accessible"
 GCP_BILLING_ACCOUNT="${GCP_BILLING_ACCOUNT#billingAccounts/}"
-r "Resolved billing account: ${GCP_BILLING_NAME} (${GCP_BILLING_ACCOUNT})"
+t "Resolving the billing account: ${GCP_BILLING_NAME} (${GCP_BILLING_ACCOUNT})"
 [[ -n "${TFC_ORG}" ]] || die "TFC organisation not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${GH_OWNER}" ]] || die "GitHub owner not found in ${ENV_DIR}/organisation.yaml"
