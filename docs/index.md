@@ -1,6 +1,6 @@
-# EF Landing Zone
+# Landing Zone
 
-Welcome to the documentation for the EF landing zone — the platform that
+Welcome to the documentation for the landing zone — the platform that
 provisions and manages GitHub organisations, Google Cloud, and Terraform
 Cloud from YAML.
 
