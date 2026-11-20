@@ -1,3 +1,7 @@
 terraform {
-  backend "remote" {}
+  backend "remote" {
+    workspaces {
+      name = "ef-mgt-devops"
+    }
+  }
 }
