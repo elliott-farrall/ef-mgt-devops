@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ── Bootstrap: cloud landing zone bring-up ────────────────────────
-# 1) Google Cloud   — seed: folder, project, APIs, mgt identity + key
+# 1) Google Cloud   — seed: folder, project, APIs, mgt identity
 # 2) Terraform Cloud — seed: project, workspace, credential variables
 # 3) Imports        — render bootstrap.tf from the collected IDs
 # 4) Deploy         — local-execution apply importing + creating everything
@@ -116,22 +116,19 @@ GCP_PROJ_NUM="$(gcloud projects describe "${GCP_DEFAULT_PROJECT}" --format='valu
 r "Project number: ${GCP_PROJ_NUM}"
 
 t "1.5. Enabling the required APIs"
-for svc in "${DEVOPS_SERVICES[@]}"; do
-  gcloud services enable "${svc}.googleapis.com" --project="${GCP_DEFAULT_PROJECT}"
-  r "Enabled API: ${svc}"
-done
+gcloud services enable iam.googleapis.com serviceusage.googleapis.com cloudbilling.googleapis.com dns.googleapis.com compute.googleapis.com \
+  --project="${GCP_DEFAULT_PROJECT}"
+r "Enabled APIs: ${DEVOPS_SERVICES[*]}"
 
-t "1.6. Checking the mgt identity ${SA_NAME}"
-if gcloud iam service-accounts list --project="${GCP_DEFAULT_PROJECT}" --format="value(email)" \
-   | grep -q "^${SA_NAME}@"; then
-  r "${SA_NAME} already exists"
+t "1.6. Creating the mgt identity ${SA_NAME}"
+if gcloud iam service-accounts describe "${SA_EMAIL}" --project="${GCP_DEFAULT_PROJECT}" >/dev/null 2>&1; then
+  r "Identity already exists"
 else
   gcloud iam service-accounts create "${SA_NAME}" \
     --display-name="Management plane" \
     --project="${GCP_DEFAULT_PROJECT}"
-  r "Created ${SA_NAME}"
+  r "Created identity"
 fi
-r "SA email: ${SA_EMAIL}"
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 2: Terraform Cloud — seed the org, workspace, credentials
@@ -184,7 +181,6 @@ t "2.5. Setting workspace execution to local for the first apply"
 curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/workspaces/${TFC_WORKSPACE_ID}/settings" \
   -d "$(jq -n '{data: {type: "workspace-settings", attributes: {execution_mode: "local"}}}')" >/dev/null
 r "Workspace runs locally for the first apply; Terraform switches it to remote"
-r "Mgt key seeded — the first apply authenticates with it; Terraform adds the WIF variables for every run after it"
 
 t "2.6. Checking the organisation-wide token set platform-tokens"
 VARSET_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" \
@@ -195,24 +191,39 @@ if [[ -z "${VARSET_ID}" ]]; then
     | jq -r '.data.id')"
   r "Created variable set platform-tokens (${VARSET_ID})"
 fi
-upsert_varset_var() {
-  local key="$1" value="$2"
-  local var_id body
-  var_id="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" \
-    | jq -r --arg key "${key}" '.data[] | select(.attributes.key==$key) | .id' | head -n1)"
-  body="$(jq -n --arg key "${key}" --arg value "${value}" \
-    '{data: {type: "vars", attributes: {key: $key, value: $value, category: "env", hcl: false, sensitive: true}}}')"
-  if [[ -n "${var_id}" ]]; then
-    curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${var_id}" -d "${body}" >/dev/null
-    r "Updated ${key}"
-  else
-    curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${body}" >/dev/null
-    r "Added ${key}"
-  fi
-}
-upsert_varset_var "GITHUB_TOKEN" "${GITHUB_TOKEN}"
-upsert_varset_var "TFE_TOKEN" "${TF_TOKEN_APP_TERRAFORM_IO}"
-upsert_varset_var "CLOUDFLARE_API_TOKEN" "${CF_API_TOKEN}"
+VARSET_VARS=$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars")
+
+t "2.7. Seeding the platform tokens"
+GITHUB_TOKEN_VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="GITHUB_TOKEN") | .id' | head -n1)"
+VAR_BODY="$(jq -n --arg value "${GITHUB_TOKEN}" '{data: {type: "vars", attributes: {key: "GITHUB_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
+if [[ -n "${GITHUB_TOKEN_VAR_ID}" ]]; then
+  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${GITHUB_TOKEN_VAR_ID}" -d "${VAR_BODY}" >/dev/null
+  r "Updated GITHUB_TOKEN"
+else
+  curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
+  r "Added GITHUB_TOKEN"
+fi
+
+TFE_TOKEN_VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="TFE_TOKEN") | .id' | head -n1)"
+VAR_BODY="$(jq -n --arg value "${TF_TOKEN_APP_TERRAFORM_IO}" '{data: {type: "vars", attributes: {key: "TFE_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
+if [[ -n "${TFE_TOKEN_VAR_ID}" ]]; then
+  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${TFE_TOKEN_VAR_ID}" -d "${VAR_BODY}" >/dev/null
+  r "Updated TFE_TOKEN"
+else
+  curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
+  r "Added TFE_TOKEN"
+fi
+
+CLOUDFLARE_TOKEN_VAR_ID="$(echo "${VARSET_VARS}" | jq -r '.data[] | select(.attributes.key=="CLOUDFLARE_API_TOKEN") | .id' | head -n1)"
+VAR_BODY="$(jq -n --arg value "${CF_API_TOKEN}" '{data: {type: "vars", attributes: {key: "CLOUDFLARE_API_TOKEN", value: $value, category: "env", hcl: false, sensitive: true}}}')"
+if [[ -n "${CLOUDFLARE_TOKEN_VAR_ID}" ]]; then
+  curl -s -X PATCH "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars/${CLOUDFLARE_TOKEN_VAR_ID}" -d "${VAR_BODY}" >/dev/null
+  r "Updated CLOUDFLARE_API_TOKEN"
+else
+  curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/varsets/${VARSET_ID}/vars" -d "${VAR_BODY}" >/dev/null
+  r "Added CLOUDFLARE_API_TOKEN"
+fi
+
 r "GITHUB_TOKEN, TFE_TOKEN, and CLOUDFLARE_API_TOKEN shared with every workspace via platform-tokens"
 
 # ══════════════════════════════════════════════════════════════════
