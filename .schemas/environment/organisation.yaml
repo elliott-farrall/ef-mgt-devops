@@ -21,23 +21,29 @@ properties:
         required:
           - domain
           - region
+          - name
+          - id
+          - billing
         properties:
           domain:
             type: string
             pattern: '^[a-z0-9.-]+\.[a-z]{2,}$'
-            description: Domain the GCP organisation is registered under; resolved to its
-              numeric ID by
-              data.google_organization.
+            description: Domain registered to the GCP organisation.
           region:
             type: string
             pattern: '^[a-z]+-[a-z0-9]+$'
             description: Default region for the google provider.
+          name:
+            type: string
+            description: Display name used to resolve the GCP organisation.
+          id:
+            type: string
+            pattern: '^[0-9]+$'
+            description: Numeric ID of the GCP organisation; the domain alone is ambiguous.
           billing:
             type: string
             minLength: 1
-            description: Full display name of the GCP billing account; resolved to its ID
-              by
-              data.google_billing_account.
+            description: ID of the GCP billing account.
       tfe:
         type: object
         additionalProperties: false
