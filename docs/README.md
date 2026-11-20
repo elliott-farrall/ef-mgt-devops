@@ -11,9 +11,9 @@ is a data change, never new machinery.
 |------|---------|
 | [DESIGN.md](DESIGN.md) | Architecture decisions and rationale |
 | [STANDARDS.md](STANDARDS.md) | Binding rules — read before changing anything structural |
-| [bootstrap/GUIDE.md](../bootstrap/GUIDE.md) | One-time bring-up procedure |
+| [bootstrap/GUIDE.md](https://github.com/elliott-farrall/ef-mgt-devops/blob/main/bootstrap/GUIDE.md) | One-time bring-up procedure |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development workflow and conventions |
-| [CHANGELOG.md](../CHANGELOG.md) | What changed, and when |
+| [CHANGELOG.md](https://github.com/elliott-farrall/ef-mgt-devops/blob/main/CHANGELOG.md) | What changed, and when |
 
 ## Layout
 
@@ -34,7 +34,7 @@ make ci            # run every check
 ```
 
 First bring-up of the platform itself: follow
-[bootstrap/GUIDE.md](../bootstrap/GUIDE.md).
+[bootstrap/GUIDE.md](https://github.com/elliott-farrall/ef-mgt-devops/blob/main/bootstrap/GUIDE.md).
 
 ## How it works
 
