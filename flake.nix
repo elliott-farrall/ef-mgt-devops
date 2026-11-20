@@ -51,7 +51,7 @@
             shellcheck
             check-jsonschema
             yamllint
-            nodePackages.commitlint
+            commitlint
             python3Packages.mkdocs-material
             python3Packages.pyyaml
             yq
@@ -67,7 +67,7 @@
             shellcheck
             check-jsonschema
             yamllint
-            nodePackages.commitlint
+            commitlint
             python3Packages.mkdocs-material
             python3Packages.pyyaml
             yq
