@@ -119,7 +119,11 @@ else
     --folder="${FOLDER_ID}" >/dev/null 2>&1
   r "Created project"
 fi
-if gcloud billing projects link --help >/dev/null 2>&1; then
+CURRENT_BILLING="$(gcloud billing projects describe "${GCP_DEFAULT_PROJECT}" \
+  --format='value(billingAccountName)' 2>/dev/null | head -n1)"
+if [[ "${CURRENT_BILLING#billingAccounts/}" == "${GCP_BILLING_ID}" ]]; then
+  r "Billing already linked: ${GCP_BILLING_ID}"
+elif gcloud billing projects link --help >/dev/null 2>&1; then
   gcloud billing projects link "${GCP_DEFAULT_PROJECT}" \
     --billing-account="billingAccounts/${GCP_BILLING_ID}" >/dev/null
   r "Billing linked: ${GCP_BILLING_ID}"
