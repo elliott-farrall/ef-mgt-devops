@@ -35,7 +35,7 @@ through these PRs.
 ## Pull requests
 
 1. Branch from a fresh `main`; rebase and resolve conflicts yourself.
-2. Every PR updates `CHANGELOG.md` under the current unreleased heading.
+2. Every PR updates `docs/CHANGELOG.md` under the current unreleased heading.
    One line per user-visible change:
    - `feat:` → **Added**
    - `fix:` → **Fixed**
@@ -51,7 +51,7 @@ through these PRs.
 
 ## Versioning
 
-Versions are cut manually from `CHANGELOG.md` when a release is wanted:
+Versions are cut manually from `docs/CHANGELOG.md` when a release is wanted:
 summarise the unreleased section into a dated `## [x.y.z]` heading
 following [Keep a Changelog](https://keepachangelog.com/) semantics —
 feat → minor bump, fix → patch, breaking → major. Tag the commit and

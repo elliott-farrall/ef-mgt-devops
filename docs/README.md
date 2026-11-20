@@ -13,7 +13,7 @@ is a data change, never new machinery.
 | [STANDARDS.md](STANDARDS.md) | Binding rules — read before changing anything structural |
 | [bootstrap/GUIDE.md](https://github.com/elliott-farrall/ef-mgt-devops/blob/main/bootstrap/GUIDE.md) | One-time bring-up procedure |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development workflow and conventions |
-| [CHANGELOG.md](https://github.com/elliott-farrall/ef-mgt-devops/blob/main/CHANGELOG.md) | What changed, and when |
+| [CHANGELOG.md](CHANGELOG.md) | What changed, and when |
 
 ## Layout
 
