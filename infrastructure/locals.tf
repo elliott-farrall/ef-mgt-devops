@@ -1,7 +1,16 @@
 locals {
-  config = merge([for f in sort(fileset("${path.root}/../environments/${var.environment}", "*.yaml")) : yamldecode(file("${path.root}/../environments/${var.environment}/${f}"))]...)
+  config = merge([
+    for f in sort(fileset("${path.root}/../environments/${var.environment}", "*.yaml")) :
+    yamldecode(file("${path.root}/../environments/${var.environment}/${f}"))
+  ]...)
 
   default_project = [for p in local.config.projects : "ef-${p.type}-${p.name}" if try(p.default, false) != false][0]
+
+  groups = {
+    for g in toset([for e in local.config.environments : e.group if try(e.group, null) != null]) : g => {
+      organization_id = data.google_organization.this.id
+    }
+  }
 
   environments = {
     for e in local.config.environments : e.name => {
@@ -13,13 +22,6 @@ locals {
       folder_parent      = try(e.group, null) != null ? "folders/${module.group[e.group].google_folder.this.folder_id}" : "organizations/${data.google_organization.this.id}"
     }
   }
-
-  groups = {
-    for g in toset([for e in local.config.environments : e.group if try(e.group, null) != null]) : g => {
-      organization_id = data.google_organization.this.id
-    }
-  }
-
 
   projects = {
     for p in local.config.projects : try(p.repo, "ef-${p.type}-${p.name}") => {
