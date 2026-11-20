@@ -130,10 +130,6 @@ elif gcloud billing projects link --help >/dev/null 2>&1; then
 else
   t "gcloud billing projects link unavailable — link ${GCP_DEFAULT_PROJECT} to ${GCP_BILLING_ID} in the console"
 fi
-GCP_PROJ_NUM="$(gcloud projects describe "${GCP_DEFAULT_PROJECT}" --format='value(projectNumber)' 2>/dev/null | head -n1)"
-[[ -n "${GCP_PROJ_NUM}" ]] || die "project number not found for ${GCP_DEFAULT_PROJECT}"
-r "Project number: ${GCP_PROJ_NUM}"
-
 t "1.6. Enabling the required APIs"
 for svc in "${DEVOPS_SERVICES[@]}"; do
   gcloud services enable "${svc}.googleapis.com" \

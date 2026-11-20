@@ -72,7 +72,7 @@ resource "github_repository_ruleset" "review" {
       required_approving_review_count   = local.protection.required_approving_review_count
       required_review_thread_resolution = local.protection.require_conversation_resolution
       dismiss_stale_reviews_on_push     = local.protection.dismiss_stale_reviews
-      allowed_merge_methods             = ["SQUASH"]
+      allowed_merge_methods             = ["squash"]
     }
   }
 }
