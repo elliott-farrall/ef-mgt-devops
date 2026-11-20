@@ -2,7 +2,7 @@ module "group" {
   source   = "./modules/group"
   for_each = local.groups
 
-  name            = each.value.name
+  name            = each.key
   organization_id = each.value.organization_id
 }
 

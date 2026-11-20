@@ -1,5 +1,5 @@
 import {
-  to   = module.project["${GCP_DEFAULT_PROJECT}"].google_project["${GCP_DEFAULT_PROJECT}"].this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].google_project.this["${GCP_DEFAULT_PROJECT}"]
   id   = "${GCP_PROJ_NUM}"
 }
 
@@ -19,12 +19,12 @@ import {
 }
 
 import {
-  to   = module.project["${GCP_DEFAULT_PROJECT}"].tfe_workspace["${GCP_DEFAULT_PROJECT}"].this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].tfe_workspace.this["${GCP_DEFAULT_PROJECT}"]
   id   = "${TFC_WSID}"
 }
 
 import {
-  to   = module.project["${GCP_DEFAULT_PROJECT}"].tfe_workspace_settings["${GCP_DEFAULT_PROJECT}"].this
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].tfe_workspace_settings.this["${GCP_DEFAULT_PROJECT}"]
   id   = "${TFC_WSID}"
 }
 
