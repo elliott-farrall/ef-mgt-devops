@@ -22,7 +22,7 @@ r()     { printf '│   └── %s\n' "$*"; }
 # Dependencies
 # ══════════════════════════════════════════════════════════════════
 
-for tool in gcloud terraform jq git gh tfccli envsubst yq; do
+for tool in gcloud terraform jq git gh envsubst yq; do
   command -v "${tool}" >/dev/null || die "${tool} not found on PATH"
 done
 
@@ -67,7 +67,6 @@ GITHUB_TOKEN="$(gh auth token)"
 TFC_TOKEN="$(jq -r '.credentials["app.terraform.io"].token' ~/.terraform.d/credentials.tfrc.json)"
 [[ -n "${TFC_TOKEN}" && "${TFC_TOKEN}" != "null" ]] || die "no Terraform Cloud token in ~/.terraform.d/credentials.tfrc.json — run terraform login"
 export TFE_TOKEN="${TFC_TOKEN}"
-tfccli init --non-interactive --address "${TFC_HOSTNAME}" --default-org "${TFC_ORG}" --yes >/dev/null 2>&1
 
 # ══════════════════════════════════════════════════════════════════
 # Phase 1: Google Cloud — seed the resources Terraform cannot create
@@ -154,12 +153,11 @@ fi
 
 h "Phase 2: Terraform Cloud"
 
-TFC_OPTS="--address https://${TFC_HOSTNAME} --org ${TFC_ORG} --output-format json"
 TFC_API="https://${TFC_HOSTNAME}/api/v2"
 TFC_AUTH=( -H "Authorization: Bearer ${TFC_TOKEN}" -H "Content-Type: application/vnd.api+json" )
 
 t "2.1. Checking the Terraform Cloud token"
-TFC_ORG_ID="$(tfccli organizations get "${TFC_ORG}" ${TFC_OPTS} 2>&1 | jq -r '.data.external_id // .data.id // .id')"
+TFC_ORG_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}" | jq -r '.data.id')"
 if [[ -z "${TFC_ORG_ID}" || "${TFC_ORG_ID}" == "null" ]]; then
   r "Organisation '${TFC_ORG}' inaccessible"
   die "Abort: token lacks access to TFC organisation '${TFC_ORG}'"
@@ -176,22 +174,26 @@ fi
 r "GitHub App installation '${GH_OWNER}' connected"
 
 t "2.3. Checking the TFC project ef-mgt"
-TFC_PROJECT_ID="$(tfccli projects list ${TFC_OPTS} | jq -r 'select(.name=="ef-mgt") | .id' | head -n1)"
-if [[ -z "${TFC_PROJECT_ID}" || "${TFC_PROJECT_ID}" == "null" ]]; then
-  TFC_PROJECT_ID="$(tfccli projects create --name ef-mgt ${TFC_OPTS} | jq -r '.id')"
+TFC_PROJECT_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/projects?page%5Bsize%5D=100" \
+  | jq -r '.data[] | select(.attributes.name=="ef-mgt") | .id' | head -n1)"
+if [[ -z "${TFC_PROJECT_ID}" ]]; then
+  TFC_PROJECT_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/projects" \
+    -d "$(jq -n '{data: {type: "projects", attributes: {name: "ef-mgt"}}}')" \
+    | jq -r '.data.id')"
   r "Created TFC project ef-mgt (${TFC_PROJECT_ID})"
 else
   r "TFC project ef-mgt already exists (${TFC_PROJECT_ID})"
 fi
 
 t "2.4. Checking the workspace ${GCP_DEFAULT_PROJECT}"
-TFC_WORKSPACE_ID="$(tfccli workspaces list ${TFC_OPTS} --project-id "${TFC_PROJECT_ID}" \
-         | jq -r "select(.name==\"${GCP_DEFAULT_PROJECT}\") | .id" | head -n1)"
+TFC_WORKSPACE_ID="$(curl -s "${TFC_AUTH[@]}" "${TFC_API}/projects/${TFC_PROJECT_ID}/workspaces?page%5Bsize%5D=100" \
+  | jq -r ".data[] | select(.attributes.name==\"${GCP_DEFAULT_PROJECT}\") | .id" | head -n1)"
 if [[ -n "${TFC_WORKSPACE_ID}" ]]; then
   r "Workspace already exists (${TFC_WORKSPACE_ID})"
 else
-  TFC_WORKSPACE_ID="$(tfccli workspaces create --name "${GCP_DEFAULT_PROJECT}" --project-id "${TFC_PROJECT_ID}" ${TFC_OPTS} \
-           | jq -r '.id')"
+  TFC_WORKSPACE_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/projects/${TFC_PROJECT_ID}/workspaces" \
+    -d "$(jq -n '{data: {type: "workspaces", attributes: {name: "'${GCP_DEFAULT_PROJECT}'"}}}')" \
+    | jq -r '.data.id')"
   r "Created workspace (${TFC_WORKSPACE_ID})"
 fi
 
