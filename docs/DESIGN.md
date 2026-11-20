@@ -1,6 +1,6 @@
 # Design
 
-This is the design document for the landing zone: decisions and rationale,
+This is the design document for my cloud landing zone: decisions and rationale,
 maintained in the repository they describe and versioned by its git history.
 Binding rules live in [STANDARDS.md](STANDARDS.md). Read this file before
 proposing anything structural.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ── Bootstrap: landing zone bring-up ──────────────────────────────
+# ── Bootstrap: cloud landing zone bring-up ────────────────────────
 # 1) Setup Google Cloud — create seed resources TF cannot make itself
 # 2) Setup Terraform Cloud — create seed TFC resources + credential variables
 # 3) Render imports from template — pass IDs collected in steps 1&2

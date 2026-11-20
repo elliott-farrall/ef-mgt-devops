@@ -373,4 +373,4 @@ here in the same PR that makes it.
   structure, and update it in the same PR as any convention change.
 - CODEOWNERS at `.github/CODEOWNERS` lives in each repository's own
   content (not terraform-managed) and names the review owner for every
-  path. The landing zone repo's CODEOWNERS covers all paths.
+  path. The devops repo's CODEOWNERS covers all paths.
