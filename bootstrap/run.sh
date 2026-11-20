@@ -30,6 +30,7 @@ done
 # Config
 # ══════════════════════════════════════════════════════════════════
 
+GCP_DOMAIN=$(yq -r '.organisation.gcp.domain' "${ENV_DIR}/organisation.yaml")
 GCP_ORG_NAME=$(yq -r '.organisation.gcp.name' "${ENV_DIR}/organisation.yaml")
 GCP_BILLING_ID=$(yq -r '.organisation.gcp.billing' "${ENV_DIR}/organisation.yaml")
 TFC_ORG=$(yq -r '.organisation.tfe.organisation' "${ENV_DIR}/organisation.yaml")
