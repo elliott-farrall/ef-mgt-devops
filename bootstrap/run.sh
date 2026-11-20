@@ -159,7 +159,7 @@ TFC_API="https://${TFC_HOSTNAME}/api/v2"
 TFC_AUTH=( -H "Authorization: Bearer ${TFC_TOKEN}" -H "Content-Type: application/vnd.api+json" )
 
 t "2.1. Checking the Terraform Cloud token"
-TFC_ORG_ID="$(tfccli organizations get "${TFC_ORG}" ${TFC_OPTS} 2>&1 | jq -r '.data.id // .id')"
+TFC_ORG_ID="$(tfccli organizations get "${TFC_ORG}" ${TFC_OPTS} 2>&1 | jq -r '.data.external_id // .data.id // .id')"
 if [[ -z "${TFC_ORG_ID}" || "${TFC_ORG_ID}" == "null" ]]; then
   r "Organisation '${TFC_ORG}' inaccessible"
   die "Abort: token lacks access to TFC organisation '${TFC_ORG}'"
