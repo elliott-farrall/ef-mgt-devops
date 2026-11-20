@@ -43,8 +43,13 @@ here in the same PR that makes it.
   and `dns.admin` at the landing project. The management environment adds
   the platform roles on top: organisation admin, `projectOwner` on the
   landing project, `billing.user` at the billing account.
+- Resource naming (GCP resources only — not projects, folders, or
+  workspaces): `<abbreviation>-<environment>-<suffix>` — two letters
+  typically, up to four when the abbreviation needs it. The platform
+  identity resources use `sa-` (service account), `wip-` (workload
+  identity pool), and `wipp-` (pool provider), suffix `tfc`.
 - Workload identity federation: TFC run → OIDC token → pool
-  `ef-<env>-tfc`, provider `tfc-<env>`, issuer
+  `wip-<env>-tfc`, provider `wipp-<env>-tfc`, issuer
   `https://<organisation.tfe.hostname>` — the TFC API endpoint and the OIDC
   trust are one required value. The attribute condition
   `assertion.workspace_name.startsWith("ef-<env>-")` and the

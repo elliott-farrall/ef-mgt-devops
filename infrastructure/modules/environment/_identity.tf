@@ -14,13 +14,13 @@ resource "google_service_account" "this" {
 }
 
 resource "google_iam_workload_identity_pool" "this" {
-  workload_identity_pool_id = "ef-${var.name}-tfc"
+  workload_identity_pool_id = "wip-${var.name}-tfc"
   project                   = var.landing_project_id
 }
 
 resource "google_iam_workload_identity_pool_provider" "this" {
   workload_identity_pool_id          = google_iam_workload_identity_pool.this.workload_identity_pool_id
-  workload_identity_pool_provider_id = "tfc-${var.name}"
+  workload_identity_pool_provider_id = "wipp-${var.name}-tfc"
   project                            = var.landing_project_id
 
   attribute_condition = "assertion.workspace_name.startsWith(\"ef-${var.name}-\")"
