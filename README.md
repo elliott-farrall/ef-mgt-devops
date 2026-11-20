@@ -12,7 +12,7 @@ is a data change, never new machinery.
 | [docs/DESIGN.md](docs/DESIGN.md) | Architecture decisions and rationale |
 | [docs/STANDARDS.md](docs/STANDARDS.md) | Binding rules — read before changing anything structural |
 | [bootstrap/GUIDE.md](bootstrap/GUIDE.md) | One-time bring-up procedure |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Development workflow and conventions |
+| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Development workflow and conventions |
 | [CHANGELOG.md](CHANGELOG.md) | What changed, and when |
 
 ## Layout
@@ -22,7 +22,7 @@ is a data change, never new machinery.
 ├── .schemas/environment/   # JSON Schema per config file
 ├── infrastructure/         # Terraform: six function modules + wiring
 ├── bootstrap/              # run.sh, import template, bring-up guide
-└── docs/                   # Design and standards (MkDocs site)
+└── docs/                   # Design, standards, contributing (MkDocs site)
 ```
 
 ## Getting started

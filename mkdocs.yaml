@@ -10,6 +10,6 @@ theme:
     - content.code.copy
 
 nav:
-  - Home: index.md
+  - Home: README.md
   - Design: DESIGN.md
   - Standards: STANDARDS.md

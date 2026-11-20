@@ -14,7 +14,7 @@ This repository is a landing-zone management plane. To work on it:
    module in `infrastructure/locals.tf`. `main.tf` is wiring only.
 4. Run `nix develop` for the pinned toolchain, `make ci` for every check.
    Checks print one tick/cross line each; failures show the tool output.
-5. Every PR updates `CHANGELOG.md` (see `CONTRIBUTING.md`); releases are
+5. Every PR updates `CHANGELOG.md` (see `docs/CONTRIBUTING.md`); releases are
    cut manually from it.
 6. Bring-up procedures live in `bootstrap/GUIDE.md`. Bootstrap is
    one-time; steady state is PR-only.
