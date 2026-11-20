@@ -246,7 +246,7 @@ r "Import addresses derived"
 
 t "3.2. Rendering bootstrap.tf from template"
 DEVOPS_SERVICES_JSON="$(jq -cn '$ARGS.positional' --args "${DEVOPS_SERVICES[@]}")"
-DEVOPS_IMPORTS="$(jq -rn --arg project "${GCP_DEFAULT_PROJECT}" --argjson services "${DEVOPS_SERVICES_JSON}" '$services | map("import {\n  to   = module.project[\"mgt\"].google_project_service.this[\"\($project)-\(.)\"]\n  id   = \"\($project)/\(.).googleapis.com\"\n}\n\n") | join("")')"
+DEVOPS_IMPORTS="$(jq -rn --arg project "${GCP_DEFAULT_PROJECT}" --argjson services "${DEVOPS_SERVICES_JSON}" '$services | map("import {\n  to   = module.project[\"\($project)\"].google_project_service.this[\"\($project)-\(.)\"]\n  id   = \"\($project)/\(.).googleapis.com\"\n}\n\n") | join("")')"
 export FOLDER_ID
 export DEVOPS_IMPORTS
 envsubst < "${BOOTSTRAP_DIR}/imports.tf.tmpl" > "${INFRA_DIR}/bootstrap.tf"
