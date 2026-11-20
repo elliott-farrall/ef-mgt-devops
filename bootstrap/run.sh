@@ -46,6 +46,12 @@ mapfile -t DEVOPS_SERVICES < <(yq -r '.projects[] | select(.name=="devops") | .s
 
 [[ -n "${GCP_DOMAIN}" ]] || die "gcp domain not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${GCP_BILLING_NAME}" ]] || die "billing account name not found in ${ENV_DIR}/organisation.yaml"
+GCP_BILLING_ACCOUNT="$(gcloud billing accounts list \
+  --filter="displayName=${GCP_BILLING_NAME}" \
+  --format='value(name)' 2>/dev/null | head -n1)"
+[[ -n "${GCP_BILLING_ACCOUNT}" ]] || die "billing account '${GCP_BILLING_NAME}' not found or not accessible"
+GCP_BILLING_ACCOUNT="${GCP_BILLING_ACCOUNT#billingAccounts/}"
+r "Resolved billing account: ${GCP_BILLING_NAME} (${GCP_BILLING_ACCOUNT})"
 [[ -n "${TFC_ORG}" ]] || die "TFC organisation not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${GH_OWNER}" ]] || die "GitHub owner not found in ${ENV_DIR}/organisation.yaml"
