@@ -45,7 +45,7 @@ locals {
   }
 
   # One entry per referenced group folder: cosmetic containers for environment folders
-  environment_groups = {
+  groups = {
     for g in toset([for e in local.config.environments : e.group if try(e.group, null) != null]) : g => {
       organization_id = data.google_organization.ef.id
     }

@@ -1,6 +1,6 @@
 module "group" {
   source   = "./modules/group"
-  for_each = local.environment_groups
+  for_each = local.groups
 
   name            = each.value.name
   organization_id = each.value.organization_id
