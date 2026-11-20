@@ -82,7 +82,9 @@ resource "github_repository_vulnerability_alerts" "this" {
 }
 
 resource "github_repository_pages" "this" {
-  count = var.pages ? 1 : 0
+
+  depends_on = [cloudflare_dns_record.this]
+  count      = var.pages ? 1 : 0
 
   repository     = github_repository.this.name
   build_type     = "workflow"
