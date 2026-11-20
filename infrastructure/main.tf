@@ -65,7 +65,7 @@ module "record" {
   source   = "./modules/record"
   for_each = local.records
 
-  zone_id  = data.cloudflare_zone.zones[each.value.zone].id
+  zone     = each.value.zone
   name     = each.value.name
   type     = each.value.type
   content  = each.value.content
