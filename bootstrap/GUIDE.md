@@ -121,8 +121,8 @@ export CF_API_TOKEN=<api-token>
 ```
 
 The DNS records run through the Cloudflare provider; bootstrap shares the
-token through `platform-tokens` and the existing records are imported
-into state.
+token through `platform-tokens`. The records are currently parked — see
+the note under Configuration review.
 
 ### 6. Plan requirement
 
@@ -153,8 +153,10 @@ apply consume every value in them:
 - `organisation.yaml` — domain, org name, region, billing account ID, TFC
   org and hostname, GitHub owner, and the GitHub App installation name.
 - `budgets.yaml` — budget alerts (defaults are sensible).
-- `records.yaml` — DNS records of the Cloudflare apex zone. All nine live
-  records are already declared and imported via `infrastructure/imports.tf`
+- `records.yaml` — DNS records of the Cloudflare apex zone. The live
+  records are commented out for now: importing them into the first apply
+  planned a destroy+create on mail infrastructure. Uncomment them and
+  import afterwards, one zone at a time, once the platform is stable
   during the apply.
 - `environments.yaml` — the five deployment lanes (`mgt`, `hub`, `dev`,
   `pre`, `prd`).
@@ -183,9 +185,7 @@ exists:
    `CLOUDFLARE_API_TOKEN` — shared with every workspace), and set the
    workspace to local execution for the first apply.
 3. **Imports** — derive the import addresses and render
-   `infrastructure/bootstrap.tf` from `imports.tf.tmpl`. The live
-   Cloudflare DNS records are imported through the committed
-   `infrastructure/imports.tf`, which applies in the same run.
+   `infrastructure/bootstrap.tf` from `imports.tf.tmpl`.
 4. **Deploy** — `terraform init` against the remote backend, then a single
    local-execution `apply` that imports the bootstrap resources into state
    and creates everything else (identities, pools, providers, bindings,
