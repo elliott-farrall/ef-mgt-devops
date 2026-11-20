@@ -160,10 +160,9 @@ here in the same PR that makes it.
 - Block types split into separate files: `locals.tf`, `data.tf`,
   `checks.tf`, `providers.tf`, `versions.tf`, and so on — one purpose per
   filename. The one exception is resources and module blocks: they live in
-  `main.tf` or may be split into category files `_<category>.tf`
-  (`_github.tf`, `_google.tf`, `_tfe.tf`, `_identity.tf`, `_iam.tf`,
-  `_repository.tf`) — used in the multi-resource modules to keep resources
-  organised; single-resource modules keep plain `main.tf`.
+  in category files `_<category>.tf` (`_github.tf`, `_google.tf`,
+  `_workspace.tf`, `_identity.tf`, `_iam.tf`, `_repository.tf`) —
+  modules never use `main.tf`; the root module does.
 - Code is organised by function, not by platform. Five repo-local modules,
   each packaging one deliverable across every platform it touches:
   `environment` (TFC project, service account, WIF pool and provider, SA
