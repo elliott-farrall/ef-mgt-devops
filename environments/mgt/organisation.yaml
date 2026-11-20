@@ -4,7 +4,8 @@ organisation:
   gcp:
     domain: elliott-farrall.phd
     region: europe-west2
-    billing: ef-billing
+    name: elliott-farrall
+    billing: 010915-3ABD1C-7A2FA2
 
   tfe:
     organisation: elliott-farrall

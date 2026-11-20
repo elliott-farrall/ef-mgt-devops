@@ -30,8 +30,8 @@ done
 # Config
 # ══════════════════════════════════════════════════════════════════
 
-GCP_DOMAIN=$(yq -r '.organisation.gcp.domain' "${ENV_DIR}/organisation.yaml")
-GCP_BILLING_NAME=$(yq -r '.organisation.gcp.billing' "${ENV_DIR}/organisation.yaml")
+GCP_ORG_NAME=$(yq -r '.organisation.gcp.name' "${ENV_DIR}/organisation.yaml")
+GCP_BILLING_ID=$(yq -r '.organisation.gcp.billing' "${ENV_DIR}/organisation.yaml")
 TFC_ORG=$(yq -r '.organisation.tfe.organisation' "${ENV_DIR}/organisation.yaml")
 TFC_HOSTNAME=$(yq -r '.organisation.tfe.hostname' "${ENV_DIR}/organisation.yaml")
 GH_OWNER=$(yq -r '.organisation.gh.owner' "${ENV_DIR}/organisation.yaml")
@@ -45,13 +45,9 @@ mapfile -t DEVOPS_SERVICES < <(yq -r '.projects[] | select(.name=="devops") | .s
 [[ ${#DEVOPS_SERVICES[@]} -gt 0 ]] || die "devops services missing from mgt/projects.yaml"
 
 [[ -n "${GCP_DOMAIN}" ]] || die "gcp domain not found in ${ENV_DIR}/organisation.yaml"
-[[ -n "${GCP_BILLING_NAME}" ]] || die "billing account name not found in ${ENV_DIR}/organisation.yaml"
-GCP_BILLING_ACCOUNT="$(gcloud billing accounts list \
-  --filter="displayName=${GCP_BILLING_NAME}" \
-  --format='value(name)' 2>/dev/null | head -n1)"
-[[ -n "${GCP_BILLING_ACCOUNT}" ]] || die "billing account '${GCP_BILLING_NAME}' not found or not accessible"
-GCP_BILLING_ACCOUNT="${GCP_BILLING_ACCOUNT#billingAccounts/}"
-t "Resolving the billing account: ${GCP_BILLING_NAME} (${GCP_BILLING_ACCOUNT})"
+[[ -n "${GCP_ORG_NAME}" ]] || die "gcp organisation name not found in ${ENV_DIR}/organisation.yaml"
+[[ -n "${GCP_BILLING_ID}" ]] || die "billing account ID not found in ${ENV_DIR}/organisation.yaml"
+t "Resolving the billing account: ${GCP_BILLING_ID}"
 [[ -n "${TFC_ORG}" ]] || die "TFC organisation not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${TFC_HOSTNAME}" ]] || die "TFC hostname not found in ${ENV_DIR}/organisation.yaml"
 [[ -n "${GH_OWNER}" ]] || die "GitHub owner not found in ${ENV_DIR}/organisation.yaml"
@@ -87,7 +83,10 @@ fi
 r "Application-default credentials present"
 
 t "1.2. Checking the GCP organisation"
-GCP_ORG_ID="$(gcloud organizations list --format='value(name)' 2>/dev/null | head -n1)"
+GCP_ORG_ID="$(gcloud organizations list \
+  --filter="displayName=${GCP_ORG_NAME}" \
+  --format='value(name)' 2>/dev/null | head -n1)"
+[[ -n "${GCP_ORG_ID}" ]] || die "GCP organisation '${GCP_ORG_NAME}' not found or not accessible"
 if [[ -z "${GCP_ORG_ID}" ]]; then
   r "No accessible GCP organisation"
   die "Abort: account '${CURRENT_GCP_ACCT}' lacks access to a GCP organisation"

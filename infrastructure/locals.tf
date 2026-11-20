@@ -16,7 +16,7 @@ locals {
     for e in local.config.environments : e.name => {
       name               = e.name
       organization_id    = data.google_organization.this.id
-      billing_account_id = data.google_billing_account.this.id
+      billing_account_id = local.config.organisation.gcp.billing
       landing_project_id = local.default_project
       issuer             = "https://${local.config.organisation.tfe.hostname}"
       folder_parent      = try(e.group, null) != null ? "folders/${module.group[e.group].google_folder.this.folder_id}" : "organizations/${data.google_organization.this.id}"
@@ -36,7 +36,7 @@ locals {
       protection                 = try(p.protection, {})
       pages                      = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project
       cname                      = try(p.repo, "ef-${p.type}-${p.name}") == local.default_project ? "docs.elliott-farrall.phd" : null
-      billing_account_id         = data.google_billing_account.this.id
+      billing_account_id         = local.config.organisation.gcp.billing
       zone                       = local.config.organisation.gcp.domain
       github_owner               = local.config.organisation.gh.owner
       github_app_installation    = local.config.organisation.tfe.github_app_installation
@@ -76,7 +76,7 @@ locals {
   budgets = {
     for b in local.config.budgets : "ef-budget-${b.name}" => {
       name               = "ef-budget-${b.name}"
-      billing_account_id = data.google_billing_account.this.id
+      billing_account_id = local.config.organisation.gcp.billing
       amount             = b.amount
       thresholds         = b.thresholds
       scope              = try(b.scope, null) == null ? "" : b.scope

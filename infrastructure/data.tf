@@ -3,5 +3,5 @@ data "google_organization" "this" {
 }
 
 data "google_billing_account" "this" {
-  display_name = local.config.organisation.gcp.billing
+  billing_account = local.config.organisation.gcp.billing
 }
