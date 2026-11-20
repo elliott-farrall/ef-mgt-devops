@@ -212,16 +212,8 @@ if [[ -n "${VARSET_ID}" ]]; then
 fi
 
 t "2.7. Seeding the platform tokens"
-VARSET_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" \
-  -d "$(jq -n \
-    --arg gh "${GITHUB_TOKEN}" \
-    --arg tfe "${TFC_TOKEN}" \
-    --arg cf "${CF_API_TOKEN}" \
-    '{data: {type: "varsets", attributes: {name: "platform-tokens", global: true}, relationships: {vars: {data: [ \
-      {type: "vars", attributes: {key: "GITHUB_TOKEN", value: $gh, category: "env", hcl: false, sensitive: true}}, \
-      {type: "vars", attributes: {key: "TFE_TOKEN", value: $tfe, category: "env", hcl: false, sensitive: true}}, \
-      {type: "vars", attributes: {key: "CLOUDFLARE_API_TOKEN", value: $cf, category: "env", hcl: false, sensitive: true}}]}}}}')" \
-  | jq -r '.data.id')"
+VAR_BODY="$(jq -n --arg gh "${GITHUB_TOKEN}" --arg tfe "${TFC_TOKEN}" --arg cf "${CF_API_TOKEN}" '{data: {type: "varsets", attributes: {name: "platform-tokens", global: true}, relationships: {vars: {data: [{type: "vars", attributes: {key: "GITHUB_TOKEN", value: $gh, category: "env", hcl: false, sensitive: true}}, {type: "vars", attributes: {key: "TFE_TOKEN", value: $tfe, category: "env", hcl: false, sensitive: true}}, {type: "vars", attributes: {key: "CLOUDFLARE_API_TOKEN", value: $cf, category: "env", hcl: false, sensitive: true}}]}}}}')"
+VARSET_ID="$(curl -s -X POST "${TFC_AUTH[@]}" "${TFC_API}/organizations/${TFC_ORG}/varsets" -d "${VAR_BODY}" | jq -r '.data.id')"
 [[ -n "${VARSET_ID}" && "${VARSET_ID}" != "null" ]] || die "failed to create the platform-tokens variable set"
 r "platform-tokens (${VARSET_ID}) holds GITHUB_TOKEN, TFE_TOKEN, and CLOUDFLARE_API_TOKEN, shared with every workspace"
 
