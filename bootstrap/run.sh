@@ -262,8 +262,8 @@ terraform -chdir="${INFRA_DIR}" init -backend-config="organization=${TFC_ORG}"
 r "Initialised"
 
 t "4.2. Planning the first apply"
-terraform -chdir="${INFRA_DIR}" plan -no-color -out=tfplan 2>&1 | tee "${BOOTSTRAP_DIR}/plan.txt"
-r "Plan saved: ${BOOTSTRAP_DIR}/plan.txt (share this file for review)"
+terraform -chdir="${INFRA_DIR}" plan -no-color -out=tfplan > "${BOOTSTRAP_DIR}/plan.txt" 2>&1
+r "Plan written: ${BOOTSTRAP_DIR}/plan.txt — share it for review before approving"
 read -r -p "Approve the plan above? [yes/no] " REPLY
 [[ "${REPLY}" == "yes" ]] || die "apply declined"
 r "Plan approved"
