@@ -258,6 +258,7 @@ t "4.1. Initialising Terraform against workspace ${GCP_DEFAULT_PROJECT}"
 export TFE_TOKEN="${TFC_TOKEN}"
 export GITHUB_TOKEN
 export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
+export GOOGLE_CLOUD_QUOTA_PROJECT="${GCP_DEFAULT_PROJECT}"
 terraform -chdir="${INFRA_DIR}" init -input=false -no-color -backend-config="organization=${TFC_ORG}" > "${BOOTSTRAP_DIR}/init.txt" 2>&1 || {
   cat "${BOOTSTRAP_DIR}/init.txt" >&2
   die "terraform init failed — full log: ${BOOTSTRAP_DIR}/init.txt"
