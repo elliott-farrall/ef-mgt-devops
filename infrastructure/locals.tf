@@ -43,8 +43,6 @@ locals {
       tfc_project_ids            = { for name in try(p.environments, [p.type]) : name => module.environment[name].tfe_project.id }
       folder_ids                 = { for name in try(p.environments, [p.type]) : name => module.environment[name].google_folder.folder_id }
       wif_providers              = { for name in try(p.environments, [p.type]) : name => "//iam.googleapis.com/${module.environment[name].google_iam_workload_identity_pool_provider.name}" }
-      wif_pool_ids               = { for name in try(p.environments, [p.type]) : name => module.environment[name].workload_identity_pool_id }
-      wif_provider_ids           = { for name in try(p.environments, [p.type]) : name => module.environment[name].workload_identity_pool_provider_id }
       gcp_service_account_emails = { for name in try(p.environments, [p.type]) : name => module.environment[name].google_service_account.email }
     }
   }

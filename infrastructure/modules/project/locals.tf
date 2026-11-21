@@ -34,9 +34,6 @@ locals {
         { key = "TFC_GCP_PROVIDER_AUTH", value = "true", category = "env", description = "Enables HCP Terraform dynamic credentials for the Google provider in this run." },
         { key = "TFC_GCP_WORKLOAD_IDENTITY_PROVIDER", value = deployment.wif_provider, category = "env", description = "Workload identity provider this run authenticates through; consumed by the Google provider." },
         { key = "TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL", value = deployment.gcp_service_account_email, category = "env", description = "Service account this run impersonates after workload identity token exchange." },
-        { key = "TFC_GCP_PROJECT_NUMBER", value = var.landing_project_number, category = "env", description = "Numeric project number hosting the workload identity pool; consumed by HCP Terraform credential generation." },
-        { key = "TFC_GCP_WORKLOAD_POOL_ID", value = deployment.wif_pool_id, category = "env", description = "Workload identity pool identifier; consumed by HCP Terraform credential generation." },
-        { key = "TFC_GCP_WORKLOAD_PROVIDER_ID", value = deployment.wif_provider_id, category = "env", description = "Workload identity provider identifier; consumed by HCP Terraform credential generation." },
       ] : { key = "${key}-${variable.key}", workspace = key, variable = variable }
     ]
   ]) : pair.key => pair }
