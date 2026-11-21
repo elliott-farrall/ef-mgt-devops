@@ -41,10 +41,10 @@ The Google identity running the script needs, on your GCP organisation:
   environment folder as you; org admin alone does not include folder
   creation. Bootstrap-scaffolding only: not managed by Terraform, and
   unnecessary once the platform identity takes over.
-- `roles/orgpolicy.policyAdmin` once, to set the standing import/export
-  policies (see Setup gotchas) that permit intra-organisation project
-  moves — Terraform performs a move into the environment folder on the
-  first apply, and any future folder reorganisation repeats it. Set and
+- `roles/orgpolicy.policyAdmin` — to set and maintain the standing
+  import/export policies (see Setup gotchas) that permit intra-organisation
+  project moves — Terraform performs a move into the environment folder on
+  the first apply, and any future folder reorganisation repeats it. Set and
   keep:
   ```yaml
   # both constraints, same shape (import sources and export destinations)
