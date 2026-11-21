@@ -10,12 +10,13 @@ module "environment" {
   source   = "./modules/environment"
   for_each = local.environments
 
-  name               = each.value.name
-  organization_id    = each.value.organization_id
-  folder_parent      = each.value.folder_parent
-  billing_account_id = each.value.billing_account_id
-  landing_project_id = each.value.landing_project_id
-  issuer             = each.value.issuer
+  name                   = each.value.name
+  organization_id        = each.value.organization_id
+  folder_parent          = each.value.folder_parent
+  billing_account_id     = each.value.billing_account_id
+  landing_project_id     = each.value.landing_project_id
+  issuer                 = each.value.issuer
+  landing_project_number = data.google_project.this.number
 
   depends_on = [module.group]
 }
@@ -41,6 +42,9 @@ module "project" {
   tfc_project_ids            = each.value.tfc_project_ids
   folder_ids                 = each.value.folder_ids
   wif_providers              = each.value.wif_providers
+  wif_pool_ids               = each.value.wif_pool_ids
+  wif_provider_ids           = each.value.wif_provider_ids
+  landing_project_number     = data.google_project.this.number
   gcp_service_account_emails = each.value.gcp_service_account_emails
 
   depends_on = [module.environment]

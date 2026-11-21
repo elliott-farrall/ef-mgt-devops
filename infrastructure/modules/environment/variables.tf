@@ -28,3 +28,8 @@ variable "issuer" {
   type        = string
 }
 
+
+variable "landing_project_number" {
+  description = "Numeric project number of the landing project hosting the pool."
+  type        = string
+}

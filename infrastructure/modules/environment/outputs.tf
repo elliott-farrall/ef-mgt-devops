@@ -22,3 +22,18 @@ output "google_folder" {
   description = "The environment folder resource."
   value       = google_folder.this
 }
+
+output "project_number" {
+  description = "Numeric project number of the landing project hosting the pool."
+  value       = var.landing_project_number
+}
+
+output "workload_identity_pool_id" {
+  description = "Pool identifier of the environment workload identity pool."
+  value       = google_iam_workload_identity_pool.this.workload_identity_pool_id
+}
+
+output "workload_identity_pool_provider_id" {
+  description = "Provider identifier of the environment workload identity pool provider."
+  value       = google_iam_workload_identity_pool_provider.this.workload_identity_pool_provider_id
+}
