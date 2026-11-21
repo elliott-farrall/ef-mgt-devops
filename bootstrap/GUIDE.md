@@ -326,3 +326,21 @@ recovery from scratch does not repeat them:
 - Third-party CLI wrappers drift from their own documentation (tfccli
   flags, yq output options); prefer the platform's own API for anything
   the script parses.
+- Attaching the workspace to VCS requires the target branch to exist and
+  be ingressable (at least one file). Create `main` before the first
+  apply; because the branch-protection rulesets require status checks
+  that cannot run before the workspace attaches, create `main` with the
+  rulesets temporarily deleted — the same apply recreates them.
+- GitHub Pages custom domains are inherently two-phase: adding the domain
+  issues the certificate asynchronously, and the provider 404s on any
+  explicitly set `https_enforced` value until the certificate exists.
+  Omit the attribute in the first pass and enforce in a follow-up.
+- With a quota project set for user ADC, every API the provider touches
+  must be enabled on the quota project itself — including
+  `cloudresourcemanager` (the organisation data source) and
+  `billingbudgets` (the budget resource). Google's default shared
+  consumer masks this until a quota project is set.
+- Referencing a data-source ID (such as `data.google_organization.this.id`)
+  already carries its resource prefix (`organizations/...`); composing a
+  parent reference from it must not add the prefix again — three separate
+  API calls 404'd on doubled prefixes during bring-up.

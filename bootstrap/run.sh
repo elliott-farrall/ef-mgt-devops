@@ -277,7 +277,7 @@ r "Plan approved"
 
 t "4.3. Applying the approved plan"
 terraform -chdir="${INFRA_DIR}" apply tfplan
-rm -f "${INFRA_DIR}/tfplan"
-r "Deploy complete"
+rm -f "${INFRA_DIR}/tfplan" "${INFRA_DIR}/bootstrap.tf"
+r "Deploy complete — transient import file removed"
 
 r "Bootstrap complete — the platform now runs from main via TFC"
