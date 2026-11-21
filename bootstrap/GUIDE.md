@@ -33,10 +33,16 @@ The Google identity running the script needs, on your GCP organisation:
 
 - `roles/resourcemanager.organizationAdmin` — create the project, and
   grant the platform roles Terraform later adopts.
+- `roles/resourcemanager.projectMover` on the organisation — the first
+  apply moves the project into the environment folder; org admin does not
+  include project move. Bootstrap-scaffolding only: unnecessary once the
+  platform identity takes over.
 - `roles/resourcemanager.folderCreator` — the script creates the
   environment folder as you; org admin alone does not include folder
   creation. Bootstrap-scaffolding only: not managed by Terraform, and
   unnecessary once the platform identity takes over.
+- `roles/orgpolicy.policyAdmin` once, to set the standing import/export
+  policies (see Setup gotchas). Remove it after.
 - Billing viewer/user on the billing account named in `organisation.yaml`
   (`roles/billing.user` minimum; `roles/billing.admin` to link the account
   during project creation).
@@ -216,6 +222,25 @@ exists:
   stay out of the console — manual changes are drift.
 
 ## Setup gotchas (encountered during initial bring-up)
+
+- `constraints/resourcemanager.allowedExportDestinations` and
+  `...allowedImportSources` default to `denyAll` on newer organisations —
+  this blocks even intra-organisation project moves with a generic
+  permission error. Standing configuration for a single-org landing zone
+  allows the org's own subtree on both constraints:
+  ```yaml
+  name: organizations/<org-id>/policies/resourcemanager.allowedImportSources
+  spec:
+    rules:
+      - values:
+          allowedValues:
+            - under:organizations/<org-id>
+  ```
+  (same shape for `allowedExportDestinations`). Setting them requires
+  `roles/orgpolicy.policyAdmin`; always verify with
+  `gcloud org-policies describe <constraint> --effective` — a partially
+  applied pair (one constraint set, the other left at the default) fails
+  with no pointer at which half is missing.
 
 Lessons from the initial run, kept so a re-run on new infrastructure or a
 recovery from scratch does not repeat them:
