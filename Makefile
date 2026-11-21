@@ -27,7 +27,7 @@ yaml-config: ## Config files validate against their schemas
 	$(call check,$(YAML_CONFIG),YAML config against schemas)
 
 yaml-lint: ## yamllint defaults; line-length disabled — DNS record values are unbreakable
-	$(call check,yamllint -d "{extends: default, rules: {line-length: disable}}" .schemas/environment environments,YAML lint)
+	$(call check,yamllint -d '{extends: default, rules: {line-length: disable}}' .schemas/environment environments,YAML lint)
 
 yaml-style: ## YAML is block style with plain scalars
 	$(call check,if files=$$(ls environments/*/*.yaml 2>/dev/null) && [ -n "$$files" ] && grep -rnE '(: *[([{"])|(^[[:space:]]*- *\{)' $$files; then echo block-style-only; fi,YAML style)
