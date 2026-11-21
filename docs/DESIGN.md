@@ -112,7 +112,7 @@ GCP projects today. Deployments appear when projects declare them in
 One OIDC-based auth chain per environment. Five SAs, five pools, five providers — all hosted in `ef-mgt-devops`.
 
 ```
-TFC run → OIDC token → ef-<env>-tfc pool (GCP)
+TFC run → OIDC token → wip-<env>-tfc pool (GCP)
          ├─ check: workspace_name.startsWith("ef-<env>-")
          └─ attribute.environment = "<env>"
 
@@ -132,7 +132,7 @@ Pool principalSet → roles/iam.workloadIdentityUser → sa-<env>-tfc
 | `ef-pre-tfc` | `tfc-pre` | `sa-pre-tfc@[PROJECT].iam.gserviceaccount.com` | Staging workspace identity |
 | `ef-prd-tfc` | `tfc-prd` | `sa-prd-tfc@[PROJECT].iam.gserviceaccount.com` | Production workspace identity |
 
-The manager receives extra IAM bindings beyond the standard set: organisation admin, project owner on `ef-mgt-devops`, billing user.
+The manager receives extra IAM bindings beyond the standard set: organisation admin, project owner on `ef-mgt-devops`, billing costs manager.
 
 #### IAM bindings
 
@@ -159,7 +159,7 @@ Budget alerts trigger notifications but never cap spending — structural guardr
 
 #### DNS
 
-DNS for the apex lives in Cloudflare, managed as code by this repository: the `record` module creates the Proton mail records (two MX, SPF, verification, DMARC, three DKIM CNAMEs) through the Cloudflare provider. Future projects own their subdomains end to end — a Cloud DNS subzone on the GCP side plus the delegating NS records in the Cloudflare apex — so a new project subdomain never touches this repository.
+DNS for the apex lives in Cloudflare, managed as code by this repository: the `record` module creates the Proton mail records (two MX, SPF, verification, DMARC, three DKIM CNAMEs) through the Cloudflare provider. The live records are parked until the platform is stable — importing them during the first apply planned a destroy+create on mail infrastructure (see bootstrap gotchas). Future projects own their subdomains end to end — a Cloud DNS subzone on the GCP side plus the delegating NS records in the Cloudflare apex — so a new project subdomain never touches this repository.
 
 | Property | Value |
 |----------|-------|

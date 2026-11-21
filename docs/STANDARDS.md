@@ -16,8 +16,8 @@ here in the same PR that makes it.
   another environment.
 - Each environment owns, derived from its name: GCP folder `ef-<env>`
   directly under the organisation root, TFC project `ef-<env>`, service
-  account `sa-<env>-tfc`, WIF pool `ef-<env>-tfc`, WIF provider
-  `tfc-<env>`, and the workspaces of its projects. Every GCP project
+  account `sa-<env>-tfc`, WIF pool `wip-<env>-tfc`, WIF provider
+  `wipp-<env>-tfc`, and the workspaces of its projects. Every GCP project
   lives in its environment's folder.
 - A project lives in exactly one environment. Cross-environment reuse flows
   through hub services and registry modules — never through shared
@@ -41,7 +41,7 @@ here in the same PR that makes it.
 - Each environment identity gets the core roles required for its function:
   `projectCreator` and `editor` on the landing project, `serviceAccountUser`
   and `dns.admin` at the landing project. The management environment adds
-  the platform roles on top: organisation admin, `projectOwner` on the
+  the platform roles on top: organisation admin, `owner` on the
   landing project, `billing.user` at the billing account.
 - Resource naming (GCP resources only — not projects, folders, or
   workspaces): `<abbreviation>-<environment>-<suffix>` — two letters
