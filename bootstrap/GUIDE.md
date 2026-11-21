@@ -69,6 +69,15 @@ gcloud auth application-default login
 gcloud config set project <any-project-you-can-query>
 ```
 
+User application-default credentials also need a quota project for some
+APIs (billing budgets among them) — set it once the landing project
+exists (or after the script creates it, before the apply):
+
+```sh
+gcloud services enable billingbudgets.googleapis.com --project=ef-mgt-devops
+gcloud auth application-default set-quota-project ef-mgt-devops
+```
+
 The application-default login is required: the first apply runs locally
 and its Google provider authenticates through it.
 

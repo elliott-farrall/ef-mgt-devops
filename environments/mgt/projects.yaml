@@ -9,5 +9,6 @@ projects:
       - iam
       - serviceusage
       - cloudbilling
+      - billingbudgets
       - dns
       - compute
