@@ -92,10 +92,9 @@ resource "github_repository_pages" "this" {
   depends_on = [time_sleep.pages_dns]
   count      = var.pages ? 1 : 0
 
-  repository     = github_repository.this.name
-  build_type     = "workflow"
-  cname          = var.cname
-  https_enforced = false
+  repository = github_repository.this.name
+  build_type = "workflow"
+  cname      = var.cname
 }
 
 resource "cloudflare_dns_record" "this" {
