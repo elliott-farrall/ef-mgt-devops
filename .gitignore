@@ -4,5 +4,6 @@
 *.tfstate
 *.tfstate.*
 infrastructure/bootstrap.tf
+bootstrap/init.txt
 bootstrap/plan.txt
 bootstrap/tfplan
