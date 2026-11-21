@@ -81,9 +81,15 @@ resource "github_repository_vulnerability_alerts" "this" {
   repository = github_repository.this.name
 }
 
-resource "github_repository_pages" "this" {
+resource "time_sleep" "pages_dns" {
+  create_duration = "2m"
 
   depends_on = [cloudflare_dns_record.this]
+}
+
+resource "github_repository_pages" "this" {
+
+  depends_on = [time_sleep.pages_dns]
   count      = var.pages ? 1 : 0
 
   repository     = github_repository.this.name
