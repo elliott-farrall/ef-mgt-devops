@@ -51,7 +51,7 @@ definitions:
         description: Prefixes of the GCP APIs enabled on every deployment's project; the code appends .googleapis.com.
         items:
           type: string
-          pattern: '^[a-z0-9-]+$' 
+          pattern: '^[a-z0-9-]+$'
       working_directory:
         type: string
         description: Terraform root inside the repository; defaults to infrastructure.
