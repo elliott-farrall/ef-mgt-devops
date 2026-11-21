@@ -52,7 +52,7 @@ Config carries suffix-only names. Terraform generates full names as `ef-<env>-<s
 | WIF pool | derived | `ef-dev-tfc` | Landing project |
 | TFC project | derived | `ef-dev` | TFC organisation |
 | Billing budget display | `budgets[].name: total` | `ef-budget-total` | GCP billing account |
-| DNS zone name | `zones.yaml[].name: elliott-farrall.phd` | `elliott-farrall-phd` | Landing project |
+| DNS zone name | `records.yaml[].zone: elliott-farrall.phd` | `elliott-farrall-phd` | Landing project |
 | Application | `projects[].type: app`, `environments: [dev, pre, prd]` | `ef-app-web` (repo) / `ef-dev-web` … (deployments) | Owner namespace / lanes |
 | Module | `modules[].name: registry` | `ef-lib-registry` (repo) / `registry` (registry module) | Owner namespace / TFC private registry |
 
@@ -277,7 +277,6 @@ One repository (`ef-mgt-devops`) holds the entire management plane: code, enviro
 │   └── mgt/                 # Management environment config
 │       ├── organisation.yaml # Org facts: domain, region, GH owner, TFC hostname
 │       ├── budgets.yaml      # Budget alerts
-│       ├── zones.yaml        # DNS zones + record sets
 │       ├── environments.yaml # Deployment lanes
 │       ├── projects.yaml     # Repositories, deployments, libraries
 │       └── records.yaml      # Cloudflare apex zone records
