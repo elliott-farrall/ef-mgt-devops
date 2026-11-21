@@ -95,7 +95,7 @@ resource "github_repository_pages" "this" {
   repository     = github_repository.this.name
   build_type     = "workflow"
   cname          = var.cname
-  https_enforced = true
+  https_enforced = false
 }
 
 resource "cloudflare_dns_record" "this" {
