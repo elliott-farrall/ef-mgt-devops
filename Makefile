@@ -32,7 +32,7 @@ yaml-lint: ## yamllint defaults; line-length disabled — DNS record values are 
 	$(call check,yamllint -d '{extends: default$(comma) rules: {line-length: disable}}' .schemas/environment environments,YAML lint)
 
 yaml-style: ## YAML is block style with plain scalars
-	$(call check,if files=$$(ls environments/*/*.yaml 2>/dev/null) && [ -n "$$files" ] && grep -rnE '(: *[([{"])|(^[[:space:]]*- *\{)' $$files; then echo block-style-only; fi,YAML style)
+	@if files=$$(ls environments/*/*.yaml 2>/dev/null) && [ -n "$$files" ] && grep -rnE '(: *[([{"])|(^[[:space:]]*- *\{)' $$files; then printf '  ✗ YAML style\n'; exit 1; else printf '  ✓ YAML style\n'; fi
 
 # ── Terraform ────────────────────────────────────────────────────────────
 terraform-fmt: ## Terraform files are formatted
