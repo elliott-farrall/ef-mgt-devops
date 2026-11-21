@@ -42,7 +42,21 @@ The Google identity running the script needs, on your GCP organisation:
   creation. Bootstrap-scaffolding only: not managed by Terraform, and
   unnecessary once the platform identity takes over.
 - `roles/orgpolicy.policyAdmin` once, to set the standing import/export
-  policies (see Setup gotchas). Remove it after.
+  policies (see Setup gotchas) that permit intra-organisation project
+  moves — Terraform performs a move into the environment folder on the
+  first apply, and any future folder reorganisation repeats it. Set and
+  keep:
+  ```yaml
+  # both constraints, same shape (import sources and export destinations)
+  name: organizations/<org-id>/policies/resourcemanager.allowedImportSources
+  spec:
+    rules:
+      - values:
+          allowedValues:
+            - under:organizations/<org-id>
+  ```
+  Cross-organisation moves stay denied; document any exception where it is
+  performed. Remove the policyAdmin role after.
 - Billing viewer/user on the billing account named in `organisation.yaml`
   (`roles/billing.user` minimum; `roles/billing.admin` to link the account
   during project creation).
