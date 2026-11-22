@@ -326,6 +326,28 @@ recovery from scratch does not repeat them:
 - Third-party CLI wrappers drift from their own documentation (tfccli
   flags, yq output options); prefer the platform's own API for anything
   the script parses.
+- **WIF condition deadlock**: the WIF provider's attribute condition is
+  applied by Terraform — a wrong condition blocks the very apply that
+  would fix it. Repair out-of-band with
+  `gcloud iam workload-identity-pools providers update-oidc <provider-id>
+  --location=global --workload-identity-pool=<pool-id> --project=<project>
+  --attribute-condition='...'`, matching the configuration exactly, then
+  let the apply converge. The gcloud subcommand is type-specific
+  (`update-oidc`), not `providers update`.
+- **Verified identity-token claims**: HCP Terraform dynamic-credential
+  tokens carry `terraform_*`-prefixed claims (`terraform_workspace_name`,
+  `terraform_run_id`, `terraform_run_phase`, `terraform_full_workspace`,
+  …) and a `sub` of the form `organization:<org>:project:<project
+  name>:workspace:<workspace name>:run_phase:<phase>` (HCP Terraform
+  docs, dynamic provider credentials → workload identity tokens). Scope
+  the provider condition on `sub` at minimum — the default GCP audience
+  format covers the audience check implicitly.
+- **TFC GitHub check integration**: the "Terraform Cloud … (Predict)"
+  required check does not post until the TFC GitHub App integration
+  posts check-runs for speculative plans. Until it does, merging needs a
+  temporary ruleset adjustment (required checks → CI only), restored by
+  the next apply. Fix the integration in the TFC UI (GitHub App webhook
+  deliveries and permissions) to restore the gate.
 - Attaching the workspace to VCS requires the target branch to exist and
   be ingressable (at least one file). Create `main` before the first
   apply; because the branch-protection rulesets require status checks
