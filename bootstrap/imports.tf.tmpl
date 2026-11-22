@@ -1,0 +1,36 @@
+import {
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].google_project.this["${GCP_DEFAULT_PROJECT}"]
+  id   = "${GCP_DEFAULT_PROJECT}"
+}
+
+import {
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].module.repository.github_repository.this
+  id   = "${GCP_DEFAULT_PROJECT}"
+}
+
+import {
+  to   = module.environment["${TFC_ENV_NAME}"].google_service_account.this
+  id   = "${GCP_SA_EMAIL}"
+}
+
+import {
+  to   = module.environment["${TFC_ENV_NAME}"].tfe_project.this
+  id   = "prj-${TFC_PROJ_ID}"
+}
+
+import {
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].tfe_workspace.this["${GCP_DEFAULT_PROJECT}"]
+  id   = "${TFC_WSID}"
+}
+
+import {
+  to   = module.project["${GCP_DEFAULT_PROJECT}"].tfe_workspace_settings.this["${GCP_DEFAULT_PROJECT}"]
+  id   = "${TFC_WSID}"
+}
+
+import {
+  to   = module.environment["mgt"].google_folder.this
+  id   = "${FOLDER_ID}"
+}
+
+${DEVOPS_IMPORTS}

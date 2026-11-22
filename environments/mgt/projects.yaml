@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=../../.schemas/environment/projects.yaml
+projects:
+  - name: devops
+    type: mgt
+    description: DevOps Management.
+    default: true
+    services:
+      - iam
+      - serviceusage
+      - cloudbilling
+      - cloudresourcemanager
+      - billingbudgets
+      - dns
+      - compute

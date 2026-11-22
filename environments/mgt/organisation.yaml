@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=../../.schemas/environment/organisation.yaml
+organisation:
+  gcp:
+    domain: elliott-farrall.phd
+    region: europe-west2
+    name: elliott-farrall.phd
+    billing: 010915-3ABD1C-7A2FA2
+
+  tfe:
+    organisation: elliott-farrall
+    hostname: app.terraform.io
+    github_app_installation: elliott-farrall
+
+  gh:
+    owner: elliott-farrall

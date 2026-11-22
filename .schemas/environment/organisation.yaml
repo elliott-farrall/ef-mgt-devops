@@ -1,0 +1,75 @@
+---
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Organisation inputs (organisation.yaml)
+description: Cross-platform organisation facts — who we operate as and where.
+type: object
+additionalProperties: false
+required:
+  - organisation
+properties:
+  organisation:
+    type: object
+    additionalProperties: false
+    required:
+      - gcp
+      - tfe
+      - gh
+    properties:
+      gcp:
+        type: object
+        additionalProperties: false
+        required:
+          - domain
+          - region
+          - name
+          - billing
+        properties:
+          domain:
+            type: string
+            pattern: '^[a-z0-9.-]+\.[a-z]{2,}$'
+            description: Domain bound to the GCP organisation; resolves the organisation
+              by lookup.
+          region:
+            type: string
+            pattern: '^[a-z]+-[a-z0-9]+$'
+            description: Default region for the google provider.
+          name:
+            type: string
+            description: Display name used to resolve the GCP organisation.
+          billing:
+            type: string
+            minLength: 1
+            description: ID of the GCP billing account.
+      tfe:
+        type: object
+        additionalProperties: false
+        required:
+          - organisation
+          - hostname
+          - github_app_installation
+        properties:
+          organisation:
+            type: string
+            minLength: 1
+            description: TFC organisation handle.
+          github_app_installation:
+            type: string
+            minLength: 1
+            description: Name of the prerequisite TFC GitHub App installation; resolved to
+              its ID by
+              data.tfe_github_app_installation.
+          hostname:
+            type: string
+            pattern: '^[a-z0-9.-]+$'
+            description: TFC API hostname; also the OIDC federation issuer
+              (https://<hostname>).
+      gh:
+        type: object
+        additionalProperties: false
+        required:
+          - owner
+        properties:
+          owner:
+            type: string
+            minLength: 1
+            description: GitHub account or organisation owning the repositories.

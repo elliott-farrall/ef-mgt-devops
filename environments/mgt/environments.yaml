@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=../../.schemas/environment/environments.yaml
+environments:
+  - name: hub
+
+  - name: mgt
+
+  - name: dev
+    group: app
+
+  - name: pre
+    group: app
+
+  - name: prd
+    group: app

@@ -1,0 +1,346 @@
+# Bootstrap
+
+The one-time bring-up procedure for the platform. Everything here creates
+chicken-and-egg resources — the repository itself, its workspace, its
+identity — which are imported into Terraform state at the end so the
+management plane then manages itself. After the first successful run,
+bootstrap is never used again: every change arrives as a PR to `main`.
+
+Read [STANDARDS.md](STANDARDS.md) for the rules this procedure must not
+violate and [DESIGN.md](DESIGN.md) for why the platform is shaped the way
+it is.
+
+## Prerequisites
+
+Complete every step below before running the script. The script verifies
+most of them and fails loudly, but it cannot grant them.
+
+### 1. Tools
+
+The repository flake pins everything. From the repository root:
+
+```sh
+nix develop .#bootstrap
+```
+
+That shell provides `gcloud`, `terraform`, `gh`, `jq`, `git`,
+`shellcheck`, `check-jsonschema`, `yq`, `gettext`, and `tfccli`. Outside
+Nix, install the same set.
+
+### 2. GCP access
+
+The Google identity running the script needs, on your GCP organisation:
+
+- `roles/resourcemanager.organizationAdmin` — create the project, and
+  grant the platform roles Terraform later adopts.
+- `roles/resourcemanager.projectMover` on the organisation — the first
+  apply moves the project into the environment folder; org admin does not
+  include project move. Bootstrap-scaffolding only: unnecessary once the
+  platform identity takes over.
+- `roles/resourcemanager.folderCreator` — the script creates the
+  environment folder as you; org admin alone does not include folder
+  creation. Bootstrap-scaffolding only: not managed by Terraform, and
+  unnecessary once the platform identity takes over.
+- `roles/orgpolicy.policyAdmin` — to set and maintain the standing
+  import/export policies (see Setup gotchas) that permit intra-organisation
+  project moves — Terraform performs a move into the environment folder on
+  the first apply, and any future folder reorganisation repeats it. Set and
+  keep:
+  ```yaml
+  # both constraints, same shape (import sources and export destinations)
+  name: organizations/<org-id>/policies/resourcemanager.allowedImportSources
+  spec:
+    rules:
+      - values:
+          allowedValues:
+            - under:organizations/<org-id>
+  ```
+  Cross-organisation moves stay denied; document any exception where it is
+  performed. Remove the policyAdmin role after.
+- Billing viewer/user on the billing account named in `organisation.yaml`
+  (`roles/billing.user` minimum; `roles/billing.admin` to link the account
+  during project creation).
+
+Authenticate before running:
+
+```sh
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project <any-project-you-can-query>
+```
+
+User application-default credentials also need a quota project for some
+APIs (billing budgets among them) — set it once the landing project
+exists (or after the script creates it, before the apply):
+
+```sh
+gcloud services enable billingbudgets.googleapis.com --project=ef-mgt-devops
+gcloud auth application-default set-quota-project ef-mgt-devops
+```
+
+The application-default login is required: the first apply runs locally
+and its Google provider authenticates through it.
+
+Verify you hold the organisation role (it must list
+`roles/resourcemanager.organizationAdmin`); verify folder creator the
+same way (`roles/resourcemanager.folderCreator`):
+
+```sh
+gcloud organizations get-iam-policy <org-id> \
+  --format="table(bindings.role, bindings.members)" | grep -i elliott
+```
+
+If the role is missing but you are the organisation's super admin, grant
+it to yourself in the console (IAM & Admin → your account). If you cannot,
+stop — the org was created under a different identity.
+
+The script resolves your accessible GCP organisation (it must be the only
+one your identity can access), creates the project `ef-mgt-devops` in the
+`ef-mgt` folder, enables its APIs, and creates `sa-mgt-tfc`. The billing
+account is linked to the project by the script (`gcloud billing projects
+link`) — no manual step.
+
+### 3. Terraform Cloud
+
+- An HCP Terraform account with the organisation named in
+  `environments/mgt/organisation.yaml` (`organisation.tfe.organisation`).
+!!! note "User token required"
+    Team and organisation tokens cannot create or update workspaces
+    connected through the GitHub App — the token below must be a **user**
+    token, and its owner must have authorised the Terraform Cloud GitHub
+    App once in the browser.
+
+Create it at **TFC → Settings → API Tokens → Create an API token**
+(user scope), then export:
+
+```sh
+export TF_TOKEN_APP_TERRAFORM_IO=<user-token>
+```
+
+- The user who owns that token must authorise the Terraform Cloud GitHub
+  App once in the browser (User Settings → Authorized GitHub Apps) — the
+  first apply links the workspace to the repository through that
+  authorisation.
+- The org must be able to run remote workspaces (Team & Business tiers or
+  above).
+
+### 4. GitHub CLI
+
+Authenticate the GitHub CLI, which owns the repositories:
+
+```sh
+gh auth login
+```
+
+The script reads the token with `gh auth token` for the GitHub provider;
+bootstrap shares it organisation-wide through the `platform-tokens`
+variable set. The OAuth token's `repo` scope covers the provider's
+operations on your own repositories — if any call is rejected, a
+fine-grained PAT with **Administration: read and write** on
+`ef-mgt-devops` is the fallback.
+
+### 5. Cloudflare token
+
+Create an API token at **Cloudflare → My Profile → API Tokens → Create
+Token**, using the **Edit zone DNS** template, scoped to zone
+`elliott-farrall.phd`. Export:
+
+```sh
+export CF_API_TOKEN=<api-token>
+```
+
+The DNS records run through the Cloudflare provider; bootstrap shares the
+token through `platform-tokens`. The records are currently parked — see
+the note under Configuration review.
+
+### 6. Plan requirement
+
+The org must be able to run remote workspaces (Team & Business tiers or
+above).
+
+### 7. GitHub App installation
+
+!!! warning "One-time console action"
+    Installing the Terraform Cloud GitHub App is the one sanctioned
+    console action in the platform — GitHub requires an interactive web
+    flow to install an application, and no API can do it for you.
+
+1. Open <https://app.terraform.io/app/settings/organizations/<org>/github-app>
+   and run the connect flow.
+2. GitHub hosts the repositories under the personal account
+   `elliott-farrall` (there is no organisation) — install or configure the
+   Terraform Cloud app there, granting **All repositories** access.
+
+Bootstrap step 2.2 verifies the installation by name and aborts if it is
+missing. The installation name must match `organisation.gh.owner`.
+
+### 8. Configuration review
+
+Check `environments/mgt/*.yaml` before running — the script and the first
+apply consume every value in them:
+
+- `organisation.yaml` — domain, org name, region, billing account ID, TFC
+  org and hostname, GitHub owner, and the GitHub App installation name.
+- `budgets.yaml` — budget alerts (defaults are sensible).
+- `records.yaml` — DNS records of the Cloudflare apex zone. The live
+  records are commented out for now: importing them into the first apply
+  planned a destroy+create on mail infrastructure. Uncomment them and
+  import afterwards, one zone at a time, once the platform is stable
+  during the apply.
+- `environments.yaml` — the five deployment lanes (`mgt`, `hub`, `dev`,
+  `pre`, `prd`).
+- `projects.yaml` — the `mgt/devops` project with `default: true` and its
+  `services` list; no other projects yet.
+
+## Running
+
+From the repository root, with `CF_API_TOKEN` exported and `terraform
+login` + `gh auth login` completed:
+
+```sh
+nix develop .#bootstrap -c ./bootstrap/run.sh
+```
+
+The script runs four phases and is idempotent — reruns skip what already
+exists:
+
+1. **GCP** — resolve the organisation by domain, create `ef-mgt-devops`
+   under the organisation root, enable the configured APIs, create
+   `sa-mgt-tfc`.
+2. **Terraform Cloud** — verify token and org access, verify the GitHub App
+   installation, create TFC project `ef-mgt` and workspace
+   `ef-mgt-devops`, then seed the credential layer: the organisation-wide
+   variable set `platform-tokens` (`GITHUB_TOKEN`, `TFE_TOKEN`,
+   `CLOUDFLARE_API_TOKEN` — shared with every workspace), and set the
+   workspace to local execution for the first apply.
+3. **Imports** — derive the import addresses and render
+   `infrastructure/bootstrap.tf` from `imports.tf.tmpl`.
+4. **Deploy** — `terraform init` against the remote backend, then a single
+   local-execution `apply` that imports the bootstrap resources into state
+   and creates everything else (identities, pools, providers, bindings,
+   budgets), running under your own Google identity. The API enablements
+   and the live Cloudflare records are imported here too. The workspace
+   variables it creates switch every later run to workload identity
+   federation and remote execution — there are no temporary credentials
+   and no close-out step.
+
+   !!! note "The first apply is local"
+    Phase 4 runs locally under your own Google identity and sets the
+    workspace to remote execution at the end. Never rerun phase 4 after
+    that switch — the workspace is remote and the run would fail
+    authentication. Rerun the whole script if a full bring-up is ever
+    needed again.
+
+## After the first run
+
+- `infrastructure/bootstrap.tf` is transient — it exists only for the
+  first apply. Delete it once applied (or leave it; it references imported
+  resources and is harmless, but it is gitignored and must never be
+  committed).
+- The workspace `ef-mgt-devops` now runs the platform from `main`. Every
+  future change is a PR: CI validates, TFC plans on the PR, merge triggers
+  the run.
+- Verify in the GCP console that the org now contains the project, WIF
+  pools, and service account expected from [DESIGN.md](DESIGN.md), then
+  stay out of the console — manual changes are drift.
+
+## Setup gotchas (encountered during initial bring-up)
+
+- `constraints/resourcemanager.allowedExportDestinations` and
+  `...allowedImportSources` default to `denyAll` on newer organisations —
+  this blocks even intra-organisation project moves with a generic
+  permission error. Standing configuration for a single-org landing zone
+  allows the org's own subtree on both constraints:
+  ```yaml
+  name: organizations/<org-id>/policies/resourcemanager.allowedImportSources
+  spec:
+    rules:
+      - values:
+          allowedValues:
+            - under:organizations/<org-id>
+  ```
+  (same shape for `allowedExportDestinations`). Setting them requires
+  `roles/orgpolicy.policyAdmin`; always verify with
+  `gcloud org-policies describe <constraint> --effective` — a partially
+  applied pair (one constraint set, the other left at the default) fails
+  with no pointer at which half is missing.
+
+Lessons from the initial run, kept so a re-run on new infrastructure or a
+recovery from scratch does not repeat them:
+
+### Organisations
+
+- A domain-bound organisation is created automatically when a Cloud
+  Identity is provisioned for the domain. A manually created, domainless
+  organisation cannot be renamed, cannot own the Cloud Identity, and ends
+  up alongside it — two organisations is the broken state this setup
+  started in. Keep exactly one: the domain-bound org. Organisations cannot
+  be renamed; pick the survivor deliberately before populating it.
+- A project ID is global. Deleting a project does not free its ID for
+  reuse during the 30-day deletion window. If a seed project must be
+  recreated under a different organisation, **move** it — do not delete
+  and recreate.
+
+### Moving a project between organisations
+
+- Cross-organisation moves are blocked by org policy by default:
+  `constraints/resourcemanager.allowedExportDestinations` on the source
+  and `constraints/resourcemanager.allowedImportSources` on the target.
+  Setting them requires `roles/orgpolicy.policyAdmin` (not included in
+  Organization Administrator). Both constraints only accept organisation
+  values; policy changes take up to 15 minutes to enforce. Working rules:
+  - source (export): `folders/<id>/policies/resourcemanager.allowedExportDestinations`
+    with `values.allowedValues: [under:organizations/<target-org-id>]`
+  - target (import): `organizations/<id>/policies/resourcemanager.allowedImportSources`
+    with `values.allowedValues: [under:organizations/<source-org-id>]`
+  - apply with `gcloud org-policies set-policy <file>`, move with
+    `gcloud alpha projects move <project> --organization=<id>`, then delete
+    both constraints.
+- Restoring a deleted project requires its full parent chain (folder and
+  organisation) to be active first — restore bottom-up: organisation,
+  folder (`gcloud resource-manager folders undelete`), then the project
+  (console only; there is no gcloud undelete for projects).
+
+### Platform gotchas
+
+- Terraform's `remote` backend with a single `workspaces { name }` block
+  rejects `TF_WORKSPACE` — the CLI then tries explicit workspace selection
+  and fails with "workspaces not supported". Never export `TF_WORKSPACE`
+  against a single-name backend.
+- The remote backend is also poisoned by stale `.terraform/terraform.tfstate`
+  left behind by an init under a different backend; if workspace errors
+  persist inexplicably, `rm -rf .terraform` and re-init.
+- `terraform plan`/`apply` against the HCP Terraform CLI-driven workflow
+  requires the workspace's execution mode to be `local`; the API has no
+  "list variables of a varset" endpoint, and the legacy
+  `POST /workspaces/:id/settings` no-ops — use `PATCH /workspaces/:id` and
+  verify the response.
+- Terraform global variable sets enforce unique keys across *global* sets;
+  legacy sets holding the same keys (e.g. `GITHUB_TOKEN`) must be removed
+  before creating `platform-tokens`.
+- Google Cloud Billing API is strictly rate-limited (per project, per
+  minute); scripts should check current state before writing (the billing
+  link step does).
+- `fileexists()` fails on directories — validate a directory by checking a
+  file inside it.
+- Third-party CLI wrappers drift from their own documentation (tfccli
+  flags, yq output options); prefer the platform's own API for anything
+  the script parses.
+- Attaching the workspace to VCS requires the target branch to exist and
+  be ingressable (at least one file). Create `main` before the first
+  apply; because the branch-protection rulesets require status checks
+  that cannot run before the workspace attaches, create `main` with the
+  rulesets temporarily deleted — the same apply recreates them.
+- GitHub Pages custom domains are inherently two-phase: adding the domain
+  issues the certificate asynchronously, and the provider 404s on any
+  explicitly set `https_enforced` value until the certificate exists.
+  Omit the attribute in the first pass and enforce in a follow-up.
+- With a quota project set for user ADC, every API the provider touches
+  must be enabled on the quota project itself — including
+  `cloudresourcemanager` (the organisation data source) and
+  `billingbudgets` (the budget resource). Google's default shared
+  consumer masks this until a quota project is set.
+- Referencing a data-source ID (such as `data.google_organization.this.id`)
+  already carries its resource prefix (`organizations/...`); composing a
+  parent reference from it must not add the prefix again — three separate
+  API calls 404'd on doubled prefixes during bring-up.

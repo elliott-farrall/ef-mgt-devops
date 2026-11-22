@@ -1,0 +1,9 @@
+# terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+infrastructure/bootstrap.tf
+bootstrap/init.txt
+bootstrap/plan.txt
+bootstrap/tfplan
