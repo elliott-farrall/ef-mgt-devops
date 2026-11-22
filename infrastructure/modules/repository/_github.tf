@@ -89,8 +89,9 @@ resource "time_sleep" "pages_dns" {
 
 resource "github_repository_pages" "this" {
 
-  depends_on = [time_sleep.pages_dns]
-  count      = var.pages ? 1 : 0
+  depends_on     = [time_sleep.pages_dns]
+  https_enforced = true
+  count          = var.pages ? 1 : 0
 
   repository = github_repository.this.name
   build_type = "workflow"
