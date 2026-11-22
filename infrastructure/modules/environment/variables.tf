@@ -28,3 +28,8 @@ variable "issuer" {
   type        = string
 }
 
+
+variable "organization_name" {
+  description = "HCP Terraform organisation name; scopes the WIF trust to its runs via the token subject."
+  type        = string
+}

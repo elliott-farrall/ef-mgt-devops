@@ -16,6 +16,7 @@ module "environment" {
   billing_account_id = each.value.billing_account_id
   landing_project_id = each.value.landing_project_id
   issuer             = each.value.issuer
+  organization_name  = local.config.organisation.tfe.organisation
 
   depends_on = [module.group]
 }
