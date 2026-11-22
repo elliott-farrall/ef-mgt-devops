@@ -45,7 +45,7 @@ locals {
   services = [for service in var.services : "${service}.googleapis.com"]
 
   status_checks = concat(
-    ["ci / branch-name (pull_request)", "ci / terraform (pull_request)", "ci / yaml (pull_request)", "ci / shell (pull_request)"],
+    ["CI"],
     [for name in keys(local.deployments) : "Terraform Cloud / ${name} (Predict)"],
   )
 }
