@@ -93,3 +93,8 @@ variable "working_directory" {
   type        = string
 }
 
+
+variable "tfc_organization_name" {
+  description = "HCP Terraform organisation name; the Predict check context is Terraform Cloud/<org>/<workspace>."
+  type        = string
+}

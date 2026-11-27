@@ -46,6 +46,6 @@ locals {
 
   status_checks = concat(
     ["CI"],
-    [for name in keys(local.deployments) : "Terraform Cloud / ${name} (Predict)"],
+    [for name in keys(local.deployments) : "Terraform Cloud/${var.tfc_organization_name}/${name}"],
   )
 }

@@ -35,6 +35,7 @@ module "project" {
   cname                      = each.value.cname
   zone                       = each.value.zone
   github_owner               = each.value.github_owner
+  tfc_organization_name      = local.config.organisation.tfe.organisation
   github_app_installation    = each.value.github_app_installation
   billing_account_id         = each.value.billing_account_id
   services                   = each.value.services
