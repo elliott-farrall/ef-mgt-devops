@@ -50,7 +50,7 @@ bash-shell: ## Shell scripts pass shellcheck and parse
 
 # ── Git ──────────────────────────────────────────────────────────────────
 git-branch: ## Branch name follows <type>/<kebab-name>
-	$(call check,br=$${BRANCH_NAME:-$$GITHUB_HEAD_REF}; [ -z "$$br" ] && br=$$(git symbolic-ref --short HEAD 2>/dev/null); echo "$$br" | grep -Eq '^(feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert)/([a-z]+-[0-9]+-)?[a-z0-9][a-z0-9._-]*$$',Branch name)
+	$(call check,br=$${BRANCH_NAME:-$$GITHUB_HEAD_REF}; [ -z "$$br" ] && br=$$(git symbolic-ref --short HEAD 2>/dev/null); echo "$$br" | grep -Eq '^(feature|fix|hotfix|chore|docs|refactor|test|perf|build|ci|revert|dependabot)/([a-z]+-[0-9]+-)?[a-z0-9][a-z0-9._-]*$$',Branch name)
 
 GIT_COMMIT := commits=$$(git log "$${GITHUB_BASE_REF}..HEAD" --pretty=format:'%s' 2>/dev/null || true); \
 	if [ -n "$$commits" ]; then echo "$$commits" | commitlint; fi
